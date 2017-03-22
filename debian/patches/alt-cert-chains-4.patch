@@ -1,0 +1,238 @@
+From 1c687ff4dd5dcc0f05f1d062effdb40e4e41f24f Mon Sep 17 00:00:00 2001
+From: Matt Caswell <matt@openssl.org>
+Date: Tue, 27 Jan 2015 11:15:15 +0000
+Subject: [PATCH] Add documentation for the -no_alt_chains option for various
+ apps, as well as the X509_V_FLAG_NO_ALT_CHAINS flag.
+
+Reviewed-by: Dr. Stephen Henson <steve@openssl.org>
+Reviewed-by: Kurt Roeckx <kurt@roeckx.be>
+
+Conflicts:
+	doc/apps/cms.pod
+	doc/apps/ocsp.pod
+	doc/apps/s_client.pod
+	doc/apps/s_server.pod
+	doc/apps/smime.pod
+	doc/apps/verify.pod
+---
+ doc/apps/cms.pod                           |  5 ++++-
+ doc/apps/ocsp.pod                          | 11 +++++++++++
+ doc/apps/s_client.pod                      |  7 ++++++-
+ doc/apps/s_server.pod                      |  9 +++++++++
+ doc/apps/smime.pod                         |  4 +++-
+ doc/apps/verify.pod                        | 13 +++++++++++++
+ doc/crypto/X509_VERIFY_PARAM_set_flags.pod |  8 +++++++-
+ 7 files changed, 53 insertions(+), 4 deletions(-)
+
+Index: openssl-1.0.1f/doc/apps/cms.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/apps/cms.pod	2016-02-05 16:06:52.833156542 -0500
++++ openssl-1.0.1f/doc/apps/cms.pod	2016-02-05 16:06:52.825156453 -0500
+@@ -35,6 +35,7 @@
+ [B<-print>]
+ [B<-CAfile file>]
+ [B<-CApath dir>]
++[B<-no_alt_chains>]
+ [B<-md digest>]
+ [B<-[cipher]>]
+ [B<-nointern>]
+@@ -401,7 +402,7 @@
+ then many S/MIME mail clients check the signers certificate's email
+ address matches that specified in the From: address.
+ 
+-=item B<-purpose, -ignore_critical, -issuer_checks, -crl_check, -crl_check_all, -policy_check, -extended_crl, -x509_strict, -policy -check_ss_sig>
++=item B<-purpose, -ignore_critical, -issuer_checks, -crl_check, -crl_check_all, -policy_check, -extended_crl, -x509_strict, -policy -check_ss_sig -no_alt_chains>
+ 
+ Set various certificate chain valiadition option. See the
+ L<B<verify>|verify(1)> manual page for details.
+@@ -599,4 +600,6 @@
+ added in OpenSSL 1.0.0
+ 
+ 
++The -no_alt_chains options was first added to OpenSSL 1.0.1n and 1.0.2b.
++
+ =cut
+Index: openssl-1.0.1f/doc/apps/ocsp.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/apps/ocsp.pod	2016-02-05 16:06:52.833156542 -0500
++++ openssl-1.0.1f/doc/apps/ocsp.pod	2016-02-05 16:06:52.825156453 -0500
+@@ -29,6 +29,7 @@
+ [B<-path>]
+ [B<-CApath dir>]
+ [B<-CAfile file>]
++[B<-no_alt_chains>]]
+ [B<-VAfile file>]
+ [B<-validity_period n>]
+ [B<-status_age n>]
+@@ -138,6 +139,10 @@
+ file or pathname containing trusted CA certificates. These are used to verify
+ the signature on the OCSP response.
+ 
++=item B<-no_alt_chains>
++
++See L<B<verify>|verify(1)> manual page for details.
++
+ =item B<-verify_other file>
+ 
+ file containing additional certificates to search when attempting to locate
+@@ -369,3 +374,9 @@
+ 
+  openssl ocsp -index demoCA/index.txt -rsigner rcert.pem -CA demoCA/cacert.pem
+      -reqin req.der -respout resp.der
++
++=head1 HISTORY
++
++The -no_alt_chains options was first added to OpenSSL 1.0.1n and 1.0.2b.
++
++=cut
+Index: openssl-1.0.1f/doc/apps/s_client.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/apps/s_client.pod	2016-02-05 16:06:52.833156542 -0500
++++ openssl-1.0.1f/doc/apps/s_client.pod	2016-02-05 16:06:52.825156453 -0500
+@@ -17,6 +17,7 @@
+ [B<-pass arg>]
+ [B<-CApath directory>]
+ [B<-CAfile filename>]
++[B<-no_alt_chains>]
+ [B<-reconnect>]
+ [B<-pause>]
+ [B<-showcerts>]
+@@ -104,7 +105,7 @@
+ A file containing trusted certificates to use during server authentication
+ and to use when attempting to build the client certificate chain.
+ 
+-=item B<-purpose, -ignore_critical, -issuer_checks, -crl_check, -crl_check_all, -policy_check, -extended_crl, -x509_strict, -policy -check_ss_sig>
++=item B<-purpose, -ignore_critical, -issuer_checks, -crl_check, -crl_check_all, -policy_check, -extended_crl, -x509_strict, -policy -check_ss_sig -no_alt_chains>
+ 
+ Set various certificate chain valiadition option. See the
+ L<B<verify>|verify(1)> manual page for details.
+@@ -309,4 +310,8 @@
+ 
+ L<sess_id(1)|sess_id(1)>, L<s_server(1)|s_server(1)>, L<ciphers(1)|ciphers(1)>
+ 
++=head1 HISTORY
++
++The -no_alt_chains options was first added to OpenSSL 1.0.1n and 1.0.2b.
++
+ =cut
+Index: openssl-1.0.1f/doc/apps/s_server.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/apps/s_server.pod	2016-02-05 16:06:52.833156542 -0500
++++ openssl-1.0.1f/doc/apps/s_server.pod	2016-02-05 16:06:52.825156453 -0500
+@@ -33,6 +33,7 @@
+ [B<-state>]
+ [B<-CApath directory>]
+ [B<-CAfile filename>]
++[B<-no_alt_chains>]
+ [B<-nocert>]
+ [B<-cipher cipherlist>]
+ [B<-quiet>]
+@@ -163,6 +164,10 @@
+ is also used in the list of acceptable client CAs passed to the client when
+ a certificate is requested.
+ 
++=item B<-no_alt_chains>
++
++See the L<B<verify>|verify(1)> manual page for details.
++
+ =item B<-state>
+ 
+ prints out the SSL session states.
+@@ -352,4 +357,8 @@
+ 
+ L<sess_id(1)|sess_id(1)>, L<s_client(1)|s_client(1)>, L<ciphers(1)|ciphers(1)>
+ 
++=head1 HISTORY
++
++The -no_alt_chains options was first added to OpenSSL 1.0.1n and 1.0.2b.
++
+ =cut
+Index: openssl-1.0.1f/doc/apps/smime.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/apps/smime.pod	2016-02-05 16:06:52.833156542 -0500
++++ openssl-1.0.1f/doc/apps/smime.pod	2016-02-05 16:06:52.825156453 -0500
+@@ -15,6 +15,7 @@
+ [B<-pk7out>]
+ [B<-[cipher]>]
+ [B<-in file>]
++[B<-no_alt_chains>]
+ [B<-certfile file>]
+ [B<-signer file>]
+ [B<-recip  file>]
+@@ -259,7 +260,7 @@
+ then many S/MIME mail clients check the signers certificate's email
+ address matches that specified in the From: address.
+ 
+-=item B<-purpose, -ignore_critical, -issuer_checks, -crl_check, -crl_check_all, -policy_check, -extended_crl, -x509_strict, -policy -check_ss_sig>
++=item B<-purpose, -ignore_critical, -issuer_checks, -crl_check, -crl_check_all, -policy_check, -extended_crl, -x509_strict, -policy -check_ss_sig -no_alt_chains>
+ 
+ Set various options of certificate chain verification. See
+ L<B<verify>|verify(1)> manual page for details.
+@@ -441,5 +442,6 @@
+ The use of multiple B<-signer> options and the B<-resign> command were first
+ added in OpenSSL 1.0.0
+ 
++The -no_alt_chains options was first added to OpenSSL 1.0.1n and 1.0.2b.
+ 
+ =cut
+Index: openssl-1.0.1f/doc/apps/verify.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/apps/verify.pod	2016-02-05 16:06:52.833156542 -0500
++++ openssl-1.0.1f/doc/apps/verify.pod	2016-02-05 16:06:52.825156453 -0500
+@@ -22,6 +22,7 @@
+ [B<-extended_crl>]
+ [B<-use_deltas>]
+ [B<-policy_print>]
++[B<-no_alt_chains>]
+ [B<-untrusted file>]
+ [B<-help>]
+ [B<-issuer_checks>]
+@@ -102,6 +103,14 @@
+ 
+ Set policy variable inhibit-policy-mapping (see RFC5280).
+ 
++=item B<-no_alt_chains>
++
++When building a certificate chain, if the first certificate chain found is not
++trusted, then OpenSSL will continue to check to see if an alternative chain can
++be found that is trusted. With this option that behaviour is suppressed so that
++only the first chain found is ever used. Using this option will force the
++behaviour to match that of previous OpenSSL versions.
++
+ =item B<-policy_print>
+ 
+ Print out diagnostics related to policy processing.
+@@ -403,4 +412,8 @@
+ 
+ L<x509(1)|x509(1)>
+ 
++=head1 HISTORY
++
++The -no_alt_chains options was first added to OpenSSL 1.0.1n and 1.0.2b.
++
+ =cut
+Index: openssl-1.0.1f/doc/crypto/X509_VERIFY_PARAM_set_flags.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/crypto/X509_VERIFY_PARAM_set_flags.pod	2016-02-05 16:06:52.833156542 -0500
++++ openssl-1.0.1f/doc/crypto/X509_VERIFY_PARAM_set_flags.pod	2016-02-05 16:06:52.829156497 -0500
+@@ -133,6 +133,12 @@
+ to the verification callback and it B<must> be prepared to handle such cases
+ without assuming they are hard errors.
+ 
++The B<X509_V_FLAG_NO_ALT_CHAINS> flag suppresses checking for alternative
++chains. By default, when building a certificate chain, if the first certificate
++chain found is not trusted, then OpenSSL will continue to check to see if an
++alternative chain can be found that is trusted. With this flag set the behaviour
++will match that of OpenSSL versions prior to 1.0.1n and 1.0.2b.
++
+ =head1 NOTES
+ 
+ The above functions should be used to manipulate verification parameters
+@@ -166,6 +172,6 @@
+ 
+ =head1 HISTORY
+ 
+-TBA
++The B<X509_V_FLAG_NO_ALT_CHAINS> flag was added in OpenSSL 1.0.1n and 1.0.2b
+ 
+ =cut

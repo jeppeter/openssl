@@ -1,0 +1,125 @@
+Backport of:
+
+From b3b1eb5735c5b3d566a9fc3bf745bf716a29afa0 Mon Sep 17 00:00:00 2001
+From: Matt Caswell <matt@openssl.org>
+Date: Thu, 25 Jun 2015 09:47:15 +0100
+Subject: [PATCH] Reject calls to X509_verify_cert that have not been
+ reinitialised
+
+The function X509_verify_cert checks the value of |ctx->chain| at the
+beginning, and if it is NULL then it initialises it, along with the value
+of ctx->untrusted. The normal way to use X509_verify_cert() is to first
+call X509_STORE_CTX_init(); then set up various parameters etc; then call
+X509_verify_cert(); then check the results; and finally call
+X509_STORE_CTX_cleanup(). The initial call to X509_STORE_CTX_init() sets
+|ctx->chain| to NULL. The only place in the OpenSSL codebase  where
+|ctx->chain| is set to anything other than a non NULL value is in
+X509_verify_cert itself. Therefore the only ways that |ctx->chain| could be
+non NULL on entry to X509_verify_cert is if one of the following occurs:
+1) An application calls X509_verify_cert() twice without re-initialising
+in between.
+2) An application reaches inside the X509_STORE_CTX structure and changes
+the value of |ctx->chain| directly.
+
+With regards to the second of these, we should discount this - it should
+not be supported to allow this.
+
+With regards to the first of these, the documentation is not exactly
+crystal clear, but the implication is that you must call
+X509_STORE_CTX_init() before each call to X509_verify_cert(). If you fail
+to do this then, at best, the results would be undefined.
+
+Calling X509_verify_cert() with |ctx->chain| set to a non NULL value is
+likely to have unexpected results, and could be dangerous. This commit
+changes the behaviour of X509_verify_cert() so that it causes an error if
+|ctx->chain| is anything other than NULL (because this indicates that we
+have not been initialised properly). It also clarifies the associated
+documentation. This is a follow up commit to CVE-2015-1793.
+
+Reviewed-by: Stephen Henson <steve@openssl.org>
+---
+ crypto/x509/x509_vfy.c            | 22 ++++++++++++++--------
+ doc/crypto/X509_STORE_CTX_new.pod | 13 +++++++++----
+ doc/crypto/X509_verify_cert.pod   |  3 ++-
+ 3 files changed, 25 insertions(+), 13 deletions(-)
+
+Index: openssl-1.0.1f/crypto/x509/x509_vfy.c
+===================================================================
+--- openssl-1.0.1f.orig/crypto/x509/x509_vfy.c	2016-02-05 16:10:38.163688817 -0500
++++ openssl-1.0.1f/crypto/x509/x509_vfy.c	2016-02-05 16:12:38.097040833 -0500
+@@ -166,21 +166,26 @@
+ 		return -1;
+ 		}
+ 
++	if (ctx->chain != NULL) {
++		/*
++		 * This X509_STORE_CTX has already been used to verify a cert. We
++		 * cannot do another one.
++		 */
++		X509err(X509_F_X509_VERIFY_CERT, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
++		return -1;
++		}
++
+ 	cb=ctx->verify_cb;
+ 
+ 	/* first we make sure the chain we are going to build is
+ 	 * present and that the first entry is in place */
+-	if (ctx->chain == NULL)
+-		{
+-		if (	((ctx->chain=sk_X509_new_null()) == NULL) ||
+-			(!sk_X509_push(ctx->chain,ctx->cert)))
+-			{
+-			X509err(X509_F_X509_VERIFY_CERT,ERR_R_MALLOC_FAILURE);
+-			goto end;
+-			}
+-		CRYPTO_add(&ctx->cert->references,1,CRYPTO_LOCK_X509);
+-		ctx->last_untrusted=1;
+-		}
++	if (((ctx->chain = sk_X509_new_null()) == NULL) ||
++		(!sk_X509_push(ctx->chain, ctx->cert))) {
++		X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
++		goto end;
++	}
++	CRYPTO_add(&ctx->cert->references, 1, CRYPTO_LOCK_X509);
++	ctx->last_untrusted = 1;
+ 
+ 	/* We use a temporary STACK so we can chop and hack at it */
+ 	if (ctx->untrusted != NULL
+Index: openssl-1.0.1f/doc/crypto/X509_STORE_CTX_new.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/crypto/X509_STORE_CTX_new.pod	2016-02-05 16:10:38.163688817 -0500
++++ openssl-1.0.1f/doc/crypto/X509_STORE_CTX_new.pod	2016-02-05 16:10:38.163688817 -0500
+@@ -39,10 +39,15 @@
+ is no longer valid.
+ 
+ X509_STORE_CTX_init() sets up B<ctx> for a subsequent verification operation.
+-The trusted certificate store is set to B<store>, the end entity certificate
+-to be verified is set to B<x509> and a set of additional certificates (which
+-will be untrusted but may be used to build the chain) in B<chain>. Any or
+-all of the B<store>, B<x509> and B<chain> parameters can be B<NULL>.
++It must be called before each call to X509_verify_cert(), i.e. a B<ctx> is only
++good for one call to X509_verify_cert(); if you want to verify a second
++certificate with the same B<ctx> then you must call X509_XTORE_CTX_cleanup()
++and then X509_STORE_CTX_init() again before the second call to
++X509_verify_cert(). The trusted certificate store is set to B<store>, the end
++entity certificate to be verified is set to B<x509> and a set of additional
++certificates (which will be untrusted but may be used to build the chain) in
++B<chain>. Any or all of the B<store>, B<x509> and B<chain> parameters can be
++B<NULL>.
+ 
+ X509_STORE_CTX_trusted_stack() sets the set of trusted certificates of B<ctx>
+ to B<sk>. This is an alternative way of specifying trusted certificates 
+Index: openssl-1.0.1f/doc/crypto/X509_verify_cert.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/crypto/X509_verify_cert.pod	2016-02-05 16:10:38.163688817 -0500
++++ openssl-1.0.1f/doc/crypto/X509_verify_cert.pod	2016-02-05 16:10:38.163688817 -0500
+@@ -32,7 +32,8 @@
+ SSL/TLS code.
+ 
+ The negative return value from X509_verify_cert() can only occur if no
+-certificate is set in B<ctx> (due to a programming error) or if a retry
++certificate is set in B<ctx> (due to a programming error); if X509_verify_cert()
++twice without reinitialising B<ctx> in between; or if a retry
+ operation is requested during internal lookups (which never happens with
+ standard lookup methods). It is however recommended that application check
+ for <= 0 return value on error.

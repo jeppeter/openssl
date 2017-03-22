@@ -1,0 +1,117 @@
+Backport of:
+
+From c6a39046f576ab0af25bf3ef844812330af2b27b Mon Sep 17 00:00:00 2001
+From: Matt Caswell <matt@openssl.org>
+Date: Tue, 27 Jan 2015 10:50:38 +0000
+Subject: [PATCH] Add -no_alt_chains option to apps to implement the new
+ X509_V_FLAG_NO_ALT_CHAINS flag. Using this option means that when building
+ certificate chains, the first chain found will be the one used. Without this
+ flag, if the first chain found is not trusted then we will keep looking to
+ see if we can build an alternative chain instead.
+
+Reviewed-by: Dr. Stephen Henson <steve@openssl.org>
+Reviewed-by: Kurt Roeckx <kurt@roeckx.be>
+
+Conflicts:
+	apps/cms.c
+	apps/ocsp.c
+	apps/s_client.c
+	apps/s_server.c
+	apps/smime.c
+	apps/verify.c
+---
+ apps/apps.c     | 2 ++
+ apps/cms.c      | 2 ++
+ apps/ocsp.c     | 2 ++
+ apps/s_client.c | 2 ++
+ apps/s_server.c | 2 ++
+ apps/smime.c    | 2 ++
+ apps/verify.c   | 2 +-
+ 7 files changed, 13 insertions(+), 1 deletion(-)
+
+Index: openssl-1.0.1f/apps/apps.c
+===================================================================
+--- openssl-1.0.1f.orig/apps/apps.c	2016-02-05 16:00:33.396922042 -0500
++++ openssl-1.0.1f/apps/apps.c	2016-02-05 16:01:45.805726725 -0500
+@@ -2361,6 +2361,8 @@
+ 		flags |= X509_V_FLAG_NOTIFY_POLICY;
+ 	else if (!strcmp(arg, "-check_ss_sig"))
+ 		flags |= X509_V_FLAG_CHECK_SS_SIGNATURE;
++	else if (!strcmp(arg, "-no_alt_chains"))
++		flags |= X509_V_FLAG_NO_ALT_CHAINS;
+ 	else
+ 		return 0;
+ 
+Index: openssl-1.0.1f/apps/cms.c
+===================================================================
+--- openssl-1.0.1f.orig/apps/cms.c	2016-02-05 16:00:33.396922042 -0500
++++ openssl-1.0.1f/apps/cms.c	2016-02-05 16:02:37.806305681 -0500
+@@ -642,6 +642,7 @@
+ 		BIO_printf (bio_err, "-text          include or delete text MIME headers\n");
+ 		BIO_printf (bio_err, "-CApath dir    trusted certificates directory\n");
+ 		BIO_printf (bio_err, "-CAfile file   trusted certificates file\n");
++		BIO_printf (bio_err, "-no_alt_chains only ever use the first certificate chain found\n");
+ 		BIO_printf (bio_err, "-crl_check     check revocation status of signer's certificate using CRLs\n");
+ 		BIO_printf (bio_err, "-crl_check_all check revocation status of signer's certificate chain using CRLs\n");
+ #ifndef OPENSSL_NO_ENGINE
+Index: openssl-1.0.1f/apps/ocsp.c
+===================================================================
+--- openssl-1.0.1f.orig/apps/ocsp.c	2016-02-05 16:00:33.396922042 -0500
++++ openssl-1.0.1f/apps/ocsp.c	2016-02-05 16:03:12.918697092 -0500
+@@ -595,6 +595,7 @@
+ 		BIO_printf (bio_err, "-path              path to use in OCSP request\n");
+ 		BIO_printf (bio_err, "-CApath dir        trusted certificates directory\n");
+ 		BIO_printf (bio_err, "-CAfile file       trusted certificates file\n");
++		BIO_printf (bio_err, "-no_alt_chains     only ever use the first certificate chain found\n");
+ 		BIO_printf (bio_err, "-VAfile file       validator certificates file\n");
+ 		BIO_printf (bio_err, "-validity_period n maximum validity discrepancy in seconds\n");
+ 		BIO_printf (bio_err, "-status_age n      maximum status age in seconds\n");
+Index: openssl-1.0.1f/apps/s_client.c
+===================================================================
+--- openssl-1.0.1f.orig/apps/s_client.c	2016-02-05 16:00:33.396922042 -0500
++++ openssl-1.0.1f/apps/s_client.c	2016-02-05 16:03:42.603028283 -0500
+@@ -298,6 +298,7 @@
+ 	BIO_printf(bio_err," -pass arg     - private key file pass phrase source\n");
+ 	BIO_printf(bio_err," -CApath arg   - PEM format directory of CA's\n");
+ 	BIO_printf(bio_err," -CAfile arg   - PEM format file of CA's\n");
++	BIO_printf(bio_err," -no_alt_chains - only ever use the first certificate chain found\n");
+ 	BIO_printf(bio_err," -reconnect    - Drop and re-make the connection with the same Session-ID\n");
+ 	BIO_printf(bio_err," -pause        - sleep(1) after each read(2) and write(2) system call\n");
+ 	BIO_printf(bio_err," -showcerts    - show all certificates in the chain\n");
+Index: openssl-1.0.1f/apps/s_server.c
+===================================================================
+--- openssl-1.0.1f.orig/apps/s_server.c	2016-02-05 16:00:33.396922042 -0500
++++ openssl-1.0.1f/apps/s_server.c	2016-02-05 16:04:05.083279271 -0500
+@@ -517,6 +517,7 @@
+ 	BIO_printf(bio_err," -state        - Print the SSL states\n");
+ 	BIO_printf(bio_err," -CApath arg   - PEM format directory of CA's\n");
+ 	BIO_printf(bio_err," -CAfile arg   - PEM format file of CA's\n");
++	BIO_printf(bio_err," -no_alt_chains - only ever use the first certificate chain found\n");
+ 	BIO_printf(bio_err," -nocert       - Don't use any certificates (Anon-DH)\n");
+ 	BIO_printf(bio_err," -cipher arg   - play with 'openssl ciphers' to see what goes here\n");
+ 	BIO_printf(bio_err," -serverpref   - Use server's cipher preferences\n");
+Index: openssl-1.0.1f/apps/smime.c
+===================================================================
+--- openssl-1.0.1f.orig/apps/smime.c	2016-02-05 16:00:33.396922042 -0500
++++ openssl-1.0.1f/apps/smime.c	2016-02-05 16:04:44.775722783 -0500
+@@ -479,6 +479,7 @@
+ 		BIO_printf (bio_err, "-text          include or delete text MIME headers\n");
+ 		BIO_printf (bio_err, "-CApath dir    trusted certificates directory\n");
+ 		BIO_printf (bio_err, "-CAfile file   trusted certificates file\n");
++		BIO_printf (bio_err, "-no_alt_chains only ever use the first certificate chain found\n");
+ 		BIO_printf (bio_err, "-crl_check     check revocation status of signer's certificate using CRLs\n");
+ 		BIO_printf (bio_err, "-crl_check_all check revocation status of signer's certificate chain using CRLs\n");
+ #ifndef OPENSSL_NO_ENGINE
+Index: openssl-1.0.1f/apps/verify.c
+===================================================================
+--- openssl-1.0.1f.orig/apps/verify.c	2016-02-05 16:00:33.396922042 -0500
++++ openssl-1.0.1f/apps/verify.c	2016-02-05 16:05:17.240085854 -0500
+@@ -238,7 +238,7 @@
+ end:
+ 	if (ret == 1) {
+ 		BIO_printf(bio_err,"usage: verify [-verbose] [-CApath path] [-CAfile file] [-purpose purpose] [-crl_check]");
+-		BIO_printf(bio_err," [-attime timestamp]");
++		BIO_printf(bio_err," [-no_alt_chains] [-attime timestamp]");
+ #ifndef OPENSSL_NO_ENGINE
+ 		BIO_printf(bio_err," [-engine e]");
+ #endif

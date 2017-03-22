@@ -1,0 +1,26 @@
+Backport of:
+
+From a4530ce0398d673b25a15b72a18dee1d8b14c07d Mon Sep 17 00:00:00 2001
+From: Kurt Roeckx <kurt@roeckx.be>
+Date: Sun, 10 Jan 2016 13:55:08 +0100
+Subject: [PATCH] Change minimum DH size from 768 to 1024
+
+Reviewed-by: Viktor Dukhovni <openssl-users@dukhovni.org>
+---
+ CHANGES       | 3 ++-
+ ssl/s3_clnt.c | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+Index: openssl-1.0.1f/ssl/s3_clnt.c
+===================================================================
+--- openssl-1.0.1f.orig/ssl/s3_clnt.c	2016-04-28 11:21:45.882889790 -0400
++++ openssl-1.0.1f/ssl/s3_clnt.c	2016-04-28 11:22:05.123178021 -0400
+@@ -3324,7 +3324,7 @@
+ 	/* Check DHE only: static DH not implemented. */
+ 	if (alg_k & SSL_kEDH) {
+ 		int dh_size = BN_num_bits(dh->p);
+-		if ((!SSL_C_IS_EXPORT(s->s3->tmp.new_cipher) && dh_size < 768)
++		if ((!SSL_C_IS_EXPORT(s->s3->tmp.new_cipher) && dh_size < 1024)
+ 			|| (SSL_C_IS_EXPORT(s->s3->tmp.new_cipher) && dh_size < 512)) {
+ 			SSLerr(SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM, SSL_R_DH_KEY_TOO_SMALL);
+ 			goto f_err;

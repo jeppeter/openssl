@@ -1,0 +1,346 @@
+Description: reject dh keys smaller than 768 bits
+Origin: backport, https://git.openssl.org/?p=openssl.git;a=commit;h=63830384e90d9b36d2793d4891501ec024827433
+Origin: backport, https://git.openssl.org/?p=openssl.git;a=commit;h=ff4de7dde90d15b366abe4664b904f22539969c9
+Origin: backport, https://git.openssl.org/?p=openssl.git;a=commit;h=f1612746ec7580132f81fb81a23f6705e63d113b
+Origin: backport, https://git.openssl.org/?p=openssl.git;a=commit;h=3372aeed2ce056af9d577a0d79b34dd7f9b67dad
+
+Index: openssl-1.0.1f/doc/ssl/SSL_CTX_set_tmp_dh_callback.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/ssl/SSL_CTX_set_tmp_dh_callback.pod	2015-06-08 11:15:37.770725621 -0400
++++ openssl-1.0.1f/doc/ssl/SSL_CTX_set_tmp_dh_callback.pod	2015-06-08 11:15:37.766725576 -0400
+@@ -62,12 +62,12 @@
+ 
+ If "strong" primes were used to generate the DH parameters, it is not strictly
+ necessary to generate a new key for each handshake but it does improve forward
+-secrecy. If it is not assured, that "strong" primes were used (see especially
+-the section about DSA parameters below), SSL_OP_SINGLE_DH_USE must be used
+-in order to prevent small subgroup attacks. Always using SSL_OP_SINGLE_DH_USE
+-has an impact on the computer time needed during negotiation, but it is not
+-very large, so application authors/users should consider to always enable
+-this option.
++secrecy. If it is not assured that "strong" primes were used,
++SSL_OP_SINGLE_DH_USE must be used in order to prevent small subgroup
++attacks. Always using SSL_OP_SINGLE_DH_USE has an impact on the
++computer time needed during negotiation, but it is not very large, so
++application authors/users should consider always enabling this option.
++The option is required to implement perfect forward secrecy (PFS).
+ 
+ As generating DH parameters is extremely time consuming, an application
+ should not generate the parameters on the fly but supply the parameters.
+@@ -75,82 +75,62 @@
+ the negotiation. The risk in reusing DH parameters is that an attacker
+ may specialize on a very often used DH group. Applications should therefore
+ generate their own DH parameters during the installation process using the
+-openssl L<dhparam(1)|dhparam(1)> application. In order to reduce the computer
+-time needed for this generation, it is possible to use DSA parameters
+-instead (see L<dhparam(1)|dhparam(1)>), but in this case SSL_OP_SINGLE_DH_USE
+-is mandatory.
++openssl L<dhparam(1)|dhparam(1)> application. This application
++guarantees that "strong" primes are used.
+ 
+-Application authors may compile in DH parameters. Files dh512.pem,
+-dh1024.pem, dh2048.pem, and dh4096 in the 'apps' directory of current
++Files dh2048.pem, and dh4096.pem in the 'apps' directory of the current
+ version of the OpenSSL distribution contain the 'SKIP' DH parameters,
+ which use safe primes and were generated verifiably pseudo-randomly.
+ These files can be converted into C code using the B<-C> option of the
+-L<dhparam(1)|dhparam(1)> application.
+-Authors may also generate their own set of parameters using
+-L<dhparam(1)|dhparam(1)>, but a user may not be sure how the parameters were
+-generated. The generation of DH parameters during installation is therefore
+-recommended.
++L<dhparam(1)|dhparam(1)> application. Generation of custom DH
++parameters during installation should still be preferred to stop an
++attacker from specializing on a commonly used group. Files dh1024.pem
++and dh512.pem contain old parameters that must not be used by
++applications.
+ 
+ An application may either directly specify the DH parameters or
+-can supply the DH parameters via a callback function. The callback approach
+-has the advantage, that the callback may supply DH parameters for different
+-key lengths.
+-
+-The B<tmp_dh_callback> is called with the B<keylength> needed and
+-the B<is_export> information. The B<is_export> flag is set, when the
+-ephemeral DH key exchange is performed with an export cipher.
++can supply the DH parameters via a callback function.
++
++Previous versions of the callback used B<is_export> and B<keylength>
++parameters to control parameter generation for export and non-export
++cipher suites. Modern servers that do not support export ciphersuites
++are advised to either use SSL_CTX_set_tmp_dh() in combination with
++SSL_OP_SINGLE_DH_USE, or alternatively, use the callback but ignore
++B<keylength> and B<is_export> and simply supply at least 2048-bit
++parameters in the callback.
+ 
+ =head1 EXAMPLES
+ 
+-Handle DH parameters for key lengths of 512 and 1024 bits. (Error handling
++Setup DH parameters with a key length of 2048 bits. (Error handling
+ partly left out.)
+ 
+- ...
+- /* Set up ephemeral DH stuff */
+- DH *dh_512 = NULL;
+- DH *dh_1024 = NULL;
+- FILE *paramfile;
++ Command-line parameter generation:
++ $ openssl dhparam -out dh_param_2048.pem 2048
+ 
++ Code for setting up parameters during server initialization:
++
++ ...
++ SSL_CTX ctx = SSL_CTX_new();
+  ...
+- /* "openssl dhparam -out dh_param_512.pem -2 512" */
+- paramfile = fopen("dh_param_512.pem", "r");
++
++ /* Set up ephemeral DH parameters. */
++ DH *dh_2048 = NULL;
++ FILE *paramfile;
++ paramfile = fopen("dh_param_2048.pem", "r");
+  if (paramfile) {
+-   dh_512 = PEM_read_DHparams(paramfile, NULL, NULL, NULL);
++   dh_2048 = PEM_read_DHparams(paramfile, NULL, NULL, NULL);
+    fclose(paramfile);
++ } else {
++   /* Error. */
+  }
+- /* "openssl dhparam -out dh_param_1024.pem -2 1024" */
+- paramfile = fopen("dh_param_1024.pem", "r");
+- if (paramfile) {
+-   dh_1024 = PEM_read_DHparams(paramfile, NULL, NULL, NULL);
+-   fclose(paramfile);
++ if (dh_2048 == NULL) {
++  /* Error. */
+  }
+- ...
+-
+- /* "openssl dhparam -C -2 512" etc... */
+- DH *get_dh512() { ... }
+- DH *get_dh1024() { ... }
+-
+- DH *tmp_dh_callback(SSL *s, int is_export, int keylength)
+- {
+-    DH *dh_tmp=NULL;
+-
+-    switch (keylength) {
+-    case 512:
+-      if (!dh_512)
+-        dh_512 = get_dh512();
+-      dh_tmp = dh_512;
+-      break;
+-    case 1024:
+-      if (!dh_1024) 
+-        dh_1024 = get_dh1024();
+-      dh_tmp = dh_1024;
+-      break;
+-    default:
+-      /* Generating a key on the fly is very costly, so use what is there */
+-      setup_dh_parameters_like_above();
+-    }
+-    return(dh_tmp);
++ if (SSL_CTX_set_tmp_dh(ctx, dh_2048) != 1) {
++   /* Error. */
+  }
++ SSL_CTX_set_options(ctx, SSL_OP_SINGLE_DH_USE);
++ ...
+ 
+ =head1 RETURN VALUES
+ 
+Index: openssl-1.0.1f/ssl/s3_clnt.c
+===================================================================
+--- openssl-1.0.1f.orig/ssl/s3_clnt.c	2015-06-08 11:15:37.770725621 -0400
++++ openssl-1.0.1f/ssl/s3_clnt.c	2015-06-08 11:15:37.766725576 -0400
+@@ -3284,26 +3284,32 @@
+ 		}
+ #endif
+ #ifndef OPENSSL_NO_DH
+-	if ((alg_k & SSL_kEDH) &&
+-		!(has_bits(i,EVP_PK_DH|EVP_PKT_EXCH) || (dh != NULL)))
+-		{
+-		SSLerr(SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM,SSL_R_MISSING_DH_KEY);
++	if ((alg_k & SSL_kEDH) && dh == NULL) {
++		SSLerr(SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM, ERR_R_INTERNAL_ERROR);
+ 		goto f_err;
+-		}
+-	else if ((alg_k & SSL_kDHr) && !has_bits(i,EVP_PK_DH|EVP_PKS_RSA))
+-		{
++	}
++	if ((alg_k & SSL_kDHr) && !has_bits(i, EVP_PK_DH | EVP_PKS_RSA)) {
+ 		SSLerr(SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM,SSL_R_MISSING_DH_RSA_CERT);
+ 		goto f_err;
+-		}
++	}
+ #ifndef OPENSSL_NO_DSA
+-	else if ((alg_k & SSL_kDHd) && !has_bits(i,EVP_PK_DH|EVP_PKS_DSA))
+-		{
++	if ((alg_k & SSL_kDHd) && !has_bits(i, EVP_PK_DH | EVP_PKS_DSA)) {
+ 		SSLerr(SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM,SSL_R_MISSING_DH_DSA_CERT);
+ 		goto f_err;
+-		}
+-#endif
++	}
+ #endif
+ 
++	/* Check DHE only: static DH not implemented. */
++	if (alg_k & SSL_kEDH) {
++		int dh_size = BN_num_bits(dh->p);
++		if ((!SSL_C_IS_EXPORT(s->s3->tmp.new_cipher) && dh_size < 768)
++			|| (SSL_C_IS_EXPORT(s->s3->tmp.new_cipher) && dh_size < 512)) {
++			SSLerr(SSL_F_SSL3_CHECK_CERT_AND_ALGORITHM, SSL_R_DH_KEY_TOO_SMALL);
++			goto f_err;
++		}
++	}
++#endif  /* !OPENSSL_NO_DH */
++
+ 	if (SSL_C_IS_EXPORT(s->s3->tmp.new_cipher) && !has_bits(i,EVP_PKT_EXP))
+ 		{
+ #ifndef OPENSSL_NO_RSA
+Index: openssl-1.0.1f/ssl/ssl.h
+===================================================================
+--- openssl-1.0.1f.orig/ssl/ssl.h	2015-06-08 11:15:37.770725621 -0400
++++ openssl-1.0.1f/ssl/ssl.h	2015-06-08 11:15:37.766725576 -0400
+@@ -2357,6 +2357,7 @@
+ #define SSL_R_DATA_LENGTH_TOO_LONG			 146
+ #define SSL_R_DECRYPTION_FAILED				 147
+ #define SSL_R_DECRYPTION_FAILED_OR_BAD_RECORD_MAC	 281
++#define SSL_R_DH_KEY_TOO_SMALL                           372
+ #define SSL_R_DH_PUBLIC_VALUE_LENGTH_IS_WRONG		 148
+ #define SSL_R_DIGEST_CHECK_FAILED			 149
+ #define SSL_R_DTLS_MESSAGE_TOO_BIG			 334
+Index: openssl-1.0.1f/ssl/ssl_err.c
+===================================================================
+--- openssl-1.0.1f.orig/ssl/ssl_err.c	2015-06-08 11:15:37.770725621 -0400
++++ openssl-1.0.1f/ssl/ssl_err.c	2015-06-08 11:15:37.766725576 -0400
+@@ -361,6 +361,7 @@
+ {ERR_REASON(SSL_R_DATA_LENGTH_TOO_LONG)  ,"data length too long"},
+ {ERR_REASON(SSL_R_DECRYPTION_FAILED)     ,"decryption failed"},
+ {ERR_REASON(SSL_R_DECRYPTION_FAILED_OR_BAD_RECORD_MAC),"decryption failed or bad record mac"},
++{ERR_REASON(SSL_R_DH_KEY_TOO_SMALL)      ,"dh key too small"},
+ {ERR_REASON(SSL_R_DH_PUBLIC_VALUE_LENGTH_IS_WRONG),"dh public value length is wrong"},
+ {ERR_REASON(SSL_R_DIGEST_CHECK_FAILED)   ,"digest check failed"},
+ {ERR_REASON(SSL_R_DTLS_MESSAGE_TOO_BIG)  ,"dtls message too big"},
+Index: openssl-1.0.1f/apps/s_server.c
+===================================================================
+--- openssl-1.0.1f.orig/apps/s_server.c	2014-01-06 08:47:42.000000000 -0500
++++ openssl-1.0.1f/apps/s_server.c	2015-06-08 11:19:13.501148683 -0400
+@@ -214,7 +214,7 @@
+ 				unsigned int *id_len);
+ #ifndef OPENSSL_NO_DH
+ static DH *load_dh_param(const char *dhfile);
+-static DH *get_dh512(void);
++static DH *get_dh2048(void);
+ #endif
+ 
+ #ifdef MONOLITH
+@@ -222,28 +222,48 @@
+ #endif
+ 
+ #ifndef OPENSSL_NO_DH
+-static unsigned char dh512_p[]={
+-	0xDA,0x58,0x3C,0x16,0xD9,0x85,0x22,0x89,0xD0,0xE4,0xAF,0x75,
+-	0x6F,0x4C,0xCA,0x92,0xDD,0x4B,0xE5,0x33,0xB8,0x04,0xFB,0x0F,
+-	0xED,0x94,0xEF,0x9C,0x8A,0x44,0x03,0xED,0x57,0x46,0x50,0xD3,
+-	0x69,0x99,0xDB,0x29,0xD7,0x76,0x27,0x6B,0xA2,0xD3,0xD4,0x12,
+-	0xE2,0x18,0xF4,0xDD,0x1E,0x08,0x4C,0xF6,0xD8,0x00,0x3E,0x7C,
+-	0x47,0x74,0xE8,0x33,
++static unsigned char dh2048_p[] = {
++	0xF6,0x42,0x57,0xB7,0x08,0x7F,0x08,0x17,0x72,0xA2,0xBA,0xD6,
++	0xA9,0x42,0xF3,0x05,0xE8,0xF9,0x53,0x11,0x39,0x4F,0xB6,0xF1,
++	0x6E,0xB9,0x4B,0x38,0x20,0xDA,0x01,0xA7,0x56,0xA3,0x14,0xE9,
++	0x8F,0x40,0x55,0xF3,0xD0,0x07,0xC6,0xCB,0x43,0xA9,0x94,0xAD,
++	0xF7,0x4C,0x64,0x86,0x49,0xF8,0x0C,0x83,0xBD,0x65,0xE9,0x17,
++	0xD4,0xA1,0xD3,0x50,0xF8,0xF5,0x59,0x5F,0xDC,0x76,0x52,0x4F,
++	0x3D,0x3D,0x8D,0xDB,0xCE,0x99,0xE1,0x57,0x92,0x59,0xCD,0xFD,
++	0xB8,0xAE,0x74,0x4F,0xC5,0xFC,0x76,0xBC,0x83,0xC5,0x47,0x30,
++	0x61,0xCE,0x7C,0xC9,0x66,0xFF,0x15,0xF9,0xBB,0xFD,0x91,0x5E,
++	0xC7,0x01,0xAA,0xD3,0x5B,0x9E,0x8D,0xA0,0xA5,0x72,0x3A,0xD4,
++	0x1A,0xF0,0xBF,0x46,0x00,0x58,0x2B,0xE5,0xF4,0x88,0xFD,0x58,
++	0x4E,0x49,0xDB,0xCD,0x20,0xB4,0x9D,0xE4,0x91,0x07,0x36,0x6B,
++	0x33,0x6C,0x38,0x0D,0x45,0x1D,0x0F,0x7C,0x88,0xB3,0x1C,0x7C,
++	0x5B,0x2D,0x8E,0xF6,0xF3,0xC9,0x23,0xC0,0x43,0xF0,0xA5,0x5B,
++	0x18,0x8D,0x8E,0xBB,0x55,0x8C,0xB8,0x5D,0x38,0xD3,0x34,0xFD,
++	0x7C,0x17,0x57,0x43,0xA3,0x1D,0x18,0x6C,0xDE,0x33,0x21,0x2C,
++	0xB5,0x2A,0xFF,0x3C,0xE1,0xB1,0x29,0x40,0x18,0x11,0x8D,0x7C,
++	0x84,0xA7,0x0A,0x72,0xD6,0x86,0xC4,0x03,0x19,0xC8,0x07,0x29,
++	0x7A,0xCA,0x95,0x0C,0xD9,0x96,0x9F,0xAB,0xD0,0x0A,0x50,0x9B,
++	0x02,0x46,0xD3,0x08,0x3D,0x66,0xA4,0x5D,0x41,0x9F,0x9C,0x7C,
++	0xBD,0x89,0x4B,0x22,0x19,0x26,0xBA,0xAB,0xA2,0x5E,0xC3,0x55,
++	0xE9,0x32,0x0B,0x3B,
+ 	};
+-static unsigned char dh512_g[]={
++static unsigned char dh2048_g[]={
+ 	0x02,
+ 	};
+ 
+-static DH *get_dh512(void)
++DH *get_dh2048()
+ 	{
+-	DH *dh=NULL;
++	DH *dh;
+ 
+-	if ((dh=DH_new()) == NULL) return(NULL);
+-	dh->p=BN_bin2bn(dh512_p,sizeof(dh512_p),NULL);
+-	dh->g=BN_bin2bn(dh512_g,sizeof(dh512_g),NULL);
+-	if ((dh->p == NULL) || (dh->g == NULL))
+-		return(NULL);
+-	return(dh);
++	if ((dh=DH_new()) == NULL)
++		return NULL;
++	dh->p=BN_bin2bn(dh2048_p, sizeof(dh2048_p), NULL);
++	dh->g=BN_bin2bn(dh2048_g, sizeof(dh2048_g), NULL);
++	if (dh->p == NULL || dh->g == NULL)
++		{
++		DH_free(dh);
++		return NULL;
++		}
++	return dh;
+ 	}
+ #endif
+ 
+@@ -1661,7 +1681,12 @@
+ 		else
+ 			{
+ 			BIO_printf(bio_s_out,"Using default temp DH parameters\n");
+-			dh=get_dh512();
++			dh = get_dh2048();
++			if (dh == NULL)
++				{
++				ERR_print_errors(bio_err);
++				goto end;
++				}
+ 			}
+ 		(void)BIO_flush(bio_s_out);
+ 
+Index: openssl-1.0.1f/doc/apps/dhparam.pod
+===================================================================
+--- openssl-1.0.1f.orig/doc/apps/dhparam.pod	2014-01-06 08:47:42.000000000 -0500
++++ openssl-1.0.1f/doc/apps/dhparam.pod	2015-06-08 11:20:28.769993768 -0400
+@@ -66,8 +66,10 @@
+ 
+ =item B<-2>, B<-5>
+ 
+-The generator to use, either 2 or 5. 2 is the default. If present then the
+-input file is ignored and parameters are generated instead.
++The generator to use, either 2 or 5. If present then the
++input file is ignored and parameters are generated instead. If not
++present but B<numbits> is present, parameters are generated with the
++default generator 2.
+ 
+ =item B<-rand> I<file(s)>
+ 
+@@ -80,9 +82,10 @@
+ =item I<numbits>
+ 
+ this option specifies that a parameter set should be generated of size
+-I<numbits>. It must be the last option. If not present then a value of 512
+-is used. If this option is present then the input file is ignored and 
+-parameters are generated instead.
++I<numbits>. It must be the last option. If this option is present then
++the input file is ignored and parameters are generated instead. If
++this option is not present but a generator (B<-2> or B<-5>) is
++present, parameters are generated with a default length of 2048 bits.
+ 
+ =item B<-noout>
+ 

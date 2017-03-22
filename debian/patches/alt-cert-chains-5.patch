@@ -1,0 +1,41 @@
+Backport of:
+
+From 9a0db453ba017ebcaccbee933ee6511a9ae4d1c8 Mon Sep 17 00:00:00 2001
+From: Matt Caswell <matt@openssl.org>
+Date: Wed, 24 Jun 2015 15:55:36 +0100
+Subject: [PATCH] Fix alternate chains certificate forgery issue
+
+During certificate verfification, OpenSSL will attempt to find an
+alternative certificate chain if the first attempt to build such a chain
+fails. An error in the implementation of this logic can mean that an
+attacker could cause certain checks on untrusted certificates to be
+bypassed, such as the CA flag, enabling them to use a valid leaf
+certificate to act as a CA and "issue" an invalid certificate.
+
+This occurs where at least one cert is added to the first chain from the
+trust store, but that chain still ends up being untrusted. In that case
+ctx->last_untrusted is decremented in error.
+
+Patch provided by the BoringSSL project.
+
+CVE-2015-1793
+
+Reviewed-by: Stephen Henson <steve@openssl.org>
+---
+ crypto/x509/x509_vfy.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: openssl-1.0.1f/crypto/x509/x509_vfy.c
+===================================================================
+--- openssl-1.0.1f.orig/crypto/x509/x509_vfy.c	2016-02-05 16:07:17.385431908 -0500
++++ openssl-1.0.1f/crypto/x509/x509_vfy.c	2016-02-05 16:07:53.445836601 -0500
+@@ -333,8 +333,8 @@
+ 						xtmp = sk_X509_pop(ctx->chain);
+ 						X509_free(xtmp);
+ 						num--;
+-						ctx->last_untrusted--;
+ 					}
++					ctx->last_untrusted = sk_X509_num(ctx->chain);
+ 					retry = 1;
+ 					break;
+ 				}

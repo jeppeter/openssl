@@ -1,0 +1,53 @@
+Backport of:
+
+From cf1bf3f03250113c04dcfb929a1e83c744a14e9d Mon Sep 17 00:00:00 2001
+From: Matt Caswell <matt@openssl.org>
+Date: Tue, 27 Jan 2015 10:35:27 +0000
+Subject: [PATCH] Add flag to inhibit checking for alternate certificate
+ chains. Setting this behaviour will force behaviour as per previous versions
+ of OpenSSL
+
+Reviewed-by: Dr. Stephen Henson <steve@openssl.org>
+Reviewed-by: Kurt Roeckx <kurt@roeckx.be>
+---
+ crypto/x509/x509_vfy.c | 6 ++++--
+ crypto/x509/x509_vfy.h | 6 ++++++
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+Index: openssl-1.0.1f/crypto/x509/x509_vfy.c
+===================================================================
+--- openssl-1.0.1f.orig/crypto/x509/x509_vfy.c	2016-02-05 15:57:36.802967587 -0500
++++ openssl-1.0.1f/crypto/x509/x509_vfy.c	2016-02-05 15:58:52.691806009 -0500
+@@ -307,10 +307,12 @@
+ 
+ 		/*
+ 		 * If we haven't got a least one certificate from our store then check
+-		 * if there is an alternative chain that could be used.
++		 * if there is an alternative chain that could be used.  We only do this
++		 * if the user hasn't switched off alternate chain checking
+ 		 */
+ 		retry = 0;
+-		if (j == ctx->last_untrusted) {
++		if (j == ctx->last_untrusted &&
++			!(ctx->param->flags & X509_V_FLAG_NO_ALT_CHAINS)) {
+ 			while (j-- > 1) {
+ 				xtmp2 = sk_X509_value(ctx->chain, j - 1);
+ 				ok = ctx->get_issuer(&xtmp, ctx, xtmp2);
+Index: openssl-1.0.1f/crypto/x509/x509_vfy.h
+===================================================================
+--- openssl-1.0.1f.orig/crypto/x509/x509_vfy.h	2016-02-05 15:57:36.802967587 -0500
++++ openssl-1.0.1f/crypto/x509/x509_vfy.h	2016-02-05 15:59:31.300233429 -0500
+@@ -389,7 +389,12 @@
+ #define X509_V_FLAG_USE_DELTAS			0x2000
+ /* Check selfsigned CA signature */
+ #define X509_V_FLAG_CHECK_SS_SIGNATURE		0x4000
+-
++/*
++ * If the initial chain is not trusted, do not attempt to build an alternative
++ * chain. Alternate chain checking was introduced in 1.0.1n/1.0.2b. Setting
++ * this flag will force the behaviour to match that of previous versions.
++ */
++#define X509_V_FLAG_NO_ALT_CHAINS		0x100000
+ 
+ #define X509_VP_FLAG_DEFAULT			0x1
+ #define X509_VP_FLAG_OVERWRITE			0x2

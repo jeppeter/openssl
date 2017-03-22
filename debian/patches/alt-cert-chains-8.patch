@@ -1,0 +1,46 @@
+Backport of:
+
+From cb22d2ae5a5b6069dbf66dbcce07223ac15a16de Mon Sep 17 00:00:00 2001
+From: Matt Caswell <matt@openssl.org>
+Date: Wed, 24 Jun 2015 00:12:38 +0100
+Subject: [PATCH] Fix alt chains bug
+
+This is a follow up to the alternate chains certificate forgery issue
+(CVE-2015-1793). That issue is exacerbated in 1.0.1 by a related bug which
+means that we *always* check for an alternative chain, even if we have
+already found a chain. The code is supposed to stop as soon as it has found
+one (and does do in master and 1.0.2).
+
+Reviewed-by: Stephen Henson <steve@openssl.org>
+---
+ crypto/x509/verify_extra_test.c | 3 ++-
+ crypto/x509/x509_vfy.c          | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+Index: openssl-1.0.1f/test/verify_extra_test.c
+===================================================================
+--- openssl-1.0.1f.orig/test/verify_extra_test.c	2016-02-05 16:13:04.021333419 -0500
++++ openssl-1.0.1f/test/verify_extra_test.c	2016-02-05 16:13:04.017333373 -0500
+@@ -168,7 +168,8 @@
+ 
+     i = X509_verify_cert(sctx);
+ 
+-    if(i == 0 && X509_STORE_CTX_get_error(sctx) == X509_V_ERR_INVALID_CA) {
++    if(i == 0 && X509_STORE_CTX_get_error(sctx)
++                 == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT) {
+         /* This is the result we were expecting: Test passed */
+         ret = 1;
+     }
+Index: openssl-1.0.1f/crypto/x509/x509_vfy.c
+===================================================================
+--- openssl-1.0.1f.orig/crypto/x509/x509_vfy.c	2016-02-05 16:13:04.021333419 -0500
++++ openssl-1.0.1f/crypto/x509/x509_vfy.c	2016-02-05 16:13:28.365608276 -0500
+@@ -316,7 +316,7 @@
+ 		 * if the user hasn't switched off alternate chain checking
+ 		 */
+ 		retry = 0;
+-		if (j == ctx->last_untrusted &&
++		if (num == ctx->last_untrusted &&
+ 			!(ctx->param->flags & X509_V_FLAG_NO_ALT_CHAINS)) {
+ 			while (j-- > 1) {
+ 				xtmp2 = sk_X509_value(ctx->chain, j - 1);
