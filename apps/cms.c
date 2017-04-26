@@ -1000,6 +1000,8 @@ int MAIN(int argc, char **argv)
 			cms = CMS_sign(NULL, NULL, other, in, flags);
 			if (!cms)
 				goto end;
+			BIO_DEBUG("first sign: flags [0x%x]",flags);
+			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			if (econtent_type){
 				BIO_DEBUG(" ");
 				CMS_set1_eContentType(cms, econtent_type);
@@ -1020,6 +1022,8 @@ int MAIN(int argc, char **argv)
 			}
 		else
 			flags |= CMS_REUSE_DIGEST;
+		BIO_DEBUG("before key: flags[0x%x]",flags);
+		CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 		for (i = 0; i < sk_OPENSSL_STRING_num(sksigners); i++)
 			{
 			CMS_SignerInfo *si;
@@ -1027,25 +1031,32 @@ int MAIN(int argc, char **argv)
 			keyfile = sk_OPENSSL_STRING_value(skkeys, i);
 			signer = load_cert(bio_err, signerfile,FORMAT_PEM, NULL,
 					e, "signer certificate");
-			BIO_DEBUG("[%d] signerfile [%s] keyfile [%s] signer [%s]",i,signerfile,keyfile,signer->name);
+			BIO_DEBUG("[%d] signerfile [%s] keyfile [%s] signer [%s] flags[0x%x]",i,signerfile,keyfile,signer->name,flags);
+			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			if (!signer)
 				goto end;
 			key = load_key(bio_err, keyfile, keyform, 0, passin, e,
 			       "signing key file");
-			BIO_DEBUG("load key [%d]",EVP_PKEY_id(key));
+			BIO_DEBUG("load key [%d] flags[0x%x]",EVP_PKEY_id(key),flags);
+			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			if (!key)
 				goto end;
 			si = CMS_add1_signer(cms, signer, key, sign_md, flags);
 			if (!si)
 				goto end;
-			BIO_DEBUG("rr [%d]",rr);
+			BIO_DEBUG("rr [%d] flags [0x%x]",rr,flags);
+			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			if (rr && !CMS_add1_ReceiptRequest(si, rr))
 				goto end;
 			X509_free(signer);
 			signer = NULL;
 			EVP_PKEY_free(key);
 			key = NULL;
+			BIO_DEBUG("[%d] complete",i);
+			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			}
+		BIO_DEBUG("after key");
+		CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 		/* If not streaming or resigning finalize structure */
 		if ((operation == SMIME_SIGN) && !(flags & CMS_STREAM))
 			{
@@ -1054,6 +1065,8 @@ int MAIN(int argc, char **argv)
 				goto end;
 			}
 		}
+		BIO_DEBUG("SMIME_SIGN");
+		CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 
 	if (!cms)
 		{

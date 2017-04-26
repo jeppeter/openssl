@@ -768,29 +768,53 @@ int CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags)
 	{
 	BIO *cmsbio;
 	int ret = 0;
+	BIO *biostderr=NULL;
 	BIO_DEBUG(" ");
+	biostderr = BIO_new_fp(stderr,BIO_NOCLOSE);
 	if (!(cmsbio = CMS_dataInit(cms, dcont)))
 		{
 		CMSerr(CMS_F_CMS_FINAL,ERR_R_MALLOC_FAILURE);
+		if (biostderr != NULL) {
+			BIO_free_all(biostderr);
+			biostderr = NULL;
+		}
 		return 0;
 		}
-
+	if (biostderr != NULL) {
+		BIO_DEBUG("call before crlf copy");
+		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
+	}
 	SMIME_crlf_copy(data, cmsbio, flags);
 
+	if (biostderr != NULL ){
+		BIO_DEBUG("call before flush");
+		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
+	}
+
 	(void)BIO_flush(cmsbio);
-	BIO_DEBUG(" ");
 
-
+	if (biostderr != NULL) {
+		BIO_DEBUG("after flush");
+		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
+	}
         if (!CMS_dataFinal(cms, cmsbio))
 		{
 		CMSerr(CMS_F_CMS_FINAL,CMS_R_CMS_DATAFINAL_ERROR);
 		goto err;
 		}
+	if (biostderr != NULL) {
+		BIO_DEBUG("after dataFinal");
+		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
+	}
 
 	ret = 1;
 
 	err:
 	do_free_upto(cmsbio, dcont);
+	if (biostderr != NULL) {
+		BIO_free_all(biostderr);
+		biostderr = NULL;
+	}
 
 	return ret;
 

@@ -103,7 +103,6 @@ int ASN1_item_i2d(ASN1_VALUE *val, unsigned char **out, const ASN1_ITEM *it)
 static int asn1_item_flags_i2d(ASN1_VALUE *val, unsigned char **out,
 					const ASN1_ITEM *it, int flags)
 	{
-	BIO_DEBUG(" ");
 	if (out && !*out)
 		{
 		unsigned char *p, *buf;
@@ -145,7 +144,9 @@ int ASN1_item_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
 	if (aux && aux->asn1_cb)
 		 asn1_cb = aux->asn1_cb;
 
+#ifdef ASN1_DEBUG_VALUE
 	BIO_DEBUG("val[%p]->itype 0x%x",pval,it->itype);
+#endif	
 	switch(it->itype)
 		{
 
@@ -218,7 +219,9 @@ int ASN1_item_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
 			aclass = (aclass & ~ASN1_TFLG_TAG_CLASS)
 					| V_ASN1_UNIVERSAL;
 			}
+#ifdef ASN1_DEBUG_VALUE			
 		BIO_DEBUG("val[%p]asn1_cb [%p] ASN1_item_ex_i2d [%p]",pval,asn1_cb,ASN1_item_ex_i2d);
+#endif
 		if (asn1_cb && !asn1_cb(ASN1_OP_I2D_PRE, pval, it, NULL))
 				return 0;
 		/* First work out sequence content length */
@@ -235,7 +238,9 @@ int ASN1_item_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
 								-1, aclass);
 			}
 		seqlen = ASN1_object_size(ndef, seqcontlen, tag);
+#ifdef ASN1_DEBUG_VALUE
 		BIO_DEBUG("val[%p] seqlen [%d]",pval,seqlen);
+#endif
 		if (!out)
 			return seqlen;
 		/* Output SEQUENCE header */
@@ -247,14 +252,18 @@ int ASN1_item_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
 			seqtt = asn1_do_adb(pval, tt, 1);
 			if (!seqtt)
 				return 0;
+#ifdef ASN1_DEBUG_VALUE
 			BIO_DEBUG("[%p][%d] seqtt[%p]",pval,tt,seqtt);
+#endif
 			pseqval = asn1_get_field_ptr(pval, seqtt);
 			/* FIXME: check for errors in enhanced version */
 			asn1_template_ex_i2d(pseqval, out, seqtt, -1, aclass);
 			}
 		if (ndef == 2)
 			ASN1_put_eoc(out);
+#ifdef ASN1_DEBUG_VALUE		
 		BIO_DEBUG("[%p] asn1_cb [%p] ASN1_item_ex_i2d[%p]",pval,asn1_cb,ASN1_item_ex_i2d);
+#endif
 		if (asn1_cb && !asn1_cb(ASN1_OP_I2D_POST, pval, it, NULL))
 				return 0;
 		return seqlen;
@@ -283,7 +292,9 @@ static int asn1_template_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
 	 * the iclass argument may contain some additional flags
 	 * which should be noted and passed down to other levels.
 	 */
+#ifdef ASN1_DEBUG_VALUE	 
 	BIO_DEBUG("val[%p] flags [0x%x] ASN1_TFLG_TAG_MASK[0x%x] tag [0x%x] iclass[0x%x]",pval,flags,ASN1_TFLG_TAG_MASK,tag,iclass);
+#endif	
 	if (flags & ASN1_TFLG_TAG_MASK)
 		{
 		/* Error if argument and template tagging */
@@ -361,7 +372,9 @@ static int asn1_template_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
 		for (i = 0; i < sk_ASN1_VALUE_num(sk); i++)
 			{
 			skitem = sk_ASN1_VALUE_value(sk, i);
+#ifdef ASN1_DEBUG_VALUE			
 			BIO_DEBUG("val[%p][%d] skitem[%p]",pval,i,skitem);
+#endif
 			skcontlen += ASN1_item_ex_i2d(&skitem, NULL,
 						ASN1_ITEM_ptr(tt->item),
 							-1, iclass);
@@ -582,7 +595,9 @@ int asn1_ex_i2c(ASN1_VALUE **pval, unsigned char *cout, int *putype,
 	const ASN1_PRIMITIVE_FUNCS *pf;
 	pf = it->funcs;
 	if (pf && pf->prim_i2c){
+#ifdef ASN1_DEBUG_VALUE		
 		BIO_DEBUG("val[%p] pf[%p] pf->prim_i2c[%p] asn1_ex_i2c[%p]",pval,pf,pf->prim_i2c,asn1_ex_i2c);
+#endif
 		return pf->prim_i2c(pval, cout, putype, it);
 	}
 
@@ -611,20 +626,26 @@ int asn1_ex_i2c(ASN1_VALUE **pval, unsigned char *cout, int *putype,
 		}
 	else utype = *putype;
 
+#ifdef ASN1_DEBUG_VALUE
 	BIO_DEBUG("val[%p] cout[%p] utype[0x%x]",pval,cout,utype);
+#endif
 	switch(utype)
 		{
 		case V_ASN1_OBJECT:
 		otmp = (ASN1_OBJECT *)*pval;
 		cont = otmp->data;
 		len = otmp->length;
+#ifdef ASN1_DEBUG_VALUE		
 		BIO_DEBUG_BUFFER(cont,len,"[%p]V_ASN1_OBJECT",otmp);
+#endif		
 		break;
 
 		case V_ASN1_NULL:
 		cont = NULL;
 		len = 0;
+#ifdef ASN1_DEBUG_VALUE
 		BIO_DEBUG("V_ASN1_NULL");
+#endif
 		break;
 
 		case V_ASN1_BOOLEAN:
@@ -693,7 +714,9 @@ int asn1_ex_i2c(ASN1_VALUE **pval, unsigned char *cout, int *putype,
 			}
 		cont = strtmp->data;
 		len = strtmp->length;
+#ifdef ASN1_DEBUG_VALUE		
 		BIO_DEBUG_BUFFER(cont,len,"[%p]data",strtmp);
+#endif
 		break;
 
 		}
