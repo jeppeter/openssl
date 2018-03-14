@@ -347,11 +347,13 @@ int MAIN(int argc, char **argv)
     e = setup_engine(bio_err, engine, 0);
 #endif
 
+	BIO_DEBUG(" ");
     if(passarg) {
 	if(export_cert) passargout = passarg;
 	else passargin = passarg;
     }
 
+    BIO_DEBUG(" ");
     if(!app_passwd(bio_err, passargin, passargout, &passin, &passout)) {
 	BIO_printf(bio_err, "Error getting passwords\n");
 	goto end;
@@ -371,6 +373,7 @@ int MAIN(int argc, char **argv)
     }
 
     if(export_cert || inrand) {
+    	BIO_DEBUG(" ");
     	app_RAND_load_file(NULL, bio_err, (inrand != NULL));
         if (inrand != NULL)
 		BIO_printf(bio_err,"%ld semi-random bytes loaded\n",
@@ -382,8 +385,13 @@ int MAIN(int argc, char **argv)
     CRYPTO_push_info("read files");
 #endif
 
-    if (!infile) in = BIO_new_fp(stdin, BIO_NOCLOSE);
-    else in = BIO_new_file(infile, "rb");
+    if (!infile) {
+    	BIO_DEBUG(" ");
+    	in = BIO_new_fp(stdin, BIO_NOCLOSE);
+    }  else {
+    	BIO_DEBUG("infile [%s]",infile);
+    	in = BIO_new_file(infile, "rb");
+    }
     if (!in) {
 	    BIO_printf(bio_err, "Error opening input file %s\n",
 						infile ? infile : "<stdin>");
@@ -397,6 +405,7 @@ int MAIN(int argc, char **argv)
 #endif
 
     if (!outfile) {
+    	BIO_DEBUG(" ");
 	out = BIO_new_fp(stdout, BIO_NOCLOSE);
 #ifdef OPENSSL_SYS_VMS
 	{
@@ -404,7 +413,7 @@ int MAIN(int argc, char **argv)
 	    out = BIO_push(tmpbio, out);
 	}
 #endif
-    } else out = BIO_new_file(outfile, "wb");
+    } else {out = BIO_new_file(outfile, "wb");}
     if (!out) {
 	BIO_printf(bio_err, "Error opening output file %s\n",
 						outfile ? outfile : "<stdout>");
@@ -415,6 +424,7 @@ int MAIN(int argc, char **argv)
 #ifdef CRYPTO_MDEBUG
     CRYPTO_push_info("read MAC password");
 #endif
+    BIO_DEBUG(" ");
 	if(EVP_read_pw_string (macpass, sizeof macpass, "Enter MAC Password:", export_cert))
 	{
     	    BIO_printf (bio_err, "Can't read Password\n");
@@ -425,6 +435,7 @@ int MAIN(int argc, char **argv)
 #endif
     }
 
+    BIO_DEBUG(" ");
     if (export_cert) {
 	EVP_PKEY *key = NULL;
 	X509 *ucert = NULL, *x = NULL;
@@ -432,6 +443,7 @@ int MAIN(int argc, char **argv)
 	const EVP_MD *macmd = NULL;
 	unsigned char *catmp = NULL;
 	int i;
+	BIO_DEBUG(" ");
 
 	if ((options & (NOCERTS|NOKEYS)) == (NOCERTS|NOKEYS))
 		{	
@@ -459,6 +471,7 @@ int MAIN(int argc, char **argv)
 	CRYPTO_push_info("reading certs from input");
 #endif
 
+	BIO_DEBUG(" ");
 	/* Load in all certs in input file */
 	if(!(options & NOCERTS))
 		{
@@ -497,6 +510,7 @@ int MAIN(int argc, char **argv)
 	CRYPTO_pop_info();
 	CRYPTO_push_info("reading certs from input 2");
 #endif
+	BIO_DEBUG(" ");
 
 	/* Add any more certificates asked for */
 	if(certfile)
@@ -521,6 +535,7 @@ int MAIN(int argc, char **argv)
 	CRYPTO_push_info("building chain");
 #endif
 
+	BIO_DEBUG(" ");
 	/* If chaining get chain from user cert */
 	if (chain) {
         	int vret;
@@ -587,6 +602,7 @@ int MAIN(int argc, char **argv)
 	CRYPTO_push_info("creating PKCS#12 structure");
 #endif
 
+	BIO_DEBUG(" ");
 	p12 = PKCS12_create(cpass, name, key, ucert, certs,
 				key_pbe, cert_pbe, iter, -1, keytype);
 
@@ -614,6 +630,7 @@ int MAIN(int argc, char **argv)
 	CRYPTO_push_info("writing pkcs12");
 #endif
 
+	BIO_DEBUG(" ");
 	i2d_PKCS12_bio(out, p12);
 
 	ret = 0;
@@ -636,6 +653,7 @@ int MAIN(int argc, char **argv)
 	
     }
 
+    BIO_DEBUG(" ");
     if (!(p12 = d2i_PKCS12_bio (in, NULL))) {
 	ERR_print_errors(bio_err);
 	goto end;
@@ -652,8 +670,10 @@ int MAIN(int argc, char **argv)
     CRYPTO_pop_info();
 #endif
 
+    BIO_DEBUG(" ");
     if (!twopass) BUF_strlcpy(macpass, pass, sizeof macpass);
 
+    BIO_DEBUG(" ");
     if ((options & INFO) && p12->mac) BIO_printf (bio_err, "MAC Iteration %ld\n", p12->mac->iter ? ASN1_INTEGER_get (p12->mac->iter) : 1);
     if(macver) {
 #ifdef CRYPTO_MDEBUG

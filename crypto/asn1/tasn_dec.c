@@ -177,6 +177,7 @@ int ASN1_item_ex_d2i(ASN1_VALUE **pval, const unsigned char **in, long len,
 		asn1_cb = aux->asn1_cb;
 	else asn1_cb = 0;
 
+	BIO_DEBUG("itype [%d] asn1_cb [%p]", it->itype, asn1_cb);
 	switch(it->itype)
 		{
 		case ASN1_ITYPE_PRIMITIVE:

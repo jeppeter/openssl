@@ -112,6 +112,7 @@ void *ASN1_item_d2i_bio(const ASN1_ITEM *it, BIO *in, void *x)
 
 	len = asn1_d2i_read_bio(in, &b);
 	if(len < 0) goto err;
+	BIO_DEBUG_BUFFER(b->data, len,"read size [%d]", len);
 
 	p=(const unsigned char *)b->data;
 	ret=ASN1_item_d2i(x,&p,len, it);

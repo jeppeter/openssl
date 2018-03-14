@@ -1125,6 +1125,7 @@ static int load_certs_crls(BIO *err, const char *file, int format,
 
 	cb_data.password = pass;
 	cb_data.prompt_info = file;
+	BIO_DEBUG("get pass [%s]", pass);
 
 	if (format != FORMAT_PEM)
 		{
