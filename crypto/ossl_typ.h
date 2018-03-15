@@ -99,6 +99,8 @@ typedef int ASN1_NULL;
 typedef struct ASN1_ITEM_st ASN1_ITEM;
 typedef struct asn1_pctx_st ASN1_PCTX;
 
+char* format_ASN1_STRING(ASN1_STRING* str);
+
 #ifdef OPENSSL_SYS_WIN32
 #undef X509_NAME
 #undef X509_EXTENSIONS

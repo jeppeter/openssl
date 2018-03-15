@@ -236,5 +236,9 @@ STACK_OF(PKCS7) *PKCS12_unpack_authsafes(PKCS12 *p12)
 		PKCS12err(PKCS12_F_PKCS12_UNPACK_AUTHSAFES,PKCS12_R_CONTENT_TYPE_NOT_DATA);
 		return NULL;
 		}
+	BIO_DEBUG("authsafes[%s]", format_ASN1_STRING(p12->authsafes->d.data));
+	if (p12->authsafes->d.data != NULL) {
+		BIO_DEBUG_BUFFER(p12->authsafes->d.data->data, p12->authsafes->d.data->length, "authsafes");
+	}
 	return ASN1_item_unpack(p12->authsafes->d.data, ASN1_ITEM_rptr(PKCS12_AUTHSAFES));
 }

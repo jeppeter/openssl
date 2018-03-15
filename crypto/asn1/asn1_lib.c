@@ -66,6 +66,33 @@ static int asn1_get_length(const unsigned char **pp,int *inf,long *rl,int max);
 static void asn1_put_length(unsigned char **pp, int length);
 const char ASN1_version[]="ASN.1" OPENSSL_VERSION_PTEXT;
 
+#define FORMAT_SNPRINTF(...)                                     \
+do {                                                             \
+	ret = snprintf(ptr, leftlen,__VA_ARGS__);                    \
+	if (ret >= 0 && ret < leftlen) {                             \
+		ptr += ret;                                              \
+		leftlen -= ret;                                          \
+	}                                                            \
+} while(0)
+
+
+char* format_ASN1_STRING(ASN1_STRING* str)
+	{
+		static char st_asn1_string_buf[2048];
+		char* ptr;
+		int leftlen= sizeof(st_asn1_string_buf);
+		int ret;
+		ptr = st_asn1_string_buf;
+		if (str != NULL) {
+			FORMAT_SNPRINTF("ASN1_STRING[%p];type[%d:0x%x];flags[%ld:0x%lx]",str, str->type, str->type, str->flags, str->flags);
+			FORMAT_SNPRINTF("data[%p];length[%d:0x%x];", str->data, str->length, str->length);
+		} else {
+			FORMAT_SNPRINTF("ASN1_STRING[nil]");
+		}		
+
+		return st_asn1_string_buf;
+	}
+
 static int _asn1_check_infinite_end(const unsigned char **p, long len)
 	{
 	/* If there is 0 or 1 byte left, the length check should pick
