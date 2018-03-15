@@ -264,7 +264,6 @@ int EVP_DigestFinal(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *size)
 int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *size)
 	{
 #ifdef OPENSSL_FIPS
-	BIO_DEBUG("fips");
 	return FIPS_digestfinal(ctx, md, size);
 #else
 	int ret;
@@ -273,7 +272,6 @@ int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *size)
 	ret=ctx->digest->final(ctx,md);
 	if (size != NULL){
 		*size=ctx->digest->md_size;
-		//BIO_DEBUG_BUFFER(md,*size,"[%p] get final",ctx);
 	}
 	if (ctx->digest->cleanup)
 		{

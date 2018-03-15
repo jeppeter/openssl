@@ -912,7 +912,6 @@ bad:
 				}
 			else if (text == i)
 				{
-				BIO_DEBUG("nmflag 0x%x certflag 0x%x",nmflag,certflag);
 				X509_print_ex(STDout,x,nmflag, certflag);
 				}
 			else if (startdate == i)

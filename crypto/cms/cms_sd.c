@@ -74,7 +74,6 @@ static CMS_SignedData *cms_get0_signed(CMS_ContentInfo *cms)
 		CMSerr(CMS_F_CMS_GET0_SIGNED, CMS_R_CONTENT_TYPE_NOT_SIGNED_DATA);
 		return NULL;
 		}
-	BIO_DEBUG("[%p] signedData[%p]",cms,cms->d.signedData);
 	return cms->d.signedData;
 	}
 
@@ -354,7 +353,6 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
 		goto err;
 
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
@@ -378,7 +376,6 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
 		}
 
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -394,7 +391,6 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
 			break;
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -411,7 +407,6 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
 			}
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -432,7 +427,6 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
 			}
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG("flags [0x%x] CMS_NOATTR [0x%x]",flags,CMS_NOATTR);
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -469,7 +463,6 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
 			}
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -481,12 +474,10 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
 		}
 
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 	}
 	if (!sd->signerInfos)
@@ -496,7 +487,6 @@ CMS_SignerInfo *CMS_add1_signer(CMS_ContentInfo *cms,
 		goto merr;
 
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 	}
 	if (biostderr != NULL) {
@@ -554,7 +544,6 @@ STACK_OF(CMS_SignerInfo) *CMS_get0_SignerInfos(CMS_ContentInfo *cms)
 	sd = cms_get0_signed(cms);
 	if (!sd)
 		return NULL;
-	BIO_DEBUG("[%p] signerInfos [%p]",cms,sd->signerInfos);
 	return sd->signerInfos;
 	}
 
@@ -700,7 +689,6 @@ static int cms_SignerInfo_content_sign(CMS_ContentInfo *cms,
 
 	/* If any signed attributes calculate and add messageDigest attribute */
 	if (biostderr != NULL) {
-		BIO_DEBUG("before get attr count si count[%d]",CMS_signed_get_attr_count(si));
 		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 	}
 
@@ -713,7 +701,6 @@ static int cms_SignerInfo_content_sign(CMS_ContentInfo *cms,
 		if (!EVP_DigestFinal_ex(&mctx, md, &mdlen))
 			goto err;
 		if (biostderr != NULL) {
-			BIO_DEBUG_BUFFER(md,mdlen,"get last final si[%p]",si);
 			CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 		}
 		if (!CMS_signed_add1_attr_by_NID(si, NID_pkcs9_messageDigest,
@@ -722,20 +709,17 @@ static int cms_SignerInfo_content_sign(CMS_ContentInfo *cms,
 			goto err;
 		/* Copy content type across */
 		if (biostderr != NULL) {
-			BIO_DEBUG(" ");
 			CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 		}		
 		if (CMS_signed_add1_attr_by_NID(si, NID_pkcs9_contentType,
 					V_ASN1_OBJECT, ctype, -1) <= 0)
 			goto err;
 		if (biostderr != NULL) {
-			BIO_DEBUG(" ");
 			CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 		}
 		if (!CMS_SignerInfo_sign(si))
 			goto err;
 		if (biostderr != NULL) {
-			BIO_DEBUG(" ");
 			CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 		}
 		}
@@ -743,7 +727,6 @@ static int cms_SignerInfo_content_sign(CMS_ContentInfo *cms,
 		{
 		unsigned char *sig;
 		unsigned int siglen;
-		BIO_DEBUG(" ");
 		sig = OPENSSL_malloc(EVP_PKEY_size(si->pkey));
 		if (!sig)
 			{
@@ -751,7 +734,6 @@ static int cms_SignerInfo_content_sign(CMS_ContentInfo *cms,
 					ERR_R_MALLOC_FAILURE);
 			goto err;
 			}
-		BIO_DEBUG(" ");
 		if (!EVP_SignFinal(&mctx, sig, &siglen, si->pkey))
 			{
 			CMSerr(CMS_F_CMS_SIGNERINFO_CONTENT_SIGN,
@@ -759,7 +741,6 @@ static int cms_SignerInfo_content_sign(CMS_ContentInfo *cms,
 			OPENSSL_free(sig);
 			goto err;
 			}
-		BIO_DEBUG_BUFFER(sig,siglen,"signature");
 		ASN1_STRING_set0(si->signature, sig, siglen);
 		}
 
@@ -786,9 +767,7 @@ int cms_SignedData_final(CMS_ContentInfo *cms, BIO *chain)
 	for (i = 0; i < sk_CMS_SignerInfo_num(sinfos); i++)
 		{
 		si = sk_CMS_SignerInfo_value(sinfos, i);
-		BIO_DEBUG("[%d] [%p] cnt[%d]",i,si,CMS_signed_get_attr_count(si));
 		if (biostderr != NULL) {
-			BIO_DEBUG("before [%d][%p]",i,si);
 			CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);			
 		}
 			if (!cms_SignerInfo_content_sign(cms, si, chain)){
@@ -799,11 +778,9 @@ int cms_SignedData_final(CMS_ContentInfo *cms, BIO *chain)
 				return 0;
 			}
 		if (biostderr != NULL) {
-			BIO_DEBUG("after [%d][%p]",i,si);
 			CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);			
 		}
 		}
-	BIO_DEBUG(" ");
 	cms->d.signedData->encapContentInfo->partial = 0;
 	if (biostderr != NULL) {
 		BIO_free_all(biostderr);
@@ -842,7 +819,6 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
 
 	EVP_MD_CTX_init(&mctx);
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -853,14 +829,12 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
 			goto err;
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
 	if (EVP_DigestSignInit(&mctx, &pctx, md, NULL, si->pkey) <= 0)
 		goto err;
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -872,7 +846,6 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
 		goto err;
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -881,14 +854,10 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
 	if(!abuf)
 		goto err;
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
-	BIO_DEBUG_BUFFER(abuf,alen,"before EVP_DigestSignUpdate");
 	if (EVP_DigestSignUpdate(&mctx, abuf, alen) <= 0)
 		goto err;
-	BIO_DEBUG_BUFFER(abuf,alen,"after EVP_DigestSignUpdate");
-	BIO_DEBUG_BUFFER(mctx.md_data,mctx.digest->md_size,"digest type 0x%x",mctx.digest->type);
 	if (EVP_DigestSignFinal(&mctx, NULL, &siglen) <= 0)
 		goto err;
 	OPENSSL_free(abuf);
@@ -896,15 +865,12 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
 	if(!abuf)
 		goto err;
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 	if (EVP_DigestSignFinal(&mctx, abuf, &siglen) <= 0)
 		goto err;
-	BIO_DEBUG_BUFFER(abuf,siglen,"signature");
 
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 	if (EVP_PKEY_CTX_ctrl(pctx, -1, EVP_PKEY_OP_SIGN,
@@ -914,14 +880,12 @@ int CMS_SignerInfo_sign(CMS_SignerInfo *si)
 		goto err;
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
 	EVP_MD_CTX_cleanup(&mctx);
 	ASN1_STRING_set0(si->signature, abuf, siglen);
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		CMS_SignerInfo_print_ctx(biostderr,si,0,NULL);
 	}
 
@@ -1004,7 +968,6 @@ BIO *cms_SignedData_init_bio(CMS_ContentInfo *cms)
 		mdbio = cms_DigestAlgorithm_init_bio(digestAlgorithm);
 		if (!mdbio)
 			goto err;	
-		BIO_DEBUG("[%d]mdbio [%s]",i,mdbio->method->name);
 		if (chain)
 			 BIO_push(chain, mdbio);
 		else

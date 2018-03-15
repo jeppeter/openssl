@@ -467,7 +467,6 @@ CMS_ContentInfo *CMS_sign(X509 *signcert, EVP_PKEY *pkey, STACK_OF(X509) *certs,
 	if (!cms || !CMS_SignedData_init(cms))
 		goto merr;
 
-	BIO_DEBUG("signcert [%s] pkey [%p]",(signcert !=NULL ? signcert->name : "NULL"),pkey);
 	if (pkey && !CMS_add1_signer(cms, signcert, pkey, NULL, flags))
 		{
 		CMSerr(CMS_F_CMS_SIGN, CMS_R_ADD_SIGNER_ERROR);
@@ -477,16 +476,13 @@ CMS_ContentInfo *CMS_sign(X509 *signcert, EVP_PKEY *pkey, STACK_OF(X509) *certs,
 	for (i = 0; i < sk_X509_num(certs); i++)
 		{
 		X509 *x = sk_X509_value(certs, i);
-		BIO_DEBUG("[%d] x [%s]",i,x->name);
 		if (!CMS_add1_cert(cms, x))
 			goto merr;
 		}
 
 	if(!(flags & CMS_DETACHED)){
-		BIO_DEBUG(" ");
 		CMS_set_detached(cms, 0);
 	}
-	BIO_DEBUG("flags 0x%x CMS_STREAM 0x%x CMS_PARTIAL 0x%x",flags,
 		CMS_STREAM,CMS_PARTIAL);
 
 	if ((flags & (CMS_STREAM|CMS_PARTIAL))
@@ -769,7 +765,6 @@ int CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags)
 	BIO *cmsbio;
 	int ret = 0;
 	BIO *biostderr=NULL;
-	BIO_DEBUG(" ");
 	biostderr = BIO_new_fp(stderr,BIO_NOCLOSE);
 	if (!(cmsbio = CMS_dataInit(cms, dcont)))
 		{
@@ -781,20 +776,17 @@ int CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags)
 		return 0;
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG("call before crlf copy");
 		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 	}
 	SMIME_crlf_copy(data, cmsbio, flags);
 
 	if (biostderr != NULL ){
-		BIO_DEBUG("call before flush");
 		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 	}
 
 	(void)BIO_flush(cmsbio);
 
 	if (biostderr != NULL) {
-		BIO_DEBUG("after flush");
 		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 	}
         if (!CMS_dataFinal(cms, cmsbio))
@@ -803,7 +795,6 @@ int CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags)
 		goto err;
 		}
 	if (biostderr != NULL) {
-		BIO_DEBUG("after dataFinal");
 		CMS_ContentInfo_print_ctx(biostderr,cms,0,NULL);
 	}
 

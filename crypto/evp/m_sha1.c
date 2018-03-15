@@ -118,11 +118,7 @@ static int update256(EVP_MD_CTX *ctx,const void *data,size_t count)
 	{ 
 		int ret;
 		SHA256_CTX* sha256ctx=(SHA256_CTX*)ctx->md_data;
-		//BIO_DEBUG_BUFFER(data,count,"update for [%p]",ctx);
-		//BIO_DEBUG_BUFFER(sha256ctx->h,sizeof(sha256ctx->h),"[%p] update h",ctx);
 		ret = SHA256_Update(ctx->md_data,data,count);
-		//BIO_DEBUG_BUFFER(sha256ctx->data,sizeof(sha256ctx->data),"[%p]update [%d]",ctx,count);
-		//BIO_DEBUG_BUFFER(sha256ctx->h,sizeof(sha256ctx->h),"[%p] update h",ctx);
 		return ret;
 	}
 static int final256(EVP_MD_CTX *ctx,unsigned char *md)
@@ -130,8 +126,6 @@ static int final256(EVP_MD_CTX *ctx,unsigned char *md)
 		int ret;
 		SHA256_CTX* sha256ctx=(SHA256_CTX*)ctx->md_data;
 		ret = SHA256_Final(md,ctx->md_data); 
-		//BIO_DEBUG_BUFFER(sha256ctx->data,sizeof(sha256ctx->data),"[%p]update",ctx);
-		//BIO_DEBUG_BUFFER(sha256ctx->h,sizeof(sha256ctx->h),"[%p] update h",ctx);
 		return ret;
 	}
 

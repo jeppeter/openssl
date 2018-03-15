@@ -347,13 +347,11 @@ int MAIN(int argc, char **argv)
     e = setup_engine(bio_err, engine, 0);
 #endif
 
-	BIO_DEBUG(" ");
     if(passarg) {
 	if(export_cert) passargout = passarg;
 	else passargin = passarg;
     }
 
-    BIO_DEBUG(" ");
     if(!app_passwd(bio_err, passargin, passargout, &passin, &passout)) {
 	BIO_printf(bio_err, "Error getting passwords\n");
 	goto end;
@@ -386,10 +384,8 @@ int MAIN(int argc, char **argv)
 #endif
 
     if (!infile) {
-    	BIO_DEBUG(" ");
     	in = BIO_new_fp(stdin, BIO_NOCLOSE);
     }  else {
-    	BIO_DEBUG("infile [%s]",infile);
     	in = BIO_new_file(infile, "rb");
     }
     if (!in) {
@@ -405,7 +401,6 @@ int MAIN(int argc, char **argv)
 #endif
 
     if (!outfile) {
-    	BIO_DEBUG(" ");
 	out = BIO_new_fp(stdout, BIO_NOCLOSE);
 #ifdef OPENSSL_SYS_VMS
 	{
@@ -435,7 +430,6 @@ int MAIN(int argc, char **argv)
 #endif
     }
 
-    BIO_DEBUG(" ");
     if (export_cert) {
 	EVP_PKEY *key = NULL;
 	X509 *ucert = NULL, *x = NULL;
@@ -670,7 +664,6 @@ int MAIN(int argc, char **argv)
     CRYPTO_pop_info();
 #endif
 
-    BIO_DEBUG(" ");
     if (!twopass) BUF_strlcpy(macpass, pass, sizeof macpass);
 
     BIO_DEBUG(" ");

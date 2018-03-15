@@ -90,22 +90,18 @@ BIO *cms_content_bio(CMS_ContentInfo *cms)
 	{
 	ASN1_OCTET_STRING **pos = CMS_get0_content(cms);
 	if (!pos){
-		BIO_DEBUG(" ");
 		return NULL;
 	}
 	/* If content detached data goes nowhere: create NULL BIO */
 	if (!*pos){
-		BIO_DEBUG("give null");
 		return BIO_new(BIO_s_null());
 	}
 	/* If content not detached and created return memory BIO
 	 */
 	if (!*pos || ((*pos)->flags == ASN1_STRING_FLAG_CONT)){
-		BIO_DEBUG("give mem");
 		return BIO_new(BIO_s_mem());
 	}
 	/* Else content was read in: return read only BIO for it */
-	BIO_DEBUG("get data");
 	return BIO_new_mem_buf((*pos)->data, (*pos)->length);
 	}
 
@@ -155,7 +151,6 @@ BIO *CMS_dataInit(CMS_ContentInfo *cms, BIO *icont)
 		}
 
 	if (cmsbio){
-		BIO_DEBUG("cmsbio [%s:%p] cont [%s:%p]",cmsbio->method->name,cmsbio,((cont != NULL) ? cont->method->name : "NULL"),cont);
 		return BIO_push(cmsbio, cont);
 	}
 
@@ -170,14 +165,12 @@ int CMS_dataFinal(CMS_ContentInfo *cms, BIO *cmsbio)
 	ASN1_OCTET_STRING **pos = CMS_get0_content(cms);
 	if (!pos)
 		return 0;
-	BIO_DEBUG(" ");
 	/* If ebmedded content find memory BIO and set content */
 	if (*pos && ((*pos)->flags & ASN1_STRING_FLAG_CONT))
 		{
 		BIO *mbio;
 		unsigned char *cont;
 		long contlen;
-		BIO_DEBUG(" ");
 		mbio = BIO_find_type(cmsbio, BIO_TYPE_MEM);
 		if (!mbio)
 			{
@@ -188,7 +181,6 @@ int CMS_dataFinal(CMS_ContentInfo *cms, BIO *cmsbio)
 		/* Set bio as read only so its content can't be clobbered */
 		BIO_set_flags(mbio, BIO_FLAGS_MEM_RDONLY);
 		BIO_set_mem_eof_return(mbio, 0);
-		BIO_DEBUG(" ");
 		ASN1_STRING_set0(*pos, cont, contlen);
 		(*pos)->flags &= ~ASN1_STRING_FLAG_CONT;
 		}
@@ -204,11 +196,9 @@ int CMS_dataFinal(CMS_ContentInfo *cms, BIO *cmsbio)
 		return 1;
 
 		case NID_pkcs7_signed:
-		BIO_DEBUG(" ");
 		return cms_SignedData_final(cms, cmsbio);
 
 		case NID_pkcs7_digest:
-		BIO_DEBUG(" ");
 		return cms_DigestedData_do_final(cms, cmsbio, 0);
 
 		default:
@@ -227,39 +217,30 @@ ASN1_OCTET_STRING **CMS_get0_content(CMS_ContentInfo *cms)
 		{
 
 		case NID_pkcs7_data:
-		BIO_DEBUG("NID_pkcs7_data");
 		return &cms->d.data;
 
 		case NID_pkcs7_signed:
-		BIO_DEBUG("NID_pkcs7_signed");
 		return &cms->d.signedData->encapContentInfo->eContent;
 
 		case NID_pkcs7_enveloped:
-		BIO_DEBUG("NID_pkcs7_enveloped");
 		return &cms->d.envelopedData->encryptedContentInfo->encryptedContent;
 
 		case NID_pkcs7_digest:
-		BIO_DEBUG("NID_pkcs7_digest");
 		return &cms->d.digestedData->encapContentInfo->eContent;
 
 		case NID_pkcs7_encrypted:
-		BIO_DEBUG("NID_pkcs7_encrypted");
 		return &cms->d.encryptedData->encryptedContentInfo->encryptedContent;
 
 		case NID_id_smime_ct_authData:
-		BIO_DEBUG("NID_id_smime_ct_authData");
 		return &cms->d.authenticatedData->encapContentInfo->eContent;
 
 		case NID_id_smime_ct_compressedData:
-		BIO_DEBUG("NID_id_smime_ct_compressedData");
 		return &cms->d.compressedData->encapContentInfo->eContent;
 
 		default:
 		if (cms->d.other->type == V_ASN1_OCTET_STRING){
-			BIO_DEBUG("V_ASN1_OCTET_STRING");
 			return &cms->d.other->value.octet_string;
 		}
-		BIO_DEBUG("set error");
 		CMSerr(CMS_F_CMS_GET0_CONTENT, CMS_R_UNSUPPORTED_CONTENT_TYPE);
 		return NULL;
 
@@ -447,11 +428,9 @@ static STACK_OF(CMS_CertificateChoices) **cms_get0_certificate_choices(CMS_Conte
 		{
 
 		case NID_pkcs7_signed:
-		BIO_DEBUG("NID_pkcs7_signed");
 		return &cms->d.signedData->certificates;
 
 		case NID_pkcs7_enveloped:
-		BIO_DEBUG("NID_pkcs7_enveloped");
 		return &cms->d.envelopedData->originatorInfo->certificates;
 
 		default:
@@ -481,7 +460,6 @@ CMS_CertificateChoices *CMS_add0_CertificateChoices(CMS_ContentInfo *cms)
 		M_ASN1_free_of(cch, CMS_CertificateChoices);
 		return NULL;
 		}
-	BIO_DEBUG("*pcerts [%p] cch[%p]",*pcerts,cch);
 	return cch;
 	}
 
@@ -492,26 +470,21 @@ int CMS_add0_cert(CMS_ContentInfo *cms, X509 *cert)
 	int i;
 	pcerts = cms_get0_certificate_choices(cms);
 	if (!pcerts){
-		BIO_DEBUG(" ");
 		return 0;
 	}
-	BIO_DEBUG("pcerts [%p]",pcerts);
 	if (!pcerts)
 		return 0;
 	for (i = 0; i < sk_CMS_CertificateChoices_num(*pcerts); i++)
 		{
 		cch = sk_CMS_CertificateChoices_value(*pcerts, i);
-		BIO_DEBUG("[%d] cch[%p]",i,cch);
 		if (cch->type == CMS_CERTCHOICE_CERT)
 			{
-			BIO_DEBUG(" ");
 			if (!X509_cmp(cch->d.certificate, cert))
 				{
 				CMSerr(CMS_F_CMS_ADD0_CERT, 
 					CMS_R_CERTIFICATE_ALREADY_PRESENT);
 				return 0;
 				}
-			BIO_DEBUG(" ");
 			}
 		}
 	cch = CMS_add0_CertificateChoices(cms);

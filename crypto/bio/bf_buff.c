@@ -205,13 +205,10 @@ static int buffer_write(BIO *b, const char *in, int inl)
 
 	BIO_clear_retry_flags(b);
 start:
-	BIO_DEBUG("[%p] obuf_size[%d] obuf_len[%d] obuf_off[%d] inl[%d]",b,ctx->obuf_size,ctx->obuf_len,ctx->obuf_off,inl);
 	i=ctx->obuf_size-(ctx->obuf_len+ctx->obuf_off);
 	/* add to buffer and return */
 	if (i >= inl)
 		{
-		BIO_DEBUG("[%p] at [%d]",b,ctx->obuf_off + ctx->obuf_len);
-		//BIO_DEBUG_BUFFER(in,inl,"[%p] at [%d]",b,ctx->obuf_off + ctx->obuf_len);
 		memcpy(&(ctx->obuf[ctx->obuf_off+ctx->obuf_len]),in,inl);
 		ctx->obuf_len+=inl;
 		return(num+inl);
@@ -222,7 +219,6 @@ start:
 		{
 		if (i > 0) /* lets fill it up if we can */
 			{
-			BIO_DEBUG_BUFFER(in,i,"[%p] at [%d]",b,ctx->obuf_off+ctx->obuf_len);
 			memcpy(&(ctx->obuf[ctx->obuf_off+ctx->obuf_len]),in,i);
 			in+=i;
 			inl-=i;
@@ -232,8 +228,6 @@ start:
 		/* we now have a full buffer needing flushing */
 		for (;;)
 			{
-			BIO_DEBUG("[%p] obuf_off[%d] obuf_len[%d]",b,ctx->obuf_off,ctx->obuf_len);
-			//BIO_DEBUG_BUFFER(&(ctx->obuf[ctx->obuf_off]),ctx->obuf_len,"[%p] obuf_off[%d] obuf_len[%d]",b,ctx->obuf_off,ctx->obuf_len);
 			i=BIO_write(b->next_bio,&(ctx->obuf[ctx->obuf_off]),
 				ctx->obuf_len);
 			if (i <= 0)
@@ -255,7 +249,6 @@ start:
 	/* we now have inl bytes to write */
 	while (inl >= ctx->obuf_size)
 		{
-		BIO_DEBUG_BUFFER(in,inl,"write[%p]",b->next_bio);
 		i=BIO_write(b->next_bio,in,inl);
 		if (i <= 0)
 			{
@@ -411,9 +404,6 @@ static long buffer_ctrl(BIO *b, int cmd, long num, void *ptr)
 				r=BIO_write(b->next_bio,
 					&(ctx->obuf[ctx->obuf_off]),
 					ctx->obuf_len);
-#if 1
-				BIO_DEBUG("FLUSH [%s] [%3d] %3d -> %3d",b->next_bio->method->name,ctx->obuf_off,ctx->obuf_len,r);
-#endif
 				BIO_copy_next_retry(b);
 				if (r <= 0) return((long)r);
 				ctx->obuf_off+=r;

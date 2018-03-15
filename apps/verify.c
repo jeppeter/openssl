@@ -198,7 +198,6 @@ int MAIN(int argc, char **argv)
 
 	ERR_clear_error();
 
-	BIO_DEBUG(" ");
 	if(untfile)
 		{
 		untrusted = load_certs(bio_err, untfile, FORMAT_PEM,
@@ -223,7 +222,6 @@ int MAIN(int argc, char **argv)
 			goto end;
 		}
 
-	BIO_DEBUG(" ");
 	ret = 0;
 	if (argc < 1)
 		{ 
@@ -237,7 +235,6 @@ int MAIN(int argc, char **argv)
 				ret = -1;
 		}
 
-	BIO_DEBUG(" ");
 end:
 	if (ret == 1) {
 		BIO_printf(bio_err,"usage: verify [-verbose] [-CApath path] [-CAfile file] [-purpose purpose] [-crl_check]");
@@ -288,7 +285,6 @@ static int check(X509_STORE *ctx, char *file,
 	X509_STORE_set_flags(ctx, vflags);
 	if(!X509_STORE_CTX_init(csc,ctx,x,uchain))
 		{
-		BIO_DEBUG(" ");
 		ERR_print_errors(bio_err);
 		goto end;
 		}
@@ -297,7 +293,6 @@ static int check(X509_STORE *ctx, char *file,
 		X509_STORE_CTX_set0_crls(csc, crls);
 	i=X509_verify_cert(csc);
 	X509_STORE_CTX_free(csc);
-	BIO_DEBUG(" ");
 	ret=0;
 end:
 	if (i > 0)

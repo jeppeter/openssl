@@ -797,13 +797,10 @@ int MAIN(int argc, char **argv)
 	if (operation & SMIME_IP)
 		{
 		if (informat == FORMAT_SMIME) {
-			BIO_DEBUG(" ");
 			cms = SMIME_read_CMS(in, &indata);
 		} else if (informat == FORMAT_PEM) {
-			BIO_DEBUG(" ");
 			cms = PEM_read_bio_CMS(in, NULL, NULL, NULL);
 		} else if (informat == FORMAT_ASN1) {
-			BIO_DEBUG(" ");
 			cms = d2i_CMS_bio(in, NULL);
 		} else
 			{
@@ -818,7 +815,6 @@ int MAIN(int argc, char **argv)
 			}
 		if (contfile)
 			{
-			BIO_DEBUG(" ");
 			BIO_free(indata);
 			if (!(indata = BIO_new_file(contfile, "rb")))
 				{
@@ -893,7 +889,6 @@ int MAIN(int argc, char **argv)
 
 	if ((operation == SMIME_VERIFY) || (operation == SMIME_VERIFY_RECEIPT))
 		{
-		BIO_DEBUG(" ");
 		if (!(store = setup_verify(bio_err, CAfile, CApath)))
 			goto end;
 		X509_STORE_set_verify_cb(store, cms_cb);
@@ -906,22 +901,18 @@ int MAIN(int argc, char **argv)
 
 	if (operation == SMIME_DATA_CREATE)
 		{
-		BIO_DEBUG(" ");
 		cms = CMS_data_create(in, flags);
 		}
 	else if (operation == SMIME_DIGEST_CREATE)
 		{
-		BIO_DEBUG(" ");
 		cms = CMS_digest_create(in, sign_md, flags);
 		}
 	else if (operation == SMIME_COMPRESS)
 		{
-		BIO_DEBUG(" ");
 		cms = CMS_compress(in, -1, flags);
 		}
 	else if (operation == SMIME_ENCRYPT)
 		{
-		BIO_DEBUG(" ");
 		flags |= CMS_PARTIAL;
 		cms = CMS_encrypt(encerts, in, cipher, flags);
 		if (!cms)
@@ -950,7 +941,6 @@ int MAIN(int argc, char **argv)
 			}
 		if (!(flags & CMS_STREAM))
 			{
-			BIO_DEBUG(" ");
 			if (!CMS_final(cms, in, NULL, flags))
 				goto end;
 			}
@@ -964,7 +954,6 @@ int MAIN(int argc, char **argv)
 		}
 	else if (operation == SMIME_SIGN_RECEIPT)
 		{
-		BIO_DEBUG(" ");
 		CMS_ContentInfo *srcms = NULL;
 		STACK_OF(CMS_SignerInfo) *sis;
 		CMS_SignerInfo *si;
@@ -981,7 +970,6 @@ int MAIN(int argc, char **argv)
 	else if (operation & SMIME_SIGNERS)
 		{
 		int i;
-		BIO_DEBUG(" ");
 		/* If detached data content we enable streaming if
 		 * S/MIME output format.
 		 */
@@ -990,9 +978,7 @@ int MAIN(int argc, char **argv)
 				
 			if (flags & CMS_DETACHED)
 				{
-				BIO_DEBUG(" ");
 				if (outformat == FORMAT_SMIME){
-					BIO_DEBUG(" ");
 					flags |= CMS_STREAM;
 				}
 				}
@@ -1000,16 +986,13 @@ int MAIN(int argc, char **argv)
 			cms = CMS_sign(NULL, NULL, other, in, flags);
 			if (!cms)
 				goto end;
-			BIO_DEBUG("first sign: flags [0x%x]",flags);
 			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			if (econtent_type){
-				BIO_DEBUG(" ");
 				CMS_set1_eContentType(cms, econtent_type);
 			}
 
 			if (rr_to)
 				{
-				BIO_DEBUG(" ");
 				rr = make_receipt_request(rr_to, rr_allorfirst,
 								rr_from);
 				if (!rr)
@@ -1022,7 +1005,6 @@ int MAIN(int argc, char **argv)
 			}
 		else
 			flags |= CMS_REUSE_DIGEST;
-		BIO_DEBUG("before key: flags[0x%x]",flags);
 		CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 		for (i = 0; i < sk_OPENSSL_STRING_num(sksigners); i++)
 			{
@@ -1031,20 +1013,17 @@ int MAIN(int argc, char **argv)
 			keyfile = sk_OPENSSL_STRING_value(skkeys, i);
 			signer = load_cert(bio_err, signerfile,FORMAT_PEM, NULL,
 					e, "signer certificate");
-			BIO_DEBUG("[%d] signerfile [%s] keyfile [%s] signer [%s] flags[0x%x]",i,signerfile,keyfile,signer->name,flags);
 			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			if (!signer)
 				goto end;
 			key = load_key(bio_err, keyfile, keyform, 0, passin, e,
 			       "signing key file");
-			BIO_DEBUG("load key [%d] flags[0x%x]",EVP_PKEY_id(key),flags);
 			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			if (!key)
 				goto end;
 			si = CMS_add1_signer(cms, signer, key, sign_md, flags);
 			if (!si)
 				goto end;
-			BIO_DEBUG("rr [%d] flags [0x%x]",rr,flags);
 			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			if (rr && !CMS_add1_ReceiptRequest(si, rr))
 				goto end;
@@ -1052,20 +1031,16 @@ int MAIN(int argc, char **argv)
 			signer = NULL;
 			EVP_PKEY_free(key);
 			key = NULL;
-			BIO_DEBUG("[%d] complete",i);
 			CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 			}
-		BIO_DEBUG("after key");
 		CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 		/* If not streaming or resigning finalize structure */
 		if ((operation == SMIME_SIGN) && !(flags & CMS_STREAM))
 			{
-			BIO_DEBUG(" ");
 			if (!CMS_final(cms, in, NULL, flags))
 				goto end;
 			}
 		}
-		BIO_DEBUG("SMIME_SIGN");
 		CMS_ContentInfo_print_ctx(bio_err,cms,0,NULL);
 
 	if (!cms)
@@ -1077,7 +1052,6 @@ int MAIN(int argc, char **argv)
 	ret = 4;
 	if (operation == SMIME_DECRYPT)
 		{
-		BIO_DEBUG(" ");
 		if (flags & CMS_DEBUG_DECRYPT)
 			CMS_decrypt(cms, NULL, NULL, NULL, NULL, flags);
 
@@ -1112,7 +1086,6 @@ int MAIN(int argc, char **argv)
 				goto end;
 				}
 			}
-		BIO_DEBUG(" ");
 		if (!CMS_decrypt(cms, NULL, NULL, indata, out, flags))
 			{
 			BIO_printf(bio_err, "Error decrypting CMS structure\n");
@@ -1121,19 +1094,16 @@ int MAIN(int argc, char **argv)
 		}
 	else if (operation == SMIME_DATAOUT)
 		{
-		BIO_DEBUG(" ");
 		if (!CMS_data(cms, out, flags))
 			goto end;
 		}
 	else if (operation == SMIME_UNCOMPRESS)
 		{
-		BIO_DEBUG(" ");
 		if (!CMS_uncompress(cms, indata, out, flags))
 			goto end;
 		}
 	else if (operation == SMIME_DIGEST_VERIFY)
 		{
-		BIO_DEBUG(" ");
 		if (CMS_digest_verify(cms, indata, out, flags) > 0)
 			BIO_printf(bio_err, "Verification successful\n");
 		else
@@ -1144,14 +1114,12 @@ int MAIN(int argc, char **argv)
 		}
 	else if (operation == SMIME_ENCRYPTED_DECRYPT)
 		{
-		BIO_DEBUG(" ");
 		if (!CMS_EncryptedData_decrypt(cms, secret_key, secret_keylen,
 						indata, out, flags))
 			goto end;
 		}
 	else if (operation == SMIME_VERIFY)
 		{
-		BIO_DEBUG(" ");
 		if (CMS_verify(cms, other, store, indata, out, flags) > 0)
 			BIO_printf(bio_err, "Verification successful\n");
 		else
@@ -1181,7 +1149,6 @@ int MAIN(int argc, char **argv)
 		}
 	else if (operation == SMIME_VERIFY_RECEIPT)
 		{
-		BIO_DEBUG(" ");
 		if (CMS_verify_receipt(rcms, cms, other, store, flags) > 0)
 			BIO_printf(bio_err, "Verification successful\n");
 		else
@@ -1192,7 +1159,6 @@ int MAIN(int argc, char **argv)
 		}
 	else
 		{
-		BIO_DEBUG(" ");
 		if (noout)
 			{
 			if (print)
@@ -1207,19 +1173,15 @@ int MAIN(int argc, char **argv)
 			if (subject)
 				BIO_printf(out, "Subject: %s\n", subject);
 			if (operation == SMIME_RESIGN){
-				BIO_DEBUG(" ");
 				ret = SMIME_write_CMS(out, cms, indata, flags);
 			} else{
-				BIO_DEBUG(" ");
 				ret = SMIME_write_CMS(out, cms, in, flags);
 			}
 			}
 		else if (outformat == FORMAT_PEM) {
-			BIO_DEBUG(" ");
 			ret = PEM_write_bio_CMS_stream(out, cms, in, flags);
 		}
 		else if (outformat == FORMAT_ASN1) {
-			BIO_DEBUG(" ");
 			ret = i2d_CMS_bio_stream(out,cms, in, flags);
 		}
 		else

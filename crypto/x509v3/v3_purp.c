@@ -717,11 +717,9 @@ int X509_check_issued(X509 *issuer, X509 *subject)
 	if(X509_NAME_cmp(X509_get_subject_name(issuer),
 			X509_get_issuer_name(subject))){
 #if DEBUG_X509_CERT
-				BIO_DEBUG("differ for issuer");
 				if (bioerr != NULL) {
 					X509_print_ex(bioerr,issuer,0,X509_FLAG_SIMPLE_OUTPUT);
 				}
-				BIO_DEBUG("differ for subject");
 				if (bioerr != NULL) {
 					X509_print_ex(bioerr,subject,0,X509_FLAG_SIMPLE_OUTPUT);	
 				}
@@ -733,11 +731,9 @@ int X509_check_issued(X509 *issuer, X509 *subject)
 				return X509_V_ERR_SUBJECT_ISSUER_MISMATCH;
 			}
 #if DEBUG_X509_CERT
-	BIO_DEBUG("same for issuer");
 	if (bioerr != NULL) {
 		X509_print_ex(bioerr,issuer,0,X509_FLAG_SIMPLE_OUTPUT);
 	}
-	BIO_DEBUG("same for subject");
 	if (bioerr != NULL) {
 		X509_print_ex(bioerr,subject,0,X509_FLAG_SIMPLE_OUTPUT);	
 	}
@@ -756,7 +752,6 @@ int X509_check_issued(X509 *issuer, X509 *subject)
 		{
 		int ret = X509_check_akid(issuer, subject->akid);
 		if (ret != X509_V_OK){
-			BIO_DEBUG(" ");
 			return ret;
 		}
 		}
@@ -764,12 +759,10 @@ int X509_check_issued(X509 *issuer, X509 *subject)
 	if(subject->ex_flags & EXFLAG_PROXY)
 		{
 		if(ku_reject(issuer, KU_DIGITAL_SIGNATURE)){
-			BIO_DEBUG(" ");
 			return X509_V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE;
 		}
 		}
 	else if(ku_reject(issuer, KU_KEY_CERT_SIGN)){
-		BIO_DEBUG(" ");
 		return X509_V_ERR_KEYUSAGE_NO_CERTSIGN;
 	}
 	return X509_V_OK;
@@ -779,20 +772,17 @@ int X509_check_akid(X509 *issuer, AUTHORITY_KEYID *akid)
 	{
 
 	if(!akid){
-		BIO_DEBUG(" ");
 		return X509_V_OK;
 	}
 
 	/* Check key ids (if present) */
 	if(akid->keyid && issuer->skid &&
 		 ASN1_OCTET_STRING_cmp(akid->keyid, issuer->skid) ){
-				BIO_DEBUG(" ");
 				return X509_V_ERR_AKID_SKID_MISMATCH;
 		 }
 	/* Check serial number */
 	if(akid->serial &&
 		ASN1_INTEGER_cmp(X509_get_serialNumber(issuer), akid->serial)){
-				BIO_DEBUG(" ");
 				return X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH;
 		}
 	/* Check issuer name */
@@ -818,7 +808,6 @@ int X509_check_akid(X509 *issuer, AUTHORITY_KEYID *akid)
 				}
 			}
 		if(nm && X509_NAME_cmp(nm, X509_get_issuer_name(issuer))){
-			BIO_DEBUG(" ");
 			return X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH;
 		}
 		}

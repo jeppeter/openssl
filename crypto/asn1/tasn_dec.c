@@ -382,7 +382,6 @@ int ASN1_item_ex_d2i(ASN1_VALUE **pval, const unsigned char **in, long len,
 			tag = V_ASN1_SEQUENCE;
 			aclass = V_ASN1_UNIVERSAL;
 			}
-		BIO_DEBUG("p [%p]", p);
 		/* Get SEQUENCE length and update len, p */
 		ret = asn1_check_tlen(&len, NULL, NULL, &seq_eoc, &cst,
 					&p, len, tag, aclass, opt, ctx);
@@ -396,7 +395,6 @@ int ASN1_item_ex_d2i(ASN1_VALUE **pval, const unsigned char **in, long len,
 			return -1;
 		}
 		BIO_DEBUG_BUFFER(*in, (p - *in), "parse len [%d:0x%x]", (unsigned int)(p - *in), (unsigned int)(p - *in));
-		BIO_DEBUG("ret [%d] len[%ld] seq_eoc [0x%x] p [%p]",ret,len, (unsigned char)seq_eoc, p);
 		BIO_DEBUG("it %s",format_ASN1_ITEM(it));
 		if (aux && (aux->flags & ASN1_AFLG_BROKEN))
 			{
@@ -414,7 +412,6 @@ int ASN1_item_ex_d2i(ASN1_VALUE **pval, const unsigned char **in, long len,
 			goto err;
 			}
 
-		BIO_DEBUG("pval [%p] *pval [%p]", pval, *pval);
 		if (!*pval && !ASN1_item_ex_new(pval, it))
 			{
 			ASN1err(ASN1_F_ASN1_ITEM_EX_D2I,
@@ -422,7 +419,6 @@ int ASN1_item_ex_d2i(ASN1_VALUE **pval, const unsigned char **in, long len,
 			goto err;
 			}
 
-		BIO_DEBUG("pval [%p] *pval [%p]", pval, *pval);
 		if (asn1_cb && !asn1_cb(ASN1_OP_D2I_PRE, pval, it, NULL))
 				goto auxerr;
 
@@ -469,9 +465,11 @@ int ASN1_item_ex_d2i(ASN1_VALUE **pval, const unsigned char **in, long len,
 			 * strictly necessary but it increases efficiency in
 			 * some cases.
 			 */
-			if (i == (it->tcount - 1))
+			if (i == (it->tcount - 1)){
 				isopt = 0;
-			else isopt = (char)(seqtt->flags & ASN1_TFLG_OPTIONAL);
+			} else { 
+				isopt = (char)(seqtt->flags & ASN1_TFLG_OPTIONAL);
+			}
 			/* attempt to read in field, allowing each to be
 			 * OPTIONAL */
 

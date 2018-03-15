@@ -132,10 +132,8 @@ int EVP_DigestSignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen)
 	{
 	int sctx, r = 0;
 	if (ctx->pctx->pmeth->signctx){
-		BIO_DEBUG("sigctx 1");
 		sctx = 1;
 	}else{
-		BIO_DEBUG("sigctx 0");
 		sctx = 0;
 	}
 	if (sigret)
@@ -146,15 +144,11 @@ int EVP_DigestSignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen)
 		EVP_MD_CTX_init(&tmp_ctx);
 		if (!EVP_MD_CTX_copy_ex(&tmp_ctx,ctx))
 		     	return 0;
-		BIO_DEBUG_BUFFER(tmp_ctx.pctx,sizeof(tmp_ctx.pctx),"tmp_ctx");
 		if (sctx){
-			BIO_DEBUG("signctx [%p]",tmp_ctx.pctx->pmeth->signctx);
 			r = tmp_ctx.pctx->pmeth->signctx(tmp_ctx.pctx,
 					sigret, siglen, &tmp_ctx);
 		}else{
-			BIO_DEBUG("call EVP_DigestFinal_ex pctx[%p] digest[%p]",ctx->pctx,ctx->digest);
 			r = EVP_DigestFinal_ex(&tmp_ctx,md,&mdlen);
-			BIO_DEBUG_BUFFER(md,mdlen,"all md");
 		}
 		EVP_MD_CTX_cleanup(&tmp_ctx);
 		if (sctx || !r)

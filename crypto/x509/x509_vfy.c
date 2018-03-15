@@ -164,7 +164,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 	if (ctx->cert == NULL)
 		{
 		X509err(X509_F_X509_VERIFY_CERT,X509_R_NO_CERT_SET_FOR_US_TO_VERIFY);
-		BIO_DEBUG(" ");
 		return -1;
 		}
 
@@ -174,7 +173,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 		 * cannot do another one.
 		 */
 		X509err(X509_F_X509_VERIFY_CERT, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
-		BIO_DEBUG(" ");
 		return -1;
 		}
 
@@ -185,7 +183,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 	if (((ctx->chain = sk_X509_new_null()) == NULL) ||
 		(!sk_X509_push(ctx->chain, ctx->cert))) {
 		X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
-		BIO_DEBUG(" ");
 		goto end;
 	}
 	CRYPTO_add(&ctx->cert->references, 1, CRYPTO_LOCK_X509);
@@ -196,7 +193,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 	    && (sktmp=sk_X509_dup(ctx->untrusted)) == NULL)
 		{
 		X509err(X509_F_X509_VERIFY_CERT,ERR_R_MALLOC_FAILURE);
-		BIO_DEBUG(" ");
 		goto end;
 		}
 
@@ -216,7 +212,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 		                         */
 #if DEBUG_X509_CERT
 		if (biostderr != NULL) {
-			BIO_DEBUG(" ");
 			X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 		}
 #endif
@@ -233,7 +228,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 				if (!sk_X509_push(ctx->chain,xtmp))
 					{
 					X509err(X509_F_X509_VERIFY_CERT,ERR_R_MALLOC_FAILURE);
-					BIO_DEBUG(" ");
 					goto end;
 					}
 				CRYPTO_add(&xtmp->references,1,CRYPTO_LOCK_X509);
@@ -263,13 +257,11 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 		x = sk_X509_value(ctx->chain, i - 1);
 #if DEBUG_X509_CERT
 		if (biostderr != NULL) {
-			BIO_DEBUG(" ");
 			X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 		}
 #endif
 		if (ctx->check_issued(ctx, x, x)) {
 			if (biostderr != NULL) {
-				BIO_DEBUG(" ");
 				X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 			}
 			/* we have a self signed certificate */
@@ -280,7 +272,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 				 * possible impersonation.
 				 */
 				if (biostderr != NULL) {
-					BIO_DEBUG(" ");
 					X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 				}
 				ok = ctx->get_issuer(&xtmp, ctx, x);
@@ -293,7 +284,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 					bad_chain = 1;
 					ok = cb(0, ctx);
 					if (!ok){
-						BIO_DEBUG(" ");
 						goto end;
 					}
 				} else {
@@ -302,7 +292,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 					 * version so we get any trust settings.
 					 */
 					if (biostderr != NULL) {
-						BIO_DEBUG(" ");
 						X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 					}
 					X509_free(x);
@@ -314,7 +303,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 				/* extract and save self signed certificate for later use
 				 */
 				if (biostderr != NULL) {
-					BIO_DEBUG(" ");
 					X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 				}
 				chain_ss = sk_X509_pop(ctx->chain);
@@ -326,7 +314,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 
 #ifdef DEBUG_X509_CERT
 			if (biostderr != NULL) {
-				BIO_DEBUG(" ");
 				X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 			}
 #endif
@@ -339,7 +326,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 				break;
 #if DEBUG_X509_CERT
 			if (biostderr != NULL) {
-				BIO_DEBUG(" ");
 				X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 			}
 #endif
@@ -348,13 +334,11 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 				break;
 #if DEBUG_X509_CERT
 			if (biostderr != NULL) {
-				BIO_DEBUG(" ");
 				X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 			}
 #endif
 			ok = ctx->get_issuer(&xtmp, ctx, x);
 			if (ok < 0){
-				BIO_DEBUG(" ");
 				if (biostderr != NULL) {
 					BIO_free_all(biostderr);
 					biostderr = NULL;
@@ -364,7 +348,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 			if (ok == 0){
 #if 0				
 				if (biostderr != NULL) {
-					BIO_DEBUG(" ");
 					X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 				}
 #endif
@@ -374,7 +357,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 			if (!sk_X509_push(ctx->chain, x)) {
 				X509_free(xtmp);
 				X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
-				BIO_DEBUG(" ");
 				if (biostderr != NULL) {
 					BIO_free_all(biostderr);
 					biostderr = NULL;
@@ -383,7 +365,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 			}
 			num++;
 			if (biostderr != NULL) {
-				BIO_DEBUG(" ");
 				X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 			}
 		}
@@ -399,7 +380,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 			while (j-- > 1) {
 				xtmp2 = sk_X509_value(ctx->chain, j - 1);
 				if (biostderr != NULL) {
-					BIO_DEBUG(" ");
 					X509_print_ex(biostderr,xtmp2,0,X509_FLAG_SIMPLE_OUTPUT);
 				}
 				ok = ctx->get_issuer(&xtmp, ctx, xtmp2);
@@ -431,7 +411,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 
 #if DEBUG_X509_CERT
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 	}
 #endif
@@ -462,7 +441,6 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 		bad_chain = 1;
 		ok=cb(0,ctx);
 		if (!ok) {
-			BIO_DEBUG("cb %p X509_verify_cert %p",cb,X509_verify_cert);
 			goto end;
 		}
 		}
@@ -470,19 +448,19 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 	/* We have the chain complete: now we need to check its purpose */
 	ok = check_chain_extensions(ctx);
 
-	if (!ok) {BIO_DEBUG(" ");goto end;}
+	if (!ok) {goto end;}
 
 	/* Check name constraints */
 
 	ok = check_name_constraints(ctx);
 	
-	if (!ok) {BIO_DEBUG(" ");goto end;}
+	if (!ok) {goto end;}
 
 	/* The chain extensions are OK: check trust */
 
 	if (param->trust > 0) ok = check_trust(ctx);
 
-	if (!ok) {BIO_DEBUG(" ");goto end;}
+	if (!ok) {goto end;}
 
 	/* We may as well copy down any DSA parameters that are required */
 	X509_get_pubkey_parameters(NULL,ctx->chain);
@@ -492,30 +470,30 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 	 */
 
 	ok = ctx->check_revocation(ctx);
-	if(!ok) {BIO_DEBUG(" ");goto end;}
+	if(!ok) {goto end;}
 
 	/* At this point, we have a chain and need to verify it */
 	if (ctx->verify != NULL)
 		ok=ctx->verify(ctx);
 	else
 		ok=internal_verify(ctx);
-	if(!ok) {BIO_DEBUG(" ");goto end;}
+	if(!ok) {goto end;}
 
 	ok = check_ca_blacklist(ctx);
-	if(!ok) {BIO_DEBUG(" ");goto end;}
+	if(!ok) {goto end;}
 
 #ifndef OPENSSL_NO_RFC3779
 	/* RFC 3779 path validation, now that CRL check has been done */
 	ok = v3_asid_validate_path(ctx);
-	if (!ok) {BIO_DEBUG(" ");goto end;}
+	if (!ok) {goto end;}
 	ok = v3_addr_validate_path(ctx);
-	if (!ok) {BIO_DEBUG(" ");goto end;}
+	if (!ok) {goto end;}
 #endif
 
 	/* If we get this far evaluate policies */
 	if (!bad_chain && (ctx->param->flags & X509_V_FLAG_POLICY_CHECK))
 		ok = ctx->check_policy(ctx);
-	if(!ok) {BIO_DEBUG(" ");goto end;}
+	if(!ok) {goto end;}
 	if (0)
 		{
 end:
@@ -542,7 +520,6 @@ static X509 *find_issuer(X509_STORE_CTX *ctx, STACK_OF(X509) *sk, X509 *x)
 	biostderr = BIO_new_fp(stderr,BIO_NOCLOSE);
 #if DEBUG_X509_CERT	
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		X509_print_ex(biostderr,x,0,X509_FLAG_SIMPLE_OUTPUT);
 	}
 #endif
@@ -552,7 +529,6 @@ static X509 *find_issuer(X509_STORE_CTX *ctx, STACK_OF(X509) *sk, X509 *x)
 		issuer = sk_X509_value(sk, i);
 #if DEBUG_X509_CERT
 		if (biostderr != NULL) {
-			BIO_DEBUG(" ");
 			X509_print_ex(biostderr,issuer,0,X509_FLAG_SIMPLE_OUTPUT);
 		}
 #endif
@@ -579,28 +555,22 @@ static int check_issued(X509_STORE_CTX *ctx, X509 *x, X509 *issuer)
 	BIO* biostderr=NULL;
 	//biostderr = BIO_new_fp(stderr,BIO_NOCLOSE);
 	if (biostderr != NULL) {
-		BIO_DEBUG(" ");
 		X509_print_ex(biostderr,x,0,0);
-		BIO_DEBUG(" ");
 		X509_print_ex(biostderr,issuer,0,0);
 		BIO_free_all(biostderr);
 		biostderr = NULL;
 	}
 	ret = X509_check_issued(issuer, x);
 	if (ret == X509_V_OK){
-		BIO_DEBUG(" ");
 		return 1;
 	}
 	/* If we haven't asked for issuer errors don't set ctx */
 	if (!(ctx->param->flags & X509_V_FLAG_CB_ISSUER_CHECK)){		
-		//BIO_DEBUG(" ");
 		return 0;
 	}
-	BIO_DEBUG(" ");
 	ctx->error = ret;
 	ctx->current_cert = x;
 	ctx->current_issuer = issuer;
-	BIO_DEBUG("verify_cb %p check_issued %p",ctx->verify_cb,check_issued);
 	return ctx->verify_cb(0, ctx);
 	return 0;
 }

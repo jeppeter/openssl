@@ -106,7 +106,6 @@ int CMS_signed_add1_attr_by_NID(CMS_SignerInfo *si,
 			int nid, int type,
 			const void *bytes, int len)
 {
-	BIO_DEBUG("[%p]nid 0x%x type 0x%x",si,nid,type);
 	if(X509at_add1_attr_by_NID(&si->signedAttrs, nid,
 				type, bytes, len)) return 1;
 	return 0;
