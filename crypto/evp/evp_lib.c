@@ -61,6 +61,44 @@
 #include <openssl/evp.h>
 #include <openssl/objects.h>
 
+
+#define FORMAT_SNPRINTF(...)                                     \
+do {                                                             \
+	ret = snprintf(ptr, leftlen,__VA_ARGS__);                    \
+	if (ret >= 0 && ret < leftlen) {                             \
+		ptr += ret;                                              \
+		leftlen -= ret;                                          \
+	}                                                            \
+} while(0)
+
+char* format_EVP_MD(EVP_MD* md)
+	{
+		static char st_evp_md_buf[2048];
+		char* ptr;
+		int leftlen;
+		int ret;
+		int i;
+		ptr = st_evp_md_buf;
+		leftlen = sizeof(st_evp_md_buf);
+		if (md != NULL) {
+			FORMAT_SNPRINTF("EVP_MD[%p];type[%d:0x%x];pkey_type[%d:0x%x];", md, md->type, md->type, md->pkey_type, md->pkey_type);
+			FORMAT_SNPRINTF("md_size[%d:0x%x];", md->md_size, md->md_size);
+			FORMAT_SNPRINTF("flags[%ld:0x%lx];", md->flags, md->flags);
+			FORMAT_SNPRINTF("init[%p];update[%p];final[%p];copy[%p];cleanup[%p];", md->init, md->update, md->final, md->copy, md->cleanup);
+			FORMAT_SNPRINTF("sign[%p];verify[%p];", md->sign,md->verify);
+			for (i=0;i<5;i++) {
+				FORMAT_SNPRINTF("required_pkey_type.[%d]=[%d:0x%x];",i, md->required_pkey_type[i],md->required_pkey_type[i]);
+			}
+			FORMAT_SNPRINTF("block_size[%d:0x%x];",md->block_size,md->block_size);
+			FORMAT_SNPRINTF("ctx_size[%d:0x%x];", md->ctx_size, md->ctx_size);
+			FORMAT_SNPRINTF("md_ctrl[%p];", md->md_ctrl);
+		} else {
+			FORMAT_SNPRINTF("EVP_MD(nil)");
+		}
+
+		return st_evp_md_buf;
+	}
+
 int EVP_CIPHER_param_to_asn1(EVP_CIPHER_CTX *c, ASN1_TYPE *type)
 	{
 	int ret;

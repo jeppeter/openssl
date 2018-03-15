@@ -182,6 +182,8 @@ struct env_md_st
 	int (*md_ctrl)(EVP_MD_CTX *ctx, int cmd, int p1, void *p2);
 	} /* EVP_MD */;
 
+char* format_EVP_MD(EVP_MD* md);
+
 typedef int evp_sign_method(int type,const unsigned char *m,
 			    unsigned int m_length,unsigned char *sigret,
 			    unsigned int *siglen, void *key);

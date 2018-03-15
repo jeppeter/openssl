@@ -81,13 +81,20 @@ int PKCS12_gen_mac(PKCS12 *p12, const char *pass, int passlen,
 
 	salt = p12->mac->salt->data;
 	saltlen = p12->mac->salt->length;
-	if (!p12->mac->iter) iter = 1;
-	else iter = ASN1_INTEGER_get (p12->mac->iter);
+	BIO_DEBUG_BUFFER(salt,saltlen, "salt");
+	if (!p12->mac->iter) {
+		iter = 1;
+	} else {
+		iter = ASN1_INTEGER_get (p12->mac->iter);
+	}
+	BIO_DEBUG("iter [%d]", iter);
     	if(!(md_type =
 		 EVP_get_digestbyobj (p12->mac->dinfo->algor->algorithm))) {
 		PKCS12err(PKCS12_F_PKCS12_GEN_MAC,PKCS12_R_UNKNOWN_DIGEST_ALGORITHM);
 		return 0;
 	}
+	BIO_DEBUG("%s", format_EVP_MD(md_type));
+	BIO_DEBUG_BUFFER(p12->mac->dinfo->algor->algorithm->data, p12->mac->dinfo->algor->algorithm->length, "algorithm");
 	md_size = EVP_MD_size(md_type);
 	if (md_size < 0)
 	    return 0;
@@ -122,6 +129,7 @@ int PKCS12_verify_mac(PKCS12 *p12, const char *pass, int passlen)
 		PKCS12err(PKCS12_F_PKCS12_VERIFY_MAC,PKCS12_R_MAC_GENERATION_ERROR);
 		return 0;
 	}
+	BIO_DEBUG("maclen %d", maclen);
 	if ((maclen != (unsigned int)p12->mac->dinfo->digest->length)
 	|| memcmp (mac, p12->mac->dinfo->digest->data, maclen)) return 0;
 	return 1;

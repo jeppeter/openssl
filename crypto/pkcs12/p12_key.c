@@ -100,6 +100,11 @@ int PKCS12_key_gen_asc(const char *pass, int passlen, unsigned char *salt,
 	return ret;
 }
 
+#ifndef DEBUG_KEYGEN
+#define DEBUG_KEYGEN
+#endif
+
+
 int PKCS12_key_gen_uni(unsigned char *pass, int passlen, unsigned char *salt,
 	     int saltlen, int id, int iter, int n, unsigned char *out,
 	     const EVP_MD *md_type)
@@ -133,6 +138,7 @@ int PKCS12_key_gen_uni(unsigned char *pass, int passlen, unsigned char *salt,
 #endif
 	v = EVP_MD_block_size (md_type);
 	u = EVP_MD_size (md_type);
+	BIO_DEBUG("v %d u %d",v,u);
 	if (u < 0)
 	    return 0;
 	D = OPENSSL_malloc (v);
