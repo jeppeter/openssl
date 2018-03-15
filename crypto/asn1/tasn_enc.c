@@ -663,7 +663,7 @@ int asn1_ex_i2c(ASN1_VALUE **pval, unsigned char *cout, int *putype,
 		c = (unsigned char)*tbool;
 		cont = &c;
 		len = 1;
-		BIO_DEBUG("[%p]V_ASN1_BOOLEAN cont[%d] len[1]",pval,cont);
+		BIO_DEBUG("[%p]V_ASN1_BOOLEAN cont[%ld] len[1]",pval,cont);
 		break;
 
 		case V_ASN1_BIT_STRING:

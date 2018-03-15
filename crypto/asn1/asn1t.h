@@ -577,6 +577,11 @@ const char *sname;		/* Structure name */
 #endif
 };
 
+char* format_ASN1_ADB_TABLE(const ASN1_ADB_TABLE* adbtbl);
+char* format_ASN1_ADB(const ASN1_ADB* adb);
+char* format_ASN1_TEMPLATE(const ASN1_TEMPLATE* template);
+char* format_ASN1_ITEM(const ASN1_ITEM* it);
+
 /* These are values for the itype field and
  * determine how the type is interpreted.
  *

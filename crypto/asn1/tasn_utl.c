@@ -69,6 +69,160 @@
 /* Add 'offset' to 'addr' */
 #define offset2ptr(addr, offset) (void *)(((char *) addr) + offset)
 
+char* format_ASN1_ADB_TABLE(const ASN1_ADB_TABLE* adbtbl)
+	{
+		static char st_asn1_adb_table_buf[2048];
+		char* ptr;
+		int leftlen = sizeof(st_asn1_adb_table_buf);
+		int ret;
+		ptr = st_asn1_adb_table_buf;
+		if (adbtbl != NULL) {
+			ret = snprintf(ptr,leftlen,"ASN1_ADB_TABLE[%p];value[%ld:0x%lx];tt[%s];", adbtbl, adbtbl->value, adbtbl->value,format_ASN1_TEMPLATE(&(adbtbl->tt)));
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+		} else {
+			ret = snprintf(ptr,leftlen,"ASN1_ADB_TABLE[nil]");
+		}
+		return st_asn1_adb_table_buf;
+	}
+
+char* format_ASN1_ADB(const ASN1_ADB* adb)
+	{
+		static char st_asn1_adb_buf[2048];
+		char* ptr;
+		int leftlen = sizeof(st_asn1_adb_buf);
+		int ret;
+		int i;
+
+		ptr =st_asn1_adb_buf;
+		if (adb != NULL) {
+			ret = snprintf(ptr, leftlen, "ASN1_ADB[%p];flags[%ld:0x%lx];offset[%ld:0x%lx];", adb, adb->flags, adb->flags, adb->offset, adb->offset);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+
+			if (adb->app_items != NULL) {
+				for (i=0;adb->app_items[i] != NULL; i ++) {
+					ret = snprintf(ptr, leftlen, "app_items[%d][%p];",i, adb->app_items[i]);
+					if (ret >= 0 && ret < leftlen) {
+						ptr += ret;
+						leftlen -= ret;
+					}
+				}
+			}
+			ret = snprintf(ptr, leftlen, "%s",format_ASN1_ADB_TABLE(adb->tbl));
+			if (ret < 0) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+			ret = snprintf(ptr, leftlen,"tcount[%ld:0x%lx];default_tt[%s];null_tt[%s];",adb->tblcount, adb->tblcount, format_ASN1_TEMPLATE(adb->default_tt),format_ASN1_TEMPLATE(adb->null_tt));
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+		} else {
+			ret = snprintf(ptr,leftlen,"ASN1_ADB[nil]");
+		}
+		
+
+		return st_asn1_adb_buf;
+	}
+
+char* format_ASN1_TEMPLATE(const ASN1_TEMPLATE* template) 
+	{
+		static char st_asn1_template_buf[2048];
+		char* ptr;
+		int ret;
+		int leftlen = sizeof(st_asn1_template_buf);
+		ptr = st_asn1_template_buf;
+
+		if (template != NULL) {
+			ret = snprintf(ptr,leftlen,"ASN1_TEMPLATE[%p];",template);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+#ifndef NO_ASN1_FIELD_NAMES
+			ret = snprintf(ptr,leftlen,"field_name[%s];", template->field_name);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+#endif		
+			ret = snprintf(ptr,leftlen,"flags[%ld:0x%lx];tag[%ld:0x%lx];offset[%ld:0x%lx];", template->flags,template->flags, template->tag,template->tag, template->offset,template->offset);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+			ret = snprintf(ptr,leftlen,"item [%p];", template->item);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+		} else {
+			ret = snprintf(ptr,leftlen,"ASN1_TEMPLATE[nil]");
+		}
+		return st_asn1_template_buf;
+	}
+
+char* format_ASN1_ITEM(const ASN1_ITEM* it)
+	{
+		static char st_asn1_item_buf[2048];
+		int ret;
+		int leftlen = sizeof(st_asn1_item_buf);
+		char* ptr=NULL;
+		int i;
+		ptr = st_asn1_item_buf;
+
+		if (it != NULL) {
+			ret = snprintf(ptr,leftlen,"ASN1_ITEM[%p];",it);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+
+#ifndef NO_ASN1_FIELD_NAMES
+			ret = snprintf(ptr,leftlen,"name[%s];", it->sname);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+#endif			
+			ret = snprintf(ptr,leftlen,"itype[%d:0x%x];utype[%ld:0x%lx];tcount[%ld];", it->itype,it->itype,it->utype,it->utype,it->tcount);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+
+			for (i=0;i<it->tcount ;i ++) {
+				ret = snprintf(ptr, leftlen,"\n[%d]%s", i, format_ASN1_TEMPLATE(&(it->templates[i])));
+				if (ret >= 0 && ret < leftlen) {
+					ptr += ret;
+					leftlen -= ret;
+				}
+			}
+
+			if (it->tcount > 0){
+				ret = snprintf(ptr,leftlen,"\n");
+				if (ret >= 0 && ret < leftlen) {
+					ptr += ret;
+					leftlen -= ret;
+				}
+			}
+
+			ret = snprintf(ptr,leftlen,"funcs[%p];size[%ld:0x%lx];",it->funcs,it->size,it->size);
+			if (ret >= 0 && ret < leftlen) {
+				ptr += ret;
+				leftlen -= ret;
+			}
+		} else {
+			ret = snprintf(ptr,leftlen, "ASN1_ITEM[nil]");
+		}
+		return st_asn1_item_buf;
+	}
 /* Given an ASN1_ITEM CHOICE type return
  * the selector value
  */
