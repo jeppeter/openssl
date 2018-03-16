@@ -321,6 +321,7 @@ struct evp_cipher_st
 	void *app_data;		/* Application data */
 	} /* EVP_CIPHER */;
 
+char* format_EVP_CIPHER(EVP_CIPHER* cipher);
 /* Values for cipher flags */
 
 /* Modes for ciphers */

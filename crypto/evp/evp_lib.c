@@ -99,6 +99,37 @@ char* format_EVP_MD(EVP_MD* md)
 		return st_evp_md_buf;
 	}
 
+
+char* format_EVP_CIPHER(EVP_CIPHER* cipher)
+	{
+		static st_evp_cipher_buf[2048];
+		int leftlen = sizeof(st_evp_cipher_buf);
+		int ret;
+		char* ptr;
+		ptr = st_evp_cipher_buf;
+		if (cipher != NULL) {
+			FORMAT_SNPRINTF("EVP_CIPHER[%p];",cipher);
+			FORMAT_SNPRINTF("nid[%d:0x%x];block_size[%d:0x%x];key_len[%d:0x%x];iv_len[%d:0x%x];flags[%ld,0x%lx];", 
+				cipher->nid,cipher->nid,cipher->block_size, 
+				cipher->block_size,cipher->key_len,cipher->key_len,
+				cipher->iv_len,cipher->iv_len,
+				cipher->flags,cipher->flags);
+			FORMAT_SNPRINTF("init[%p];do_cipher[%p];cleanup[%p];,set_asn1_parameters[%p];get_asn1_parameters[%p];ctrl[%p];",
+				cipher->init,
+				cipher->do_cipher,
+				cipher->cleanup,
+				cipher->set_asn1_parameters,
+				cipher->get_asn1_parameters,
+				cipher->ctrl);
+			FORMAT_SNPRINTF("ctx_size[%d:0x%x];app_data[%p];",
+				cipher->ctx_size,cipher->ctx_size,
+				cipher->app_data);
+		} else {
+			FORMAT_SNPRINTF("EVP_CIPHER(nil)");
+		}
+		return st_evp_cipher_buf;
+	}
+
 int EVP_CIPHER_param_to_asn1(EVP_CIPHER_CTX *c, ASN1_TYPE *type)
 	{
 	int ret;

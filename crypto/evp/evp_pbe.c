@@ -79,6 +79,38 @@ typedef struct
 	EVP_PBE_KEYGEN *keygen;
 	} EVP_PBE_CTL;
 
+#define FORMAT_SNPRINTF(...)                                     \
+do {                                                             \
+	ret = snprintf(ptr, leftlen,__VA_ARGS__);                    \
+	if (ret >= 0 && ret < leftlen) {                             \
+		ptr += ret;                                              \
+		leftlen -= ret;                                          \
+	}                                                            \
+} while(0)
+
+
+char* format_EVP_PBE_CTL(EVP_PBE_CTL* ctl)
+	{
+		static char st_evp_pbe_ctl[2048];
+		int leftlen = sizeof(st_evp_pbe_ctl);
+		int ret;
+		char* ptr;
+		ptr = st_evp_pbe_ctl;
+		if (ctl != NULL) {
+			FORMAT_SNPRINTF("EVP_PBE_CTL[%p];", ctl);
+			FORMAT_SNPRINTF("pbe_type[%d:0x%x];pbe_nid[%d:0x%x];cipher_nid[%d:0x%x];md_nid[%d:0x%x];keygen[%p];",
+				ctl->pbe_type, ctl->pbe_type,
+				ctl->pbe_nid, ctl->pbe_nid,
+				ctl->cipher_nid, ctl->cipher_nid,
+				ctl->md_nid, ctl->md_nid,
+				ctl->keygen);
+		} else {
+			FORMAT_SNPRINTF("EVP_PBE_CTL(nil)");
+		}
+
+		return st_evp_pbe_ctl;
+	}
+
 static const EVP_PBE_CTL builtin_pbe[] = 
 	{
 	{EVP_PBE_TYPE_OUTER, NID_pbeWithMD2AndDES_CBC,
@@ -190,6 +222,8 @@ int EVP_PBE_CipherInit(ASN1_OBJECT *pbe_obj, const char *pass, int passlen,
 			return 0;
 			}
 		}
+	BIO_DEBUG("%s", format_EVP_CIPHER((EVP_CIPHER*)cipher));
+	BIO_DEBUG("cipher_nid[%d:0x%x]", cipher_nid,cipher_nid);
 
 	if (md_nid == -1)
 		md = NULL;
@@ -296,6 +330,7 @@ int EVP_PBE_find(int type, int pbe_nid,
 		pbetmp = OBJ_bsearch_pbe2(&pbelu, builtin_pbe,
 				     sizeof(builtin_pbe)/sizeof(EVP_PBE_CTL));
 		}
+	BIO_DEBUG("search [%d:0x%x]; pbe_nid[%d:0x%x] %s", type,type, pbe_nid,pbe_nid, format_EVP_PBE_CTL(pbetmp));
 	if (pbetmp == NULL)
 		return 0;
 	if (pcnid)
