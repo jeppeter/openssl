@@ -224,6 +224,8 @@ typedef struct asn1_object_st
 	int flags;	/* Should we free this one */
 	} ASN1_OBJECT;
 
+char* format_ASN1_OBJECT(ASN1_OBJECT* obj);
+
 #define ASN1_STRING_FLAG_BITS_LEFT 0x08 /* Set if 0x07 has bits left value */
 /* This indicates that the ASN1_STRING is not a real value but just a place
  * holder for the location where indefinite length constructed data should
@@ -554,6 +556,8 @@ typedef struct asn1_type_st
 		ASN1_VALUE *		asn1_value;
 		} value;
 	} ASN1_TYPE;
+
+char* format_ASN1_TYPE(ASN1_TYPE* ptype);
 
 DECLARE_STACK_OF(ASN1_TYPE)
 DECLARE_ASN1_SET_OF(ASN1_TYPE)

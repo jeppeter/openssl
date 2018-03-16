@@ -144,8 +144,7 @@ int ASN1_item_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
 	if (aux && aux->asn1_cb)
 		 asn1_cb = aux->asn1_cb;
 
-#ifdef ASN1_DEBUG_VALUE
-#endif	
+
 	switch(it->itype)
 		{
 

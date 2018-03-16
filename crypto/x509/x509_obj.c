@@ -63,6 +63,69 @@
 #include <openssl/x509.h>
 #include <openssl/buffer.h>
 
+
+
+#define FORMAT_SNPRINTF(...)                                     \
+do {                                                             \
+	ret = snprintf(ptr, leftlen,__VA_ARGS__);                    \
+	if (ret >= 0 && ret < leftlen) {                             \
+		ptr += ret;                                              \
+		leftlen -= ret;                                          \
+	}                                                            \
+} while(0)
+
+char* format_X509_ALGOR(X509_ALGOR* algo)
+	{
+		static char st_x509_algor_buf[2048];
+		char* ptr;
+		int leftlen = sizeof(st_x509_algor_buf);
+		int ret;
+		ptr = st_x509_algor_buf;
+		if (algo != NULL) {
+			FORMAT_SNPRINTF("X509_ALGOR[%p];", algo);
+			FORMAT_SNPRINTF("algorithm[%s];", format_ASN1_OBJECT(algo->algorithm));
+			FORMAT_SNPRINTF("parameter[%s];", format_ASN1_TYPE(algo->parameter));
+		} else {
+			FORMAT_SNPRINTF("X509_ALGOR(nil)");
+		}
+
+		return st_x509_algor_buf;
+	}
+
+char* format_PBEPARAM(PBEPARAM* pbe)
+	{
+		static char st_pbeparam_buf[2048];
+		char* ptr;
+		int leftlen = sizeof(st_pbeparam_buf);
+		int ret;
+		ptr = st_pbeparam_buf;
+		if (pbe != NULL) {
+			FORMAT_SNPRINTF("PBEPARAM[%p];", pbe);
+			FORMAT_SNPRINTF("salt[%s];", format_ASN1_STRING((ASN1_STRING*)pbe->salt));
+			FORMAT_SNPRINTF("iter[%s];", format_ASN1_STRING((ASN1_STRING*)pbe->iter));
+		} else {
+			FORMAT_SNPRINTF("PBEPARAM(nil)");
+		}
+		return st_pbeparam_buf;
+	}
+
+char* format_PBE2PARAM(PBE2PARAM* pbe2)
+	{
+		static char st_pbe2param_buf[2048];
+		int leftlen = sizeof(st_pbe2param_buf);
+		int ret;
+		char* ptr;
+		ptr = st_pbe2param_buf;
+		if (pbe2 != NULL) {
+			FORMAT_SNPRINTF("PBE2PARAM[%p];", pbe2);
+			FORMAT_SNPRINTF("keyfunc[%s];", format_X509_ALGOR(pbe2->keyfunc));
+			FORMAT_SNPRINTF("encryption[%s];", format_X509_ALGOR(pbe2->encryption));
+		} else {
+			FORMAT_SNPRINTF("PBE2PARAM(nil)");
+		}
+		return st_pbe2param_buf;
+	}
+
 char *X509_NAME_oneline(X509_NAME *a, char *buf, int len)
 	{
 	X509_NAME_ENTRY *ne;

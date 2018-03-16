@@ -149,6 +149,8 @@ struct X509_algor_st
 	ASN1_TYPE *parameter;
 	} /* X509_ALGOR */;
 
+char* format_X509_ALGOR(X509_ALGOR* algo);
+
 DECLARE_ASN1_SET_OF(X509_ALGOR)
 
 typedef STACK_OF(X509_ALGOR) X509_ALGORS;
@@ -570,12 +572,16 @@ ASN1_OCTET_STRING *salt;
 ASN1_INTEGER *iter;
 } PBEPARAM;
 
+char* format_PBEPARAM(PBEPARAM* pbe);
+
 /* Password based encryption V2 structures */
 
 typedef struct PBE2PARAM_st {
 X509_ALGOR *keyfunc;
 X509_ALGOR *encryption;
 } PBE2PARAM;
+
+char* format_PBE2PARAM(PBE2PARAM* pbe2);
 
 typedef struct PBKDF2PARAM_st {
 ASN1_TYPE *salt;	/* Usually OCTET STRING but could be anything */

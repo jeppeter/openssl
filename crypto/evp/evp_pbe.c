@@ -160,6 +160,9 @@ int EVP_PBE_CipherInit(ASN1_OBJECT *pbe_obj, const char *pass, int passlen,
 	int cipher_nid, md_nid;
 	EVP_PBE_KEYGEN *keygen;
 
+	BIO_DEBUG("pbe_obj [%s]", format_ASN1_OBJECT(pbe_obj));
+	BIO_DEBUG("param [%s]", format_ASN1_TYPE(param));
+
 	if (!EVP_PBE_find(EVP_PBE_TYPE_OUTER, OBJ_obj2nid(pbe_obj),
 					&cipher_nid, &md_nid, &keygen))
 		{

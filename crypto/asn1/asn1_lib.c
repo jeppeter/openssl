@@ -75,6 +75,39 @@ do {                                                             \
 	}                                                            \
 } while(0)
 
+char* format_ASN1_OBJECT(ASN1_OBJECT* obj)
+	{
+		static char st_asn1_object_buf[2048];
+		int leftlen = sizeof(st_asn1_object_buf);
+		int ret;
+		char* ptr = st_asn1_object_buf;
+		int i;
+		unsigned char* pcurdata;
+		if (obj != NULL) {
+			FORMAT_SNPRINTF("ASN1_OBJECT[%p];", obj);
+			FORMAT_SNPRINTF("sn[%p]ln[%p];", obj->sn, obj->ln);
+			FORMAT_SNPRINTF("nid[%d:0x%x];", obj->nid, obj->nid);
+			FORMAT_SNPRINTF("length[%d:0x%x];", obj->length, obj->length);
+			FORMAT_SNPRINTF("data[%p];", obj->data);
+			if (obj->length > 0) {
+				FORMAT_SNPRINTF("[");
+			}
+			for (i=0, pcurdata=(unsigned char*)obj->data;i<obj->length;i++, pcurdata ++) {
+				if (i > 0) {
+					FORMAT_SNPRINTF(",");
+				}
+				FORMAT_SNPRINTF("0x%02x",*pcurdata);
+			}
+			if (obj->length > 0) {
+				FORMAT_SNPRINTF("];");
+			}
+			FORMAT_SNPRINTF("flags[%d:0x%x];", obj->flags,obj->flags);
+		} else {
+			FORMAT_SNPRINTF("ASN1_OBJECT(nil)");
+		}
+
+		return st_asn1_object_buf;
+	}
 
 char* format_ASN1_STRING(ASN1_STRING* str)
 	{
@@ -82,15 +115,130 @@ char* format_ASN1_STRING(ASN1_STRING* str)
 		char* ptr;
 		int leftlen= sizeof(st_asn1_string_buf);
 		int ret;
+		int i;
+		unsigned char* pcurdata;
 		ptr = st_asn1_string_buf;
 		if (str != NULL) {
 			FORMAT_SNPRINTF("ASN1_STRING[%p];type[%d:0x%x];flags[%ld:0x%lx]",str, str->type, str->type, str->flags, str->flags);
 			FORMAT_SNPRINTF("data[%p];length[%d:0x%x];", str->data, str->length, str->length);
+			if (str->length > 0) {
+				FORMAT_SNPRINTF("[");
+			}
+			for (i=0, pcurdata= (unsigned char*)str->data;i<str->length;i++, pcurdata ++) {
+				if (i > 0) {
+					FORMAT_SNPRINTF(",");
+				}
+				FORMAT_SNPRINTF("0x%02x",*pcurdata);
+			}
+			if (str->length > 0) {
+				FORMAT_SNPRINTF("];");
+			}
 		} else {
 			FORMAT_SNPRINTF("ASN1_STRING[nil]");
 		}		
 
 		return st_asn1_string_buf;
+	}
+
+char* format_ASN1_TYPE(ASN1_TYPE* ptype)
+	{
+		static char st_asn1_type_buf[2048];
+		char* ptr;
+		int leftlen = sizeof(st_asn1_type_buf);
+		int ret;
+		ptr = st_asn1_type_buf;
+
+		if (ptype != NULL) {
+			FORMAT_SNPRINTF("ASN1_TYPE[%p];", ptype);
+			switch(ptype->type) {
+				case V_ASN1_EOC:
+					FORMAT_SNPRINTF("type[ASN1_EOC];");
+					FORMAT_SNPRINTF("value.ptr[%p];",ptype->value.ptr);
+					break;
+				case V_ASN1_BOOLEAN:
+					FORMAT_SNPRINTF("type[ASN1_BOOLEAN];");
+					FORMAT_SNPRINTF("value.boolean[%d:0x%x];", ptype->value.boolean, ptype->value.boolean);
+					break;
+				case V_ASN1_INTEGER:
+					FORMAT_SNPRINTF("type[ASN1_INTEGER];");
+					FORMAT_SNPRINTF("value.integer[%s];", format_ASN1_STRING((ASN1_STRING*) ptype->value.integer));
+				case V_ASN1_BIT_STRING:
+					FORMAT_SNPRINTF("type[ASN1_BIT_STRING];");
+					FORMAT_SNPRINTF("value.bit_string[%s];", format_ASN1_STRING((ASN1_STRING*) ptype->value.bit_string));
+				case V_ASN1_OCTET_STRING:
+					FORMAT_SNPRINTF("type[ASN1_OCTET_STRING];");
+					FORMAT_SNPRINTF("value.octet_string[%s];", format_ASN1_STRING((ASN1_STRING*) ptype->value.octet_string));
+				case V_ASN1_NULL:
+					FORMAT_SNPRINTF("type[ASN1_NULL];");
+				case V_ASN1_OBJECT:
+					FORMAT_SNPRINTF("type[ASN1_OBJECT];");
+					FORMAT_SNPRINTF("value.object[%s];", format_ASN1_OBJECT(ptype->value.object));
+				case V_ASN1_OBJECT_DESCRIPTOR:
+					FORMAT_SNPRINTF("type[ASN1_OBJECT_DESCRIPTOR];");
+					FORMAT_SNPRINTF("value.object[%s];", format_ASN1_OBJECT(ptype->value.object));
+				case V_ASN1_EXTERNAL:
+					FORMAT_SNPRINTF("type[ASN1_EXTERNAL];");
+					FORMAT_SNPRINTF("value.ptr[%p];", ptype->value.ptr);
+				case V_ASN1_REAL:
+					FORMAT_SNPRINTF("type[ASN1_REAL];");
+					FORMAT_SNPRINTF("value.object[%s];", format_ASN1_OBJECT(ptype->value.object));
+				case V_ASN1_ENUMERATED:
+					FORMAT_SNPRINTF("type[ASN1_ENUMERATED];");
+					FORMAT_SNPRINTF("value.enumerated[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.enumerated));
+				case V_ASN1_UTF8STRING:
+					FORMAT_SNPRINTF("type[ASN1_UTF8STRING];");
+					FORMAT_SNPRINTF("value.utf8string[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.utf8string));
+				case V_ASN1_SEQUENCE:
+					FORMAT_SNPRINTF("type[ASN1_SEQUENCE];");
+					FORMAT_SNPRINTF("value.sequence[%s];", format_ASN1_STRING(ptype->value.sequence));
+				case V_ASN1_SET:
+					FORMAT_SNPRINTF("type[ASN1_SET];");
+					FORMAT_SNPRINTF("value.set[%s];", format_ASN1_STRING(ptype->value.set));
+				case V_ASN1_NUMERICSTRING:
+					FORMAT_SNPRINTF("type[ASN1_NUMERICSTRING];");
+					FORMAT_SNPRINTF("value.asn1_string[%s];", format_ASN1_STRING(ptype->value.asn1_string));
+				case V_ASN1_PRINTABLESTRING:
+					FORMAT_SNPRINTF("type[ASN1_PRINTABLESTRING];");
+					FORMAT_SNPRINTF("value.printablestring[%s];", format_ASN1_STRING(ptype->value.printablestring));
+				case V_ASN1_TELETEXSTRING:
+					FORMAT_SNPRINTF("type[ASN1_TELETEXSTRING];");
+					FORMAT_SNPRINTF("value.asn1_string[%s];", format_ASN1_STRING(ptype->value.asn1_string));
+				case V_ASN1_VIDEOTEXSTRING:
+					FORMAT_SNPRINTF("type[ASN1_VIDEOTEXSTRING];");
+					FORMAT_SNPRINTF("value.asn1_string[%s];", format_ASN1_STRING(ptype->value.asn1_string));
+				case V_ASN1_IA5STRING:
+					FORMAT_SNPRINTF("type[ASN1_IA5STRING];");
+					FORMAT_SNPRINTF("value.ia5string[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.ia5string));
+				case V_ASN1_UTCTIME:
+					FORMAT_SNPRINTF("type[ASN1_UTCTIME];");
+					FORMAT_SNPRINTF("value.utctime[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.utctime));
+				case V_ASN1_GENERALIZEDTIME:
+					FORMAT_SNPRINTF("type[ASN1_GENERALIZEDTIME];");
+					FORMAT_SNPRINTF("value.generalizedtime[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.generalizedtime));
+				case V_ASN1_GRAPHICSTRING:
+					FORMAT_SNPRINTF("type[ASN1_GRAPHICSTRING];");
+					FORMAT_SNPRINTF("value.asn1_string[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.asn1_string));
+				case V_ASN1_VISIBLESTRING:
+					FORMAT_SNPRINTF("type[ASN1_VISILESTRING];");
+					FORMAT_SNPRINTF("value.visiblestring[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.visiblestring));
+				case V_ASN1_GENERALSTRING:
+					FORMAT_SNPRINTF("type[ASN1_GENERALSTRING];");
+					FORMAT_SNPRINTF("value.generalstring[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.generalstring));
+				case V_ASN1_UNIVERSALSTRING:
+					FORMAT_SNPRINTF("type[ASN1_UNIVERSALSTRING];");
+					FORMAT_SNPRINTF("value.universalstring[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.universalstring));
+				case V_ASN1_BMPSTRING:
+					FORMAT_SNPRINTF("type[ASN1_BMPSTRING];");
+					FORMAT_SNPRINTF("value.bmpstring[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.bmpstring));
+				default:
+					FORMAT_SNPRINTF("type[unknown:%d:0x%x];", ptype->type, ptype->type);
+					FORMAT_SNPRINTF("value.ptr[%p];", ptype->value.ptr);
+			}
+		} else {
+			FORMAT_SNPRINTF("ASN1_TYPE(nil)");
+		}
+
+		return st_asn1_type_buf;
 	}
 
 static int _asn1_check_infinite_end(const unsigned char **p, long len)
