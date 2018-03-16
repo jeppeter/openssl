@@ -483,7 +483,6 @@ CMS_ContentInfo *CMS_sign(X509 *signcert, EVP_PKEY *pkey, STACK_OF(X509) *certs,
 	if(!(flags & CMS_DETACHED)){
 		CMS_set_detached(cms, 0);
 	}
-		CMS_STREAM,CMS_PARTIAL);
 
 	if ((flags & (CMS_STREAM|CMS_PARTIAL))
 		|| CMS_final(cms, data, NULL, flags))
