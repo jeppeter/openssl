@@ -279,6 +279,8 @@ typedef struct ENGINE_CMD_DEFN_st
 	unsigned int cmd_flags; /* The input the command expects */
 	} ENGINE_CMD_DEFN;
 
+char* format_ENGINE_CMD_DEFN(ENGINE_CMD_DEFN* defn);
+
 /* Generic function pointer */
 typedef int (*ENGINE_GEN_FUNC_PTR)(void);
 /* Generic function pointer taking no arguments */

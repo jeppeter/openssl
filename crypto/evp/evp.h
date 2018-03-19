@@ -434,6 +434,8 @@ struct evp_cipher_ctx_st
 	unsigned char final[EVP_MAX_BLOCK_LENGTH];/* possible final block */
 	} /* EVP_CIPHER_CTX */;
 
+char* format_EVP_CIPHER_CTX(EVP_CIPHER_CTX* ctx);
+
 typedef struct evp_Encode_Ctx_st
 	{
 	int num;	/* number saved in a partial encode/decode */

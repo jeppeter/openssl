@@ -235,6 +235,8 @@ int PKCS5_v2_PBE_keyivgen(EVP_CIPHER_CTX *ctx, const char *pass, int passlen,
 		goto err;
 	}
 
+	BIO_DEBUG("%s", format_EVP_CIPHER(cipher));
+
 	/* Fixup cipher based on AlgorithmIdentifier */
 	if (!EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, en_de))
 		goto err;
@@ -281,6 +283,7 @@ int PKCS5_v2_PBKDF2_keyivgen(EVP_CIPHER_CTX *ctx, const char *pass, int passlen,
 
 	pbuf = param->value.sequence->data;
 	plen = param->value.sequence->length;
+	BIO_DEBUG("%s", format_ASN1_TYPE(param));
 
 	if(!(kdf = d2i_PBKDF2PARAM(NULL, &pbuf, plen)) ) {
 		EVPerr(EVP_F_PKCS5_V2_PBKDF2_KEYIVGEN,EVP_R_DECODE_ERROR);

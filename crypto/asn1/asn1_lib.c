@@ -77,7 +77,7 @@ do {                                                             \
 
 char* format_ASN1_OBJECT(ASN1_OBJECT* obj)
 	{
-		static char st_asn1_object_buf[2048];
+		static char st_asn1_object_buf[4096];
 		int leftlen = sizeof(st_asn1_object_buf);
 		int ret;
 		char* ptr = st_asn1_object_buf;
@@ -117,6 +117,7 @@ char* format_ASN1_STRING(ASN1_STRING* str)
 		int ret;
 		int i;
 		unsigned char* pcurdata;
+		memset(st_asn1_string_buf,0, sizeof(st_asn1_string_buf));
 		ptr = st_asn1_string_buf;
 		if (str != NULL) {
 			FORMAT_SNPRINTF("ASN1_STRING[%p];type[%d:0x%x];flags[%ld:0x%lx]",str, str->type, str->type, str->flags, str->flags);
@@ -162,77 +163,102 @@ char* format_ASN1_TYPE(ASN1_TYPE* ptype)
 				case V_ASN1_INTEGER:
 					FORMAT_SNPRINTF("type[ASN1_INTEGER];");
 					FORMAT_SNPRINTF("value.integer[%s];", format_ASN1_STRING((ASN1_STRING*) ptype->value.integer));
+					break;
 				case V_ASN1_BIT_STRING:
 					FORMAT_SNPRINTF("type[ASN1_BIT_STRING];");
 					FORMAT_SNPRINTF("value.bit_string[%s];", format_ASN1_STRING((ASN1_STRING*) ptype->value.bit_string));
+					break;
 				case V_ASN1_OCTET_STRING:
 					FORMAT_SNPRINTF("type[ASN1_OCTET_STRING];");
 					FORMAT_SNPRINTF("value.octet_string[%s];", format_ASN1_STRING((ASN1_STRING*) ptype->value.octet_string));
+					break;
 				case V_ASN1_NULL:
 					FORMAT_SNPRINTF("type[ASN1_NULL];");
+					break;
 				case V_ASN1_OBJECT:
 					FORMAT_SNPRINTF("type[ASN1_OBJECT];");
 					FORMAT_SNPRINTF("value.object[%s];", format_ASN1_OBJECT(ptype->value.object));
+					break;
 				case V_ASN1_OBJECT_DESCRIPTOR:
 					FORMAT_SNPRINTF("type[ASN1_OBJECT_DESCRIPTOR];");
 					FORMAT_SNPRINTF("value.object[%s];", format_ASN1_OBJECT(ptype->value.object));
+					break;
 				case V_ASN1_EXTERNAL:
 					FORMAT_SNPRINTF("type[ASN1_EXTERNAL];");
 					FORMAT_SNPRINTF("value.ptr[%p];", ptype->value.ptr);
+					break;
 				case V_ASN1_REAL:
 					FORMAT_SNPRINTF("type[ASN1_REAL];");
 					FORMAT_SNPRINTF("value.object[%s];", format_ASN1_OBJECT(ptype->value.object));
+					break;
 				case V_ASN1_ENUMERATED:
 					FORMAT_SNPRINTF("type[ASN1_ENUMERATED];");
 					FORMAT_SNPRINTF("value.enumerated[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.enumerated));
+					break;
 				case V_ASN1_UTF8STRING:
 					FORMAT_SNPRINTF("type[ASN1_UTF8STRING];");
 					FORMAT_SNPRINTF("value.utf8string[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.utf8string));
+					break;
 				case V_ASN1_SEQUENCE:
 					FORMAT_SNPRINTF("type[ASN1_SEQUENCE];");
 					FORMAT_SNPRINTF("value.sequence[%s];", format_ASN1_STRING(ptype->value.sequence));
+					break;
 				case V_ASN1_SET:
 					FORMAT_SNPRINTF("type[ASN1_SET];");
 					FORMAT_SNPRINTF("value.set[%s];", format_ASN1_STRING(ptype->value.set));
+					break;
 				case V_ASN1_NUMERICSTRING:
 					FORMAT_SNPRINTF("type[ASN1_NUMERICSTRING];");
 					FORMAT_SNPRINTF("value.asn1_string[%s];", format_ASN1_STRING(ptype->value.asn1_string));
+					break;
 				case V_ASN1_PRINTABLESTRING:
 					FORMAT_SNPRINTF("type[ASN1_PRINTABLESTRING];");
 					FORMAT_SNPRINTF("value.printablestring[%s];", format_ASN1_STRING(ptype->value.printablestring));
+					break;
 				case V_ASN1_TELETEXSTRING:
 					FORMAT_SNPRINTF("type[ASN1_TELETEXSTRING];");
 					FORMAT_SNPRINTF("value.asn1_string[%s];", format_ASN1_STRING(ptype->value.asn1_string));
+					break;
 				case V_ASN1_VIDEOTEXSTRING:
 					FORMAT_SNPRINTF("type[ASN1_VIDEOTEXSTRING];");
 					FORMAT_SNPRINTF("value.asn1_string[%s];", format_ASN1_STRING(ptype->value.asn1_string));
+					break;
 				case V_ASN1_IA5STRING:
 					FORMAT_SNPRINTF("type[ASN1_IA5STRING];");
 					FORMAT_SNPRINTF("value.ia5string[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.ia5string));
+					break;
 				case V_ASN1_UTCTIME:
 					FORMAT_SNPRINTF("type[ASN1_UTCTIME];");
 					FORMAT_SNPRINTF("value.utctime[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.utctime));
+					break;
 				case V_ASN1_GENERALIZEDTIME:
 					FORMAT_SNPRINTF("type[ASN1_GENERALIZEDTIME];");
 					FORMAT_SNPRINTF("value.generalizedtime[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.generalizedtime));
+					break;
 				case V_ASN1_GRAPHICSTRING:
 					FORMAT_SNPRINTF("type[ASN1_GRAPHICSTRING];");
 					FORMAT_SNPRINTF("value.asn1_string[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.asn1_string));
+					break;
 				case V_ASN1_VISIBLESTRING:
 					FORMAT_SNPRINTF("type[ASN1_VISILESTRING];");
 					FORMAT_SNPRINTF("value.visiblestring[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.visiblestring));
+					break;
 				case V_ASN1_GENERALSTRING:
 					FORMAT_SNPRINTF("type[ASN1_GENERALSTRING];");
 					FORMAT_SNPRINTF("value.generalstring[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.generalstring));
+					break;
 				case V_ASN1_UNIVERSALSTRING:
 					FORMAT_SNPRINTF("type[ASN1_UNIVERSALSTRING];");
 					FORMAT_SNPRINTF("value.universalstring[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.universalstring));
+					break;
 				case V_ASN1_BMPSTRING:
 					FORMAT_SNPRINTF("type[ASN1_BMPSTRING];");
 					FORMAT_SNPRINTF("value.bmpstring[%s];", format_ASN1_STRING((ASN1_STRING*)ptype->value.bmpstring));
+					break;
 				default:
 					FORMAT_SNPRINTF("type[unknown:%d:0x%x];", ptype->type, ptype->type);
 					FORMAT_SNPRINTF("value.ptr[%p];", ptype->value.ptr);
+					break;
 			}
 		} else {
 			FORMAT_SNPRINTF("ASN1_TYPE(nil)");

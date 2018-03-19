@@ -199,6 +199,8 @@ struct engine_st
 	struct engine_st *next;
 	};
 
+char* format_ENGINE(ENGINE* eng);
+
 #ifdef  __cplusplus
 }
 #endif

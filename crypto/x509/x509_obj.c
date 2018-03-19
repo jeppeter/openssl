@@ -76,7 +76,7 @@ do {                                                             \
 
 char* format_X509_ALGOR(X509_ALGOR* algo)
 	{
-		static char st_x509_algor_buf[2048];
+		static char st_x509_algor_buf[4096];
 		char* ptr;
 		int leftlen = sizeof(st_x509_algor_buf);
 		int ret;
@@ -94,7 +94,7 @@ char* format_X509_ALGOR(X509_ALGOR* algo)
 
 char* format_PBEPARAM(PBEPARAM* pbe)
 	{
-		static char st_pbeparam_buf[2048];
+		static char st_pbeparam_buf[4096];
 		char* ptr;
 		int leftlen = sizeof(st_pbeparam_buf);
 		int ret;
@@ -111,7 +111,7 @@ char* format_PBEPARAM(PBEPARAM* pbe)
 
 char* format_PBE2PARAM(PBE2PARAM* pbe2)
 	{
-		static char st_pbe2param_buf[2048];
+		static char st_pbe2param_buf[4096];
 		int leftlen = sizeof(st_pbe2param_buf);
 		int ret;
 		char* ptr;
