@@ -1,0 +1,339 @@
+From db1d92e0ccd5509bda22a49ff110b7fdd3503824 Mon Sep 17 00:00:00 2001
+From: Dmitry Belyavskiy <beldmit@gmail.com>
+Date: Wed, 13 Apr 2022 12:32:14 +0200
+Subject: [PATCH 1/5] Public API functions OPENSSL_str[n]casecmp
+
+Reviewed-by: Tim Hudson <tjh@openssl.org>
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18103)
+
+Origin: https://github.com/openssl/openssl/pull/18103
+Applied-Upstream: 3.0.3, master@2022-04-22
+---
+ crypto/context.c                |   4 +-
+ crypto/ctype.c                  | 100 ++++++++++++++++++++++++++++++++
+ crypto/init.c                   |   7 +++
+ doc/build.info                  |   6 ++
+ doc/man3/OPENSSL_strcasecmp.pod |  47 +++++++++++++++
+ e_os.h                          |   2 -
+ include/crypto/ctype.h          |   2 +
+ include/internal/core.h         |   2 +
+ include/openssl/crypto.h.in     |   2 +
+ util/libcrypto.num              |   2 +
+ 10 files changed, 171 insertions(+), 3 deletions(-)
+ create mode 100644 doc/man3/OPENSSL_strcasecmp.pod
+
+diff --git a/crypto/context.c b/crypto/context.c
+index 3333af4c53..4fef24cadd 100644
+--- a/crypto/context.c
++++ b/crypto/context.c
+@@ -14,6 +14,7 @@
+ #include "internal/core.h"
+ #include "internal/bio.h"
+ #include "internal/provider.h"
++#include "crypto/ctype.h"
+ 
+ struct ossl_lib_ctx_onfree_list_st {
+     ossl_lib_ctx_onfree_fn *fn;
+@@ -150,7 +151,8 @@ static CRYPTO_THREAD_LOCAL default_context_thread_local;
+ DEFINE_RUN_ONCE_STATIC(default_context_do_init)
+ {
+     return CRYPTO_THREAD_init_local(&default_context_thread_local, NULL)
+-        && context_init(&default_context_int);
++        && context_init(&default_context_int)
++        && ossl_init_casecmp();
+ }
+ 
+ void ossl_lib_ctx_default_deinit(void)
+diff --git a/crypto/ctype.c b/crypto/ctype.c
+index 83c24a546f..321306eb5f 100644
+--- a/crypto/ctype.c
++++ b/crypto/ctype.c
+@@ -12,6 +12,19 @@
+ #include "crypto/ctype.h"
+ #include <openssl/ebcdic.h>
+ 
++#include <openssl/crypto.h>
++#include "internal/core.h"
++#include "internal/thread_once.h"
++
++#ifndef OPENSSL_SYS_WINDOWS
++#include <strings.h>
++#endif
++#include <locale.h>
++
++#ifdef OPENSSL_SYS_MACOSX
++#include <xlocale.h>
++#endif
++
+ /*
+  * Define the character classes for each character in the seven bit ASCII
+  * character set.  This is independent of the host's character set, characters
+@@ -278,3 +291,90 @@ int ossl_ascii_isdigit(const char inchar) {
+         return 1;
+     return 0;
+ }
++
++/* str[n]casecmp_l is defined in POSIX 2008-01. Value is taken accordingly
++ * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html */
++
++#if (defined OPENSSL_SYS_WINDOWS) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L)
++
++# if defined OPENSSL_SYS_WINDOWS
++# define locale_t _locale_t
++# define freelocale _free_locale
++# define strcasecmp_l _stricmp_l
++# define strncasecmp_l _strnicmp_l
++# endif
++
++# ifndef FIPS_MODULE
++static locale_t loc;
++
++static int locale_base_inited = 0;
++static CRYPTO_ONCE locale_base = CRYPTO_ONCE_STATIC_INIT;
++static CRYPTO_ONCE locale_base_deinit = CRYPTO_ONCE_STATIC_INIT;
++
++void *ossl_c_locale() {
++    return (void *)loc;
++}
++
++DEFINE_RUN_ONCE_STATIC(ossl_init_locale_base)
++{
++# ifdef OPENSSL_SYS_WINDOWS
++    loc = _create_locale(LC_COLLATE, "C");
++# else
++    loc = newlocale(LC_COLLATE_MASK, "C", (locale_t) 0);
++# endif
++    locale_base_inited = 1;
++    return (loc == (locale_t) 0) ? 0 : 1;
++}
++
++DEFINE_RUN_ONCE_STATIC(ossl_deinit_locale_base)
++{
++    if (locale_base_inited && loc) {
++        freelocale(loc);
++        loc = NULL;
++    }
++    return 1;
++}
++
++int ossl_init_casecmp()
++{
++   return RUN_ONCE(&locale_base, ossl_init_locale_base);
++}
++
++void ossl_deinit_casecmp() {
++    (void)RUN_ONCE(&locale_base_deinit, ossl_deinit_locale_base);
++}
++# endif
++
++int OPENSSL_strcasecmp(const char *s1, const char *s2)
++{
++    return strcasecmp_l(s1, s2, (locale_t)ossl_c_locale());
++}
++
++int OPENSSL_strncasecmp(const char *s1, const char *s2, size_t n)
++{
++    return strncasecmp_l(s1, s2, n, (locale_t)ossl_c_locale());
++}
++#else
++# ifndef FIPS_MODULE
++void *ossl_c_locale() {
++    return NULL;
++}
++# endif
++
++int ossl_init_casecmp() {
++    return 1;
++}
++
++void ossl_deinit_casecmp() {
++}
++
++int OPENSSL_strcasecmp(const char *s1, const char *s2)
++{
++    return strcasecmp(s1, s2);
++}
++
++int OPENSSL_strncasecmp(const char *s1, const char *s2, size_t n)
++{
++    return strncasecmp(s1, s2, n);
++}
++#endif
+diff --git a/crypto/init.c b/crypto/init.c
+index 6a27d1a8e4..1569c35a6b 100644
+--- a/crypto/init.c
++++ b/crypto/init.c
+@@ -32,6 +32,7 @@
+ #include "crypto/store.h"
+ #include <openssl/cmp_util.h> /* for OSSL_CMP_log_close() */
+ #include <openssl/trace.h>
++#include "crypto/ctype.h"
+ 
+ static int stopped = 0;
+ static uint64_t optsdone = 0;
+@@ -447,6 +448,9 @@ void OPENSSL_cleanup(void)
+     OSSL_TRACE(INIT, "OPENSSL_cleanup: ossl_trace_cleanup()\n");
+     ossl_trace_cleanup();
+ 
++    OSSL_TRACE(INIT, "OPENSSL_cleanup: ossl_deinit_casecmp()\n");
++    ossl_deinit_casecmp();
++
+     base_inited = 0;
+ }
+ 
+@@ -460,6 +464,9 @@ int OPENSSL_init_crypto(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings)
+     uint64_t tmp;
+     int aloaddone = 0;
+ 
++    if (!ossl_init_casecmp())
++        return 0;
++
+    /* Applications depend on 0 being returned when cleanup was already done */
+     if (stopped) {
+         if (!(opts & OPENSSL_INIT_BASE_ONLY))
+diff --git a/doc/build.info b/doc/build.info
+index c1d98a4ca6..7e86de588a 100644
+--- a/doc/build.info
++++ b/doc/build.info
+@@ -1531,6 +1531,10 @@ DEPEND[html/man3/OPENSSL_secure_malloc.html]=man3/OPENSSL_secure_malloc.pod
+ GENERATE[html/man3/OPENSSL_secure_malloc.html]=man3/OPENSSL_secure_malloc.pod
+ DEPEND[man/man3/OPENSSL_secure_malloc.3]=man3/OPENSSL_secure_malloc.pod
+ GENERATE[man/man3/OPENSSL_secure_malloc.3]=man3/OPENSSL_secure_malloc.pod
++DEPEND[html/man3/OPENSSL_strcasecmp.html]=man3/OPENSSL_strcasecmp.pod
++GENERATE[html/man3/OPENSSL_strcasecmp.html]=man3/OPENSSL_strcasecmp.pod
++DEPEND[man/man3/OPENSSL_strcasecmp.3]=man3/OPENSSL_strcasecmp.pod
++GENERATE[man/man3/OPENSSL_strcasecmp.3]=man3/OPENSSL_strcasecmp.pod
+ DEPEND[html/man3/OSSL_CMP_CTX_new.html]=man3/OSSL_CMP_CTX_new.pod
+ GENERATE[html/man3/OSSL_CMP_CTX_new.html]=man3/OSSL_CMP_CTX_new.pod
+ DEPEND[man/man3/OSSL_CMP_CTX_new.3]=man3/OSSL_CMP_CTX_new.pod
+@@ -3110,6 +3114,7 @@ html/man3/OPENSSL_load_builtin_modules.html \
+ html/man3/OPENSSL_malloc.html \
+ html/man3/OPENSSL_s390xcap.html \
+ html/man3/OPENSSL_secure_malloc.html \
++html/man3/OPENSSL_strcasecmp.html \
+ html/man3/OSSL_CMP_CTX_new.html \
+ html/man3/OSSL_CMP_HDR_get0_transactionID.html \
+ html/man3/OSSL_CMP_ITAV_set0.html \
+@@ -3704,6 +3709,7 @@ man/man3/OPENSSL_load_builtin_modules.3 \
+ man/man3/OPENSSL_malloc.3 \
+ man/man3/OPENSSL_s390xcap.3 \
+ man/man3/OPENSSL_secure_malloc.3 \
++man/man3/OPENSSL_strcasecmp.3 \
+ man/man3/OSSL_CMP_CTX_new.3 \
+ man/man3/OSSL_CMP_HDR_get0_transactionID.3 \
+ man/man3/OSSL_CMP_ITAV_set0.3 \
+diff --git a/doc/man3/OPENSSL_strcasecmp.pod b/doc/man3/OPENSSL_strcasecmp.pod
+new file mode 100644
+index 0000000000..1bb8b18c50
+--- /dev/null
++++ b/doc/man3/OPENSSL_strcasecmp.pod
+@@ -0,0 +1,47 @@
++=pod
++
++=head1 NAME
++
++OPENSSL_strcasecmp, OPENSSL_strncasecmp - compare two strings ignoring case
++
++=head1 SYNOPSIS
++
++ #include <openssl/crypto.h>
++
++ int OPENSSL_strcasecmp(const char *s1, const char *s2);
++ int OPENSSL_strncasecmp(const char *s1, const char *s2, size_t n);
++
++=head1 DESCRIPTION
++
++The OPENSSL_strcasecmp function performs a byte-by-byte comparison of the strings
++B<s1> and B<s2>, ignoring the case of the characters.
++
++The OPENSSL_strncasecmp function is similar, except that it compares no more than
++B<n> bytes of B<s1> and B<s2>.
++
++In POSIX-compatible system and on Windows these functions use "C" locale for
++case insensitive. Otherwise the comparison is done in current locale.
++
++=head1 RETURN VALUES
++
++Both functions return an integer less than, equal to, or greater than zero if
++s1 is found, respectively, to be less than, to match, or be greater than s2.
++
++=head1 NOTES
++
++OpenSSL extensively uses case insensitive comparison of ASCII strings. Though
++OpenSSL itself is locale-agnostic, the applications using OpenSSL libraries may
++unpredictably suffer when they use localization (e.g. Turkish locale is
++well-known with a specific I/i cases). These functions use C locale for string
++comparison.
++
++=head1 COPYRIGHT
++
++Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
++
++Licensed under the Apache License 2.0 (the "License").  You may not use
++this file except in compliance with the License.  You can obtain a copy
++in the file LICENSE in the source distribution or at
++L<https://www.openssl.org/source/license.html>.
++
++=cut
+diff --git a/e_os.h b/e_os.h
+index e1608ae55d..5490a48fcd 100644
+--- a/e_os.h
++++ b/e_os.h
+@@ -249,8 +249,6 @@ FILE *__iob_func();
+ /***********************************************/
+ 
+ # if defined(OPENSSL_SYS_WINDOWS)
+-#  define strcasecmp _stricmp
+-#  define strncasecmp _strnicmp
+ #  if (_MSC_VER >= 1310) && !defined(_WIN32_WCE)
+ #   define open _open
+ #   define fdopen _fdopen
+diff --git a/include/crypto/ctype.h b/include/crypto/ctype.h
+index a35c137e84..44fa9a8ae9 100644
+--- a/include/crypto/ctype.h
++++ b/include/crypto/ctype.h
+@@ -80,4 +80,6 @@ int ossl_ascii_isdigit(const char inchar);
+ # define ossl_isbase64(c)       (ossl_ctype_check((c), CTYPE_MASK_base64))
+ # define ossl_isasn1print(c)    (ossl_ctype_check((c), CTYPE_MASK_asn1print))
+ 
++int ossl_init_casecmp(void);
++void ossl_deinit_casecmp(void);
+ #endif
+diff --git a/include/internal/core.h b/include/internal/core.h
+index d9dc424164..b63af84787 100644
+--- a/include/internal/core.h
++++ b/include/internal/core.h
+@@ -63,4 +63,6 @@ __owur int ossl_lib_ctx_read_lock(OSSL_LIB_CTX *ctx);
+ int ossl_lib_ctx_unlock(OSSL_LIB_CTX *ctx);
+ int ossl_lib_ctx_is_child(OSSL_LIB_CTX *ctx);
+ 
++void *ossl_c_locale(void);
++
+ #endif
+diff --git a/include/openssl/crypto.h.in b/include/openssl/crypto.h.in
+index c56885d2d6..7232f647e8 100644
+--- a/include/openssl/crypto.h.in
++++ b/include/openssl/crypto.h.in
+@@ -133,6 +133,8 @@ int OPENSSL_hexstr2buf_ex(unsigned char *buf, size_t buf_n, size_t *buflen,
+                           const char *str, const char sep);
+ unsigned char *OPENSSL_hexstr2buf(const char *str, long *buflen);
+ int OPENSSL_hexchar2int(unsigned char c);
++int OPENSSL_strcasecmp(const char *s1, const char *s2);
++int OPENSSL_strncasecmp(const char *s1, const char *s2, size_t n);
+ 
+ # define OPENSSL_MALLOC_MAX_NELEMS(type)  (((1U<<(sizeof(int)*8-1))-1)/sizeof(type))
+ 
+diff --git a/util/libcrypto.num b/util/libcrypto.num
+index 10b4e57d79..1b9b23878e 100644
+--- a/util/libcrypto.num
++++ b/util/libcrypto.num
+@@ -5425,3 +5425,5 @@ ASN1_item_d2i_ex                        5552	3_0_0	EXIST::FUNCTION:
+ ASN1_TIME_print_ex                      5553	3_0_0	EXIST::FUNCTION:
+ EVP_PKEY_get0_provider                  5554	3_0_0	EXIST::FUNCTION:
+ EVP_PKEY_CTX_get0_provider              5555	3_0_0	EXIST::FUNCTION:
++OPENSSL_strcasecmp                      ?	3_0_3	EXIST::FUNCTION:
++OPENSSL_strncasecmp                     ?	3_0_3	EXIST::FUNCTION:
+-- 
+2.34.1
+

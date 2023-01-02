@@ -84,3 +84,30 @@ msgid ""
 "start'."
 msgstr ""
 "Budete ich musieť reštartovať ručne spustením „/etc/init.d/<service> start“."
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid "Restart services during package upgrades without asking?"
+msgstr "Reštartovať služby počas aktualizácie balíka bez pýtania sa?"
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid ""
+"There are services installed on your system which need to be restarted when "
+"certain libraries, such as libpam, libc, and libssl, are upgraded. Since "
+"these restarts may cause interruptions of service for the system, you will "
+"normally be prompted on each upgrade for the list of services you wish to "
+"restart.  You can choose this option to avoid being prompted; instead, all "
+"necessary restarts will be done for you automatically so you can avoid being "
+"asked questions on each library upgrade."
+msgstr ""
+"Na vašom systéme sú nainštalované služby, ktoré je potrebné reštartovať pri "
+"aktualizácii určitých knižníc ako libpam, libc, a libssl. Keďže tieto "
+"reštarty môžu spôsobiť prerušenie služby systému, za bežných okolností sa "
+"vám systém správy balíkov pri každej aktualizácii ponúkne zoznam služieb, "
+"ktoré chcete reštartovať. Môžete zvoliť, aby sa vás systém správy balíkov už "
+"viac nepýtal, ale aby sa namiesto toho všetky potrebné reštarty vykonávali "
+"automaticky, takže sa vyhnete kladeniu otázok pri každej aktualizácii "
+"knižnice."

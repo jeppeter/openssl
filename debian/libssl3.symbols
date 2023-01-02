@@ -1,0 +1,10 @@
+libcrypto.so.3 libssl3 #MINVER#
+* Build-Depends-Package: libssl-dev
+ *@OPENSSL_3.0.0 3.0.0~~alpha1
+ OPENSSL_3.0.3@OPENSSL_3.0.3 3.0.2-0ubuntu1.2
+ OPENSSL_strcasecmp@OPENSSL_3.0.3 3.0.2-0ubuntu1.2
+ OPENSSL_strncasecmp@OPENSSL_3.0.3 3.0.2-0ubuntu1.2
+
+libssl.so.3 libssl3 #MINVER#
+* Build-Depends-Package: libssl-dev
+ *@OPENSSL_3.0.0 3.0.0~~alpha1

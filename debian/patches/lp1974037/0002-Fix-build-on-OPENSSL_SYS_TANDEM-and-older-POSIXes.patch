@@ -1,0 +1,226 @@
+From 53826887174e816db5c45265f0817f3371f8220d Mon Sep 17 00:00:00 2001
+From: Tomas Mraz <tomas@openssl.org>
+Date: Wed, 4 May 2022 16:58:06 +0200
+Subject: [PATCH 02/11] Fix build on OPENSSL_SYS_TANDEM and older POSIXes
+
+It also allows for passing -DOPENSSL_NO_LOCALE as a workaround
+to ./Configure command.
+
+Fixes #18233
+
+Reviewed-by: Dmitry Belyavskiy <beldmit@gmail.com>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18293)
+
+Origin: upstream, https://github.com/openssl/openssl/pull/18293
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1974037
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010958
+Applied-Upstream: 3.0 branch (probably upcoming 3.0.4)
+---
+ crypto/ctype.c            | 28 +++++++---------------------
+ e_os.h                    | 19 +++++++++++++++++++
+ providers/fips/fipsprov.c | 34 ++++++++++++++++++++++------------
+ test/localetest.c         | 27 ++++++++++++++++++++-------
+ 4 files changed, 68 insertions(+), 40 deletions(-)
+
+diff --git a/crypto/ctype.c b/crypto/ctype.c
+index 321306eb5f..e55ed17ffa 100644
+--- a/crypto/ctype.c
++++ b/crypto/ctype.c
+@@ -15,16 +15,13 @@
+ #include <openssl/crypto.h>
+ #include "internal/core.h"
+ #include "internal/thread_once.h"
+-
+-#ifndef OPENSSL_SYS_WINDOWS
+-#include <strings.h>
+-#endif
+-#include <locale.h>
+-
+-#ifdef OPENSSL_SYS_MACOSX
+-#include <xlocale.h>
++#include "e_os.h"
++#ifndef OPENSSL_NO_LOCALE
++# include <locale.h>
++# ifdef OPENSSL_SYS_MACOSX
++#  include <xlocale.h>
++# endif
+ #endif
+-
+ /*
+  * Define the character classes for each character in the seven bit ASCII
+  * character set.  This is independent of the host's character set, characters
+@@ -292,18 +289,7 @@ int ossl_ascii_isdigit(const char inchar) {
+     return 0;
+ }
+ 
+-/* str[n]casecmp_l is defined in POSIX 2008-01. Value is taken accordingly
+- * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html */
+-
+-#if (defined OPENSSL_SYS_WINDOWS) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L)
+-
+-# if defined OPENSSL_SYS_WINDOWS
+-# define locale_t _locale_t
+-# define freelocale _free_locale
+-# define strcasecmp_l _stricmp_l
+-# define strncasecmp_l _strnicmp_l
+-# endif
+-
++#ifndef OPENSSL_NO_LOCALE
+ # ifndef FIPS_MODULE
+ static locale_t loc;
+ 
+diff --git a/e_os.h b/e_os.h
+index 5490a48fcd..00b104864d 100644
+--- a/e_os.h
++++ b/e_os.h
+@@ -409,4 +409,23 @@ inline int nssgetpid();
+ #   endif
+ # endif
+ 
++/*
++ * str[n]casecmp_l is defined in POSIX 2008-01. Value is taken accordingly
++ * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
++ * There are also equivalent functions on Windows.
++ * There is no locale_t on NONSTOP.
++ */
++# if defined(OPENSSL_SYS_WINDOWS)
++#  define locale_t _locale_t
++#  define freelocale _free_locale
++#  define strcasecmp_l _stricmp_l
++#  define strncasecmp_l _strnicmp_l
++#  define strcasecmp _stricmp
++# elif !defined(_POSIX_C_SOURCE) || _POSIX_C_SOURCE < 200809L \
++     || defined(OPENSSL_SYS_TANDEM)
++#  ifndef OPENSSL_NO_LOCALE
++#   define OPENSSL_NO_LOCALE
++#  endif
++# endif
++
+ #endif
+diff --git a/providers/fips/fipsprov.c b/providers/fips/fipsprov.c
+index fc17a958ce..c2a6bc1701 100644
+--- a/providers/fips/fipsprov.c
++++ b/providers/fips/fipsprov.c
+@@ -23,6 +23,7 @@
+ #include "prov/seeding.h"
+ #include "self_test.h"
+ #include "internal/core.h"
++#include "e_os.h"
+ 
+ static const char FIPS_DEFAULT_PROPERTIES[] = "provider=fips,fips=yes";
+ static const char FIPS_UNAPPROVED_PROPERTIES[] = "provider=fips,fips=no";
+@@ -37,17 +38,13 @@ static OSSL_FUNC_provider_get_params_fn fips_get_params;
+ static OSSL_FUNC_provider_query_operation_fn fips_query;
+ 
+ /* Locale object accessor functions */
+-#ifdef OPENSSL_SYS_MACOSX
+-# include <xlocale.h>
+-#else
++#ifndef OPENSSL_NO_LOCALE
+ # include <locale.h>
+-#endif
+-
+-#if defined OPENSSL_SYS_WINDOWS
+-# define locale_t _locale_t
+-# define freelocale _free_locale
+-#endif
++# ifdef OPENSSL_SYS_MACOSX
++#  include <xlocale.h>
++# endif
+ static locale_t loc;
++#endif
+ 
+ static int fips_init_casecmp(void);
+ static void fips_deinit_casecmp(void);
+@@ -503,22 +500,35 @@ static const OSSL_ALGORITHM *fips_query(void *provctx, int operation_id,
+     return NULL;
+ }
+ 
++# ifndef OPENSSL_NO_LOCALE
+ void *ossl_c_locale() {
+     return (void *)loc;
+ }
+ 
+ static int fips_init_casecmp(void) {
+-# ifdef OPENSSL_SYS_WINDOWS
++#  ifdef OPENSSL_SYS_WINDOWS
+     loc = _create_locale(LC_COLLATE, "C");
+-# else
++#  else
+     loc = newlocale(LC_COLLATE_MASK, "C", (locale_t) 0);
+-# endif
++#  endif
+     return (loc == (locale_t) 0) ? 0 : 1;
+ }
+ 
+ static void fips_deinit_casecmp(void) {
+     freelocale(loc);
+ }
++# else
++void *ossl_c_locale() {
++    return NULL;
++}
++
++static int fips_init_casecmp(void) {
++    return 1;
++}
++
++static void fips_deinit_casecmp(void) {
++}
++# endif
+ 
+ static void fips_teardown(void *provctx)
+ {
+diff --git a/test/localetest.c b/test/localetest.c
+index 3db66b7a9e..7e0a37af4e 100644
+--- a/test/localetest.c
++++ b/test/localetest.c
+@@ -1,3 +1,11 @@
++/*
++ * Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
+ 
+ #include <stdio.h>
+ #include <string.h>
+@@ -7,12 +15,12 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+-#include <locale.h>
+-#ifdef OPENSSL_SYS_WINDOWS
+-# define strcasecmp _stricmp
+-#else
+-# include <strings.h>
+-#endif
++#include "../e_os.h"
++#ifndef OPENSSL_NO_LOCALE
++# include <locale.h>
++# ifdef OPENSSL_SYS_MACOSX
++#  include <xlocale.h>
++# endif
+ 
+ int setup_tests(void)
+ {
+@@ -116,7 +124,12 @@ int setup_tests(void)
+     X509_free(cert);
+     return 1;
+ }
+-
++#else
++int setup_tests(void)
++{
++    return TEST_skip("Locale support not available");
++}
++#endif /* OPENSSL_NO_LOCALE */
+ void cleanup_tests(void)
+ {
+ }
+-- 
+2.34.1
+

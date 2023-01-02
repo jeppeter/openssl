@@ -1,7 +1,14 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2005-2020 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License 2.0 (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 #
 # ====================================================================
-# Written by Andy Polyakov <appro@fy.chalmers.se> for the OpenSSL
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
 # project. The module is, however, dual licensed under OpenSSL and
 # CRYPTOGAMS licenses depending on where you obtain it. For further
 # details see http://www.openssl.org/~appro/cryptogams/.
@@ -19,15 +26,17 @@
 # Performance in number of cycles per processed byte for 128-bit key:
 #
 #		ECB encrypt	ECB decrypt	CBC large chunk
-# AMD64		33		41		13.0
-# EM64T		38		59		18.6(*)
-# Core 2	30		43		14.5(*)
+# AMD64		33		43		13.0
+# EM64T		38		56		18.6(*)
+# Core 2	30		42		14.5(*)
+# Atom		65		86		32.1(*)
 #
 # (*) with hyper-threading off
 
-$flavour = shift;
-$output  = shift;
-if ($flavour =~ /\./) { $output = $flavour; undef $flavour; }
+# $output is the last argument if it looks like a file (it has an extension)
+# $flavour is the first argument if it doesn't look like a file
+$output = $#ARGV >= 0 && $ARGV[$#ARGV] =~ m|\.\w+$| ? pop : undef;
+$flavour = $#ARGV >= 0 && $ARGV[0] !~ m|\.| ? shift : undef;
 
 $win64=0; $win64=1 if ($flavour =~ /[nm]asm|mingw64/ || $output =~ /\.asm$/);
 
@@ -36,7 +45,8 @@ $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
 ( $xlate="${dir}../../perlasm/x86_64-xlate.pl" and -f $xlate) or
 die "can't locate x86_64-xlate.pl";
 
-open OUT,"| \"$^X\" $xlate $flavour $output";
+open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\""
+    or die "can't call $xlate: $!";
 *STDOUT=*OUT;
 
 $verticalspin=1;	# unlike 32-bit version $verticalspin performs
@@ -318,6 +328,7 @@ $code.=<<___;
 .type	_x86_64_AES_encrypt,\@abi-omnipotent
 .align	16
 _x86_64_AES_encrypt:
+.cfi_startproc
 	xor	0($key),$s0			# xor with key
 	xor	4($key),$s1
 	xor	8($key),$s2
@@ -353,6 +364,7 @@ ___
 	}
 $code.=<<___;
 	.byte	0xf3,0xc3			# rep ret
+.cfi_endproc
 .size	_x86_64_AES_encrypt,.-_x86_64_AES_encrypt
 ___
 
@@ -366,68 +378,66 @@ $code.=<<___;
 	movzb	`&lo("$s0")`,$t0
 	movzb	`&lo("$s1")`,$t1
 	movzb	`&lo("$s2")`,$t2
-	movzb	($sbox,$t0,1),$t0
-	movzb	($sbox,$t1,1),$t1
-	movzb	($sbox,$t2,1),$t2
-
 	movzb	`&lo("$s3")`,$t3
 	movzb	`&hi("$s1")`,$acc0
 	movzb	`&hi("$s2")`,$acc1
-	movzb	($sbox,$t3,1),$t3
-	movzb	($sbox,$acc0,1),$t4	#$t0
-	movzb	($sbox,$acc1,1),$t5	#$t1
-
-	movzb	`&hi("$s3")`,$acc2
-	movzb	`&hi("$s0")`,$acc0
 	shr	\$16,$s2
+	movzb	`&hi("$s3")`,$acc2
+	movzb	($sbox,$t0,1),$t0
+	movzb	($sbox,$t1,1),$t1
+	movzb	($sbox,$t2,1),$t2
+	movzb	($sbox,$t3,1),$t3
+
+	movzb	($sbox,$acc0,1),$t4	#$t0
+	movzb	`&hi("$s0")`,$acc0
+	movzb	($sbox,$acc1,1),$t5	#$t1
+	movzb	`&lo("$s2")`,$acc1
 	movzb	($sbox,$acc2,1),$acc2	#$t2
 	movzb	($sbox,$acc0,1),$acc0	#$t3
-	shr	\$16,$s3
 
-	movzb	`&lo("$s2")`,$acc1
 	shl	\$8,$t4
+	shr	\$16,$s3
 	shl	\$8,$t5
-	movzb	($sbox,$acc1,1),$acc1	#$t0
 	xor	$t4,$t0
-	xor	$t5,$t1
-
-	movzb	`&lo("$s3")`,$t4
 	shr	\$16,$s0
+	movzb	`&lo("$s3")`,$t4
 	shr	\$16,$s1
-	movzb	`&lo("$s0")`,$t5
+	xor	$t5,$t1
 	shl	\$8,$acc2
-	shl	\$8,$acc0
-	movzb	($sbox,$t4,1),$t4	#$t1
-	movzb	($sbox,$t5,1),$t5	#$t2
+	movzb	`&lo("$s0")`,$t5
+	movzb	($sbox,$acc1,1),$acc1	#$t0
 	xor	$acc2,$t2
-	xor	$acc0,$t3
 
+	shl	\$8,$acc0
 	movzb	`&lo("$s1")`,$acc2
-	movzb	`&hi("$s3")`,$acc0
 	shl	\$16,$acc1
-	movzb	($sbox,$acc2,1),$acc2	#$t3
-	movzb	($sbox,$acc0,1),$acc0	#$t0
+	xor	$acc0,$t3
+	movzb	($sbox,$t4,1),$t4	#$t1
+	movzb	`&hi("$s3")`,$acc0
+	movzb	($sbox,$t5,1),$t5	#$t2
 	xor	$acc1,$t0
 
-	movzb	`&hi("$s0")`,$acc1
 	shr	\$8,$s2
+	movzb	`&hi("$s0")`,$acc1
+	shl	\$16,$t4
 	shr	\$8,$s1
+	shl	\$16,$t5
+	xor	$t4,$t1
+	movzb	($sbox,$acc2,1),$acc2	#$t3
+	movzb	($sbox,$acc0,1),$acc0	#$t0
 	movzb	($sbox,$acc1,1),$acc1	#$t1
 	movzb	($sbox,$s2,1),$s3	#$t3
 	movzb	($sbox,$s1,1),$s2	#$t2
-	shl	\$16,$t4
-	shl	\$16,$t5
-	shl	\$16,$acc2
-	xor	$t4,$t1
-	xor	$t5,$t2
-	xor	$acc2,$t3
 
+	shl	\$16,$acc2
+	xor	$t5,$t2
 	shl	\$24,$acc0
+	xor	$acc2,$t3
 	shl	\$24,$acc1
-	shl	\$24,$s3
 	xor	$acc0,$t0
-	shl	\$24,$s2
+	shl	\$24,$s3
 	xor	$acc1,$t1
+	shl	\$24,$s2
 	mov	$t0,$s0
 	mov	$t1,$s1
 	xor	$t2,$s2
@@ -466,12 +476,12 @@ sub enctransform()
 { my ($t3,$r20,$r21)=($acc2,"%r8d","%r9d");
 
 $code.=<<___;
-	mov	$s0,$acc0
-	mov	$s1,$acc1
-	and	\$0x80808080,$acc0
-	and	\$0x80808080,$acc1
-	mov	$acc0,$t0
-	mov	$acc1,$t1
+	mov	\$0x80808080,$t0
+	mov	\$0x80808080,$t1
+	and	$s0,$t0
+	and	$s1,$t1
+	mov	$t0,$acc0
+	mov	$t1,$acc1
 	shr	\$7,$t0
 	lea	($s0,$s0),$r20
 	shr	\$7,$t1
@@ -489,25 +499,25 @@ $code.=<<___;
 
 	xor	$r20,$s0
 	xor	$r21,$s1
-	 mov	$s2,$acc0
-	 mov	$s3,$acc1
+	 mov	\$0x80808080,$t2
 	rol	\$24,$s0
+	 mov	\$0x80808080,$t3
 	rol	\$24,$s1
-	 and	\$0x80808080,$acc0
-	 and	\$0x80808080,$acc1
+	 and	$s2,$t2
+	 and	$s3,$t3
 	xor	$r20,$s0
 	xor	$r21,$s1
-	 mov	$acc0,$t2
-	 mov	$acc1,$t3
+	 mov	$t2,$acc0
 	ror	\$16,$t0
+	 mov	$t3,$acc1
 	ror	\$16,$t1
-	 shr	\$7,$t2
 	 lea	($s2,$s2),$r20
+	 shr	\$7,$t2
 	xor	$t0,$s0
-	xor	$t1,$s1
 	 shr	\$7,$t3
-	 lea	($s3,$s3),$r21
+	xor	$t1,$s1
 	ror	\$8,$t0
+	 lea	($s3,$s3),$r21
 	ror	\$8,$t1
 	 sub	$t2,$acc0
 	 sub	$t3,$acc1
@@ -523,23 +533,23 @@ $code.=<<___;
 	xor	$acc0,$r20
 	xor	$acc1,$r21
 
+	ror	\$16,$t2
 	xor	$r20,$s2
+	ror	\$16,$t3
 	xor	$r21,$s3
 	rol	\$24,$s2
+	mov	0($sbox),$acc0			# prefetch Te4
 	rol	\$24,$s3
 	xor	$r20,$s2
-	xor	$r21,$s3
-	mov	0($sbox),$acc0			# prefetch Te4
-	ror	\$16,$t2
-	ror	\$16,$t3
 	mov	64($sbox),$acc1
-	xor	$t2,$s2
-	xor	$t3,$s3
+	xor	$r21,$s3
 	mov	128($sbox),$r20
-	ror	\$8,$t2
-	ror	\$8,$t3
-	mov	192($sbox),$r21
 	xor	$t2,$s2
+	ror	\$8,$t2
+	xor	$t3,$s3
+	ror	\$8,$t3
+	xor	$t2,$s2
+	mov	192($sbox),$r21
 	xor	$t3,$s3
 ___
 }
@@ -548,6 +558,7 @@ $code.=<<___;
 .type	_x86_64_AES_encrypt_compact,\@abi-omnipotent
 .align	16
 _x86_64_AES_encrypt_compact:
+.cfi_startproc
 	lea	128($sbox),$inp			# size optimization
 	mov	0-128($inp),$acc1		# prefetch Te4
 	mov	32-128($inp),$acc2
@@ -581,6 +592,7 @@ $code.=<<___;
 	xor	8($key),$s2
 	xor	12($key),$s3
 	.byte	0xf3,0xc3			# rep ret
+.cfi_endproc
 .size	_x86_64_AES_encrypt_compact,.-_x86_64_AES_encrypt_compact
 ___
 
@@ -593,15 +605,24 @@ $code.=<<___;
 .hidden	asm_AES_encrypt
 asm_AES_encrypt:
 AES_encrypt:
+.cfi_startproc
+	endbranch
+	mov	%rsp,%rax
+.cfi_def_cfa_register	%rax
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 
 	# allocate frame "above" key schedule
-	mov	%rsp,%r10
 	lea	-63(%rdx),%rcx	# %rdx is key argument
 	and	\$-64,%rsp
 	sub	%rsp,%rcx
@@ -611,7 +632,8 @@ AES_encrypt:
 	sub	\$32,%rsp
 
 	mov	%rsi,16(%rsp)	# save out
-	mov	%r10,24(%rsp)	# save real stack pointer
+	mov	%rax,24(%rsp)	# save original stack pointer
+.cfi_cfa_expression	%rsp+24,deref,+8
 .Lenc_prologue:
 
 	mov	%rdx,$key
@@ -638,20 +660,29 @@ AES_encrypt:
 
 	mov	16(%rsp),$out	# restore out
 	mov	24(%rsp),%rsi	# restore saved stack pointer
+.cfi_def_cfa	%rsi,8
 	mov	$s0,0($out)	# write output vector
 	mov	$s1,4($out)
 	mov	$s2,8($out)
 	mov	$s3,12($out)
 
-	mov	(%rsi),%r15
-	mov	8(%rsi),%r14
-	mov	16(%rsi),%r13
-	mov	24(%rsi),%r12
-	mov	32(%rsi),%rbp
-	mov	40(%rsi),%rbx
-	lea	48(%rsi),%rsp
+	mov	-48(%rsi),%r15
+.cfi_restore	%r15
+	mov	-40(%rsi),%r14
+.cfi_restore	%r14
+	mov	-32(%rsi),%r13
+.cfi_restore	%r13
+	mov	-24(%rsi),%r12
+.cfi_restore	%r12
+	mov	-16(%rsi),%rbp
+.cfi_restore	%rbp
+	mov	-8(%rsi),%rbx
+.cfi_restore	%rbx
+	lea	(%rsi),%rsp
+.cfi_def_cfa_register	%rsp
 .Lenc_epilogue:
 	ret
+.cfi_endproc
 .size	AES_encrypt,.-AES_encrypt
 ___
 
@@ -884,6 +915,7 @@ $code.=<<___;
 .type	_x86_64_AES_decrypt,\@abi-omnipotent
 .align	16
 _x86_64_AES_decrypt:
+.cfi_startproc
 	xor	0($key),$s0			# xor with key
 	xor	4($key),$s1
 	xor	8($key),$s2
@@ -926,6 +958,7 @@ ___
 	}
 $code.=<<___;
 	.byte	0xf3,0xc3			# rep ret
+.cfi_endproc
 .size	_x86_64_AES_decrypt,.-_x86_64_AES_decrypt
 ___
 
@@ -936,70 +969,69 @@ $code.=<<___;
 	movzb	`&lo("$s0")`,$t0
 	movzb	`&lo("$s1")`,$t1
 	movzb	`&lo("$s2")`,$t2
-	movzb	($sbox,$t0,1),$t0
-	movzb	($sbox,$t1,1),$t1
-	movzb	($sbox,$t2,1),$t2
-
 	movzb	`&lo("$s3")`,$t3
 	movzb	`&hi("$s3")`,$acc0
 	movzb	`&hi("$s0")`,$acc1
-	movzb	($sbox,$t3,1),$t3
-	movzb	($sbox,$acc0,1),$t4	#$t0
-	movzb	($sbox,$acc1,1),$t5	#$t1
-
+	shr	\$16,$s3
 	movzb	`&hi("$s1")`,$acc2
+	movzb	($sbox,$t0,1),$t0
+	movzb	($sbox,$t1,1),$t1
+	movzb	($sbox,$t2,1),$t2
+	movzb	($sbox,$t3,1),$t3
+
+	movzb	($sbox,$acc0,1),$t4	#$t0
 	movzb	`&hi("$s2")`,$acc0
-	shr	\$16,$s2
+	movzb	($sbox,$acc1,1),$t5	#$t1
 	movzb	($sbox,$acc2,1),$acc2	#$t2
 	movzb	($sbox,$acc0,1),$acc0	#$t3
-	shr	\$16,$s3
 
-	movzb	`&lo("$s2")`,$acc1
-	shl	\$8,$t4
+	shr	\$16,$s2
 	shl	\$8,$t5
-	movzb	($sbox,$acc1,1),$acc1	#$t0
-	xor	$t4,$t0
-	xor	$t5,$t1
-
-	movzb	`&lo("$s3")`,$t4
+	shl	\$8,$t4
+	movzb	`&lo("$s2")`,$acc1
 	shr	\$16,$s0
+	xor	$t4,$t0
 	shr	\$16,$s1
-	movzb	`&lo("$s0")`,$t5
+	movzb	`&lo("$s3")`,$t4
+
 	shl	\$8,$acc2
+	xor	$t5,$t1
 	shl	\$8,$acc0
-	movzb	($sbox,$t4,1),$t4	#$t1
-	movzb	($sbox,$t5,1),$t5	#$t2
+	movzb	`&lo("$s0")`,$t5
+	movzb	($sbox,$acc1,1),$acc1	#$t0
 	xor	$acc2,$t2
-	xor	$acc0,$t3
-
 	movzb	`&lo("$s1")`,$acc2
-	movzb	`&hi("$s1")`,$acc0
-	shl	\$16,$acc1
-	movzb	($sbox,$acc2,1),$acc2	#$t3
-	movzb	($sbox,$acc0,1),$acc0	#$t0
-	xor	$acc1,$t0
 
+	shl	\$16,$acc1
+	xor	$acc0,$t3
+	movzb	($sbox,$t4,1),$t4	#$t1
+	movzb	`&hi("$s1")`,$acc0
+	movzb	($sbox,$acc2,1),$acc2	#$t3
+	xor	$acc1,$t0
+	movzb	($sbox,$t5,1),$t5	#$t2
 	movzb	`&hi("$s2")`,$acc1
+
+	shl	\$16,$acc2
 	shl	\$16,$t4
 	shl	\$16,$t5
-	movzb	($sbox,$acc1,1),$s1	#$t1
+	xor	$acc2,$t3
+	movzb	`&hi("$s3")`,$acc2
 	xor	$t4,$t1
+	shr	\$8,$s0
 	xor	$t5,$t2
 
-	movzb	`&hi("$s3")`,$acc1
-	shr	\$8,$s0
-	shl	\$16,$acc2
-	movzb	($sbox,$acc1,1),$s2	#$t2
+	movzb	($sbox,$acc0,1),$acc0	#$t0
+	movzb	($sbox,$acc1,1),$s1	#$t1
+	movzb	($sbox,$acc2,1),$s2	#$t2
 	movzb	($sbox,$s0,1),$s3	#$t3
-	xor	$acc2,$t3
 
+	mov	$t0,$s0
 	shl	\$24,$acc0
 	shl	\$24,$s1
 	shl	\$24,$s2
-	xor	$acc0,$t0
+	xor	$acc0,$s0
 	shl	\$24,$s3
 	xor	$t1,$s1
-	mov	$t0,$s0
 	xor	$t2,$s2
 	xor	$t3,$s3
 ___
@@ -1014,12 +1046,12 @@ sub dectransform()
   my $prefetch = shift;
 
 $code.=<<___;
-	mov	$tp10,$acc0
-	mov	$tp18,$acc8
-	and	$mask80,$acc0
-	and	$mask80,$acc8
-	mov	$acc0,$tp40
-	mov	$acc8,$tp48
+	mov	$mask80,$tp40
+	mov	$mask80,$tp48
+	and	$tp10,$tp40
+	and	$tp18,$tp48
+	mov	$tp40,$acc0
+	mov	$tp48,$acc8
 	shr	\$7,$tp40
 	lea	($tp10,$tp10),$tp20
 	shr	\$7,$tp48
@@ -1030,15 +1062,15 @@ $code.=<<___;
 	and	$maskfe,$tp28
 	and	$mask1b,$acc0
 	and	$mask1b,$acc8
-	xor	$tp20,$acc0
-	xor	$tp28,$acc8
-	mov	$acc0,$tp20
-	mov	$acc8,$tp28
+	xor	$acc0,$tp20
+	xor	$acc8,$tp28
+	mov	$mask80,$tp80
+	mov	$mask80,$tp88
 
-	and	$mask80,$acc0
-	and	$mask80,$acc8
-	mov	$acc0,$tp80
-	mov	$acc8,$tp88
+	and	$tp20,$tp80
+	and	$tp28,$tp88
+	mov	$tp80,$acc0
+	mov	$tp88,$acc8
 	shr	\$7,$tp80
 	lea	($tp20,$tp20),$tp40
 	shr	\$7,$tp88
@@ -1049,15 +1081,15 @@ $code.=<<___;
 	and	$maskfe,$tp48
 	and	$mask1b,$acc0
 	and	$mask1b,$acc8
-	xor	$tp40,$acc0
-	xor	$tp48,$acc8
-	mov	$acc0,$tp40
-	mov	$acc8,$tp48
+	xor	$acc0,$tp40
+	xor	$acc8,$tp48
+	mov	$mask80,$tp80
+	mov	$mask80,$tp88
 
-	and	$mask80,$acc0
-	and	$mask80,$acc8
-	mov	$acc0,$tp80
-	mov	$acc8,$tp88
+	and	$tp40,$tp80
+	and	$tp48,$tp88
+	mov	$tp80,$acc0
+	mov	$tp88,$acc8
 	shr	\$7,$tp80
 	 xor	$tp10,$tp20		# tp2^=tp1
 	shr	\$7,$tp88
@@ -1082,51 +1114,51 @@ $code.=<<___;
 	mov	$tp10,$acc0
 	mov	$tp18,$acc8
 	xor	$tp80,$tp40		# tp4^tp1^=tp8
-	xor	$tp88,$tp48		# tp4^tp1^=tp8
 	shr	\$32,$acc0
+	xor	$tp88,$tp48		# tp4^tp1^=tp8
 	shr	\$32,$acc8
 	xor	$tp20,$tp80		# tp8^=tp8^tp2^tp1=tp2^tp1
-	xor	$tp28,$tp88		# tp8^=tp8^tp2^tp1=tp2^tp1
 	rol	\$8,`&LO("$tp10")`	# ROTATE(tp1^tp8,8)
+	xor	$tp28,$tp88		# tp8^=tp8^tp2^tp1=tp2^tp1
 	rol	\$8,`&LO("$tp18")`	# ROTATE(tp1^tp8,8)
 	xor	$tp40,$tp80		# tp2^tp1^=tp8^tp4^tp1=tp8^tp4^tp2
+	rol	\$8,`&LO("$acc0")`	# ROTATE(tp1^tp8,8)
 	xor	$tp48,$tp88		# tp2^tp1^=tp8^tp4^tp1=tp8^tp4^tp2
 
-	rol	\$8,`&LO("$acc0")`	# ROTATE(tp1^tp8,8)
 	rol	\$8,`&LO("$acc8")`	# ROTATE(tp1^tp8,8)
 	xor	`&LO("$tp80")`,`&LO("$tp10")`
-	xor	`&LO("$tp88")`,`&LO("$tp18")`
 	shr	\$32,$tp80
+	xor	`&LO("$tp88")`,`&LO("$tp18")`
 	shr	\$32,$tp88
 	xor	`&LO("$tp80")`,`&LO("$acc0")`
 	xor	`&LO("$tp88")`,`&LO("$acc8")`
 
 	mov	$tp20,$tp80
-	mov	$tp28,$tp88
-	shr	\$32,$tp80
-	shr	\$32,$tp88
 	rol	\$24,`&LO("$tp20")`	# ROTATE(tp2^tp1^tp8,24)
+	mov	$tp28,$tp88
 	rol	\$24,`&LO("$tp28")`	# ROTATE(tp2^tp1^tp8,24)
-	rol	\$24,`&LO("$tp80")`	# ROTATE(tp2^tp1^tp8,24)
-	rol	\$24,`&LO("$tp88")`	# ROTATE(tp2^tp1^tp8,24)
+	shr	\$32,$tp80
 	xor	`&LO("$tp20")`,`&LO("$tp10")`
+	shr	\$32,$tp88
 	xor	`&LO("$tp28")`,`&LO("$tp18")`
+	rol	\$24,`&LO("$tp80")`	# ROTATE(tp2^tp1^tp8,24)
 	mov	$tp40,$tp20
+	rol	\$24,`&LO("$tp88")`	# ROTATE(tp2^tp1^tp8,24)
 	mov	$tp48,$tp28
+	shr	\$32,$tp20
 	xor	`&LO("$tp80")`,`&LO("$acc0")`
+	shr	\$32,$tp28
 	xor	`&LO("$tp88")`,`&LO("$acc8")`
 
 	`"mov	0($sbox),$mask80"	if ($prefetch)`
-	shr	\$32,$tp20
-	shr	\$32,$tp28
-	`"mov	64($sbox),$maskfe"	if ($prefetch)`
 	rol	\$16,`&LO("$tp40")`	# ROTATE(tp4^tp1^tp8,16)
+	`"mov	64($sbox),$maskfe"	if ($prefetch)`
 	rol	\$16,`&LO("$tp48")`	# ROTATE(tp4^tp1^tp8,16)
 	`"mov	128($sbox),$mask1b"	if ($prefetch)`
 	rol	\$16,`&LO("$tp20")`	# ROTATE(tp4^tp1^tp8,16)
-	rol	\$16,`&LO("$tp28")`	# ROTATE(tp4^tp1^tp8,16)
 	`"mov	192($sbox),$tp80"	if ($prefetch)`
 	xor	`&LO("$tp40")`,`&LO("$tp10")`
+	rol	\$16,`&LO("$tp28")`	# ROTATE(tp4^tp1^tp8,16)
 	xor	`&LO("$tp48")`,`&LO("$tp18")`
 	`"mov	256($sbox),$tp88"	if ($prefetch)`
 	xor	`&LO("$tp20")`,`&LO("$acc0")`
@@ -1138,6 +1170,7 @@ $code.=<<___;
 .type	_x86_64_AES_decrypt_compact,\@abi-omnipotent
 .align	16
 _x86_64_AES_decrypt_compact:
+.cfi_startproc
 	lea	128($sbox),$inp			# size optimization
 	mov	0-128($inp),$acc1		# prefetch Td4
 	mov	32-128($inp),$acc2
@@ -1180,6 +1213,7 @@ $code.=<<___;
 	xor	8($key),$s2
 	xor	12($key),$s3
 	.byte	0xf3,0xc3			# rep ret
+.cfi_endproc
 .size	_x86_64_AES_decrypt_compact,.-_x86_64_AES_decrypt_compact
 ___
 
@@ -1192,15 +1226,24 @@ $code.=<<___;
 .hidden	asm_AES_decrypt
 asm_AES_decrypt:
 AES_decrypt:
+.cfi_startproc
+	endbranch
+	mov	%rsp,%rax
+.cfi_def_cfa_register	%rax
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 
 	# allocate frame "above" key schedule
-	mov	%rsp,%r10
 	lea	-63(%rdx),%rcx	# %rdx is key argument
 	and	\$-64,%rsp
 	sub	%rsp,%rcx
@@ -1210,7 +1253,8 @@ AES_decrypt:
 	sub	\$32,%rsp
 
 	mov	%rsi,16(%rsp)	# save out
-	mov	%r10,24(%rsp)	# save real stack pointer
+	mov	%rax,24(%rsp)	# save original stack pointer
+.cfi_cfa_expression	%rsp+24,deref,+8
 .Ldec_prologue:
 
 	mov	%rdx,$key
@@ -1239,20 +1283,29 @@ AES_decrypt:
 
 	mov	16(%rsp),$out	# restore out
 	mov	24(%rsp),%rsi	# restore saved stack pointer
+.cfi_def_cfa	%rsi,8
 	mov	$s0,0($out)	# write output vector
 	mov	$s1,4($out)
 	mov	$s2,8($out)
 	mov	$s3,12($out)
 
-	mov	(%rsi),%r15
-	mov	8(%rsi),%r14
-	mov	16(%rsi),%r13
-	mov	24(%rsi),%r12
-	mov	32(%rsi),%rbp
-	mov	40(%rsi),%rbx
-	lea	48(%rsi),%rsp
+	mov	-48(%rsi),%r15
+.cfi_restore	%r15
+	mov	-40(%rsi),%r14
+.cfi_restore	%r14
+	mov	-32(%rsi),%r13
+.cfi_restore	%r13
+	mov	-24(%rsi),%r12
+.cfi_restore	%r12
+	mov	-16(%rsi),%rbp
+.cfi_restore	%rbp
+	mov	-8(%rsi),%rbx
+.cfi_restore	%rbx
+	lea	(%rsi),%rsp
+.cfi_def_cfa_register	%rsp
 .Ldec_epilogue:
 	ret
+.cfi_endproc
 .size	AES_decrypt,.-AES_decrypt
 ___
 #------------------------------------------------------------------#
@@ -1284,38 +1337,48 @@ $code.=<<___;
 ___
 }
 
-# int private_AES_set_encrypt_key(const unsigned char *userKey, const int bits,
+# int AES_set_encrypt_key(const unsigned char *userKey, const int bits,
 #                        AES_KEY *key)
 $code.=<<___;
-.globl	private_AES_set_encrypt_key
-.type	private_AES_set_encrypt_key,\@function,3
+.globl	AES_set_encrypt_key
+.type	AES_set_encrypt_key,\@function,3
 .align	16
-private_AES_set_encrypt_key:
+AES_set_encrypt_key:
+.cfi_startproc
+	endbranch
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
-	push	%r12			# redundant, but allows to share 
+.cfi_push	%rbp
+	push	%r12			# redundant, but allows to share
+.cfi_push	%r12
 	push	%r13			# exception handler...
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 	sub	\$8,%rsp
+.cfi_adjust_cfa_offset	8
 .Lenc_key_prologue:
 
 	call	_x86_64_AES_set_encrypt_key
 
-	mov	8(%rsp),%r15
-	mov	16(%rsp),%r14
-	mov	24(%rsp),%r13
-	mov	32(%rsp),%r12
 	mov	40(%rsp),%rbp
+.cfi_restore	%rbp
 	mov	48(%rsp),%rbx
+.cfi_restore	%rbx
 	add	\$56,%rsp
+.cfi_adjust_cfa_offset	-56
 .Lenc_key_epilogue:
 	ret
-.size	private_AES_set_encrypt_key,.-private_AES_set_encrypt_key
+.cfi_endproc
+.size	AES_set_encrypt_key,.-AES_set_encrypt_key
 
 .type	_x86_64_AES_set_encrypt_key,\@abi-omnipotent
 .align	16
 _x86_64_AES_set_encrypt_key:
+.cfi_startproc
 	mov	%esi,%ecx			# %ecx=bits
 	mov	%rdi,%rsi			# %rsi=userKey
 	mov	%rdx,%rdi			# %rdi=key
@@ -1423,7 +1486,7 @@ $code.=<<___;
 	xor	%rax,%rax
 	jmp	.Lexit
 
-.L14rounds:		
+.L14rounds:
 	mov	0(%rsi),%rax			# copy first 8 dwords
 	mov	8(%rsi),%rbx
 	mov	16(%rsi),%rcx
@@ -1497,6 +1560,7 @@ $code.=<<___;
 	mov	\$-1,%rax
 .Lexit:
 	.byte	0xf3,0xc3			# rep ret
+.cfi_endproc
 .size	_x86_64_AES_set_encrypt_key,.-_x86_64_AES_set_encrypt_key
 ___
 
@@ -1554,20 +1618,29 @@ $code.=<<___;
 ___
 }
 
-# int private_AES_set_decrypt_key(const unsigned char *userKey, const int bits,
+# int AES_set_decrypt_key(const unsigned char *userKey, const int bits,
 #                        AES_KEY *key)
 $code.=<<___;
-.globl	private_AES_set_decrypt_key
-.type	private_AES_set_decrypt_key,\@function,3
+.globl	AES_set_decrypt_key
+.type	AES_set_decrypt_key,\@function,3
 .align	16
-private_AES_set_decrypt_key:
+AES_set_decrypt_key:
+.cfi_startproc
+	endbranch
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 	push	%rdx			# save key schedule
+.cfi_adjust_cfa_offset	8
 .Ldec_key_prologue:
 
 	call	_x86_64_AES_set_encrypt_key
@@ -1621,15 +1694,23 @@ $code.=<<___;
 	xor	%rax,%rax
 .Labort:
 	mov	8(%rsp),%r15
+.cfi_restore	%r15
 	mov	16(%rsp),%r14
+.cfi_restore	%r14
 	mov	24(%rsp),%r13
+.cfi_restore	%r13
 	mov	32(%rsp),%r12
+.cfi_restore	%r12
 	mov	40(%rsp),%rbp
+.cfi_restore	%rbp
 	mov	48(%rsp),%rbx
+.cfi_restore	%rbx
 	add	\$56,%rsp
+.cfi_adjust_cfa_offset	-56
 .Ldec_key_epilogue:
 	ret
-.size	private_AES_set_decrypt_key,.-private_AES_set_decrypt_key
+.cfi_endproc
+.size	AES_set_decrypt_key,.-AES_set_decrypt_key
 ___
 
 # void AES_cbc_encrypt (const void char *inp, unsigned char *out,
@@ -1659,26 +1740,37 @@ $code.=<<___;
 .hidden	asm_AES_cbc_encrypt
 asm_AES_cbc_encrypt:
 AES_cbc_encrypt:
+.cfi_startproc
+	endbranch
 	cmp	\$0,%rdx	# check length
 	je	.Lcbc_epilogue
 	pushfq
+# This could be .cfi_push 49, but libunwind fails on registers it does not
+# recognize. See https://bugzilla.redhat.com/show_bug.cgi?id=217087.
+.cfi_adjust_cfa_offset	8
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 .Lcbc_prologue:
 
 	cld
 	mov	%r9d,%r9d	# clear upper half of enc
 
 	lea	.LAES_Te(%rip),$sbox
+	lea	.LAES_Td(%rip),%r10
 	cmp	\$0,%r9
-	jne	.Lcbc_picked_te
-	lea	.LAES_Td(%rip),$sbox
-.Lcbc_picked_te:
+	cmoveq	%r10,$sbox
 
+.cfi_remember_state
 	mov	OPENSSL_ia32cap_P(%rip),%r10d
 	cmp	\$$speed_limit,%rdx
 	jb	.Lcbc_slow_prologue
@@ -1713,8 +1805,10 @@ AES_cbc_encrypt:
 .Lcbc_te_ok:
 
 	xchg	%rsp,$key
+.cfi_def_cfa_register	$key
 	#add	\$8,%rsp	# reserve for return address!
 	mov	$key,$_rsp	# save %rsp
+.cfi_cfa_expression	$_rsp,deref,+64
 .Lcbc_fast_body:
 	mov	%rdi,$_inp	# save copy of inp
 	mov	%rsi,$_out	# save copy of out
@@ -1912,6 +2006,7 @@ AES_cbc_encrypt:
 #--------------------------- SLOW ROUTINE ---------------------------#
 .align	16
 .Lcbc_slow_prologue:
+.cfi_restore_state
 	# allocate aligned stack frame...
 	lea	-88(%rsp),%rbp
 	and	\$-64,%rbp
@@ -1923,8 +2018,10 @@ AES_cbc_encrypt:
 	sub	%r10,%rbp
 
 	xchg	%rsp,%rbp
+.cfi_def_cfa_register	%rbp
 	#add	\$8,%rsp	# reserve for return address!
 	mov	%rbp,$_rsp	# save %rsp
+.cfi_cfa_expression	$_rsp,deref,+64
 .Lcbc_slow_body:
 	#mov	%rdi,$_inp	# save copy of inp
 	#mov	%rsi,$_out	# save copy of out
@@ -1944,7 +2041,7 @@ AES_cbc_encrypt:
 	lea	($key,%rax),%rax
 	mov	%rax,$keyend
 
-	# pick Te4 copy which can't "overlap" with stack frame or key scdedule
+	# pick Te4 copy which can't "overlap" with stack frame or key schedule
 	lea	2048($sbox),$sbox
 	lea	768-8(%rsp),%rax
 	sub	$sbox,%rax
@@ -2096,17 +2193,29 @@ AES_cbc_encrypt:
 .align	16
 .Lcbc_exit:
 	mov	$_rsp,%rsi
+.cfi_def_cfa	%rsi,64
 	mov	(%rsi),%r15
+.cfi_restore	%r15
 	mov	8(%rsi),%r14
+.cfi_restore	%r14
 	mov	16(%rsi),%r13
+.cfi_restore	%r13
 	mov	24(%rsi),%r12
+.cfi_restore	%r12
 	mov	32(%rsi),%rbp
+.cfi_restore	%rbp
 	mov	40(%rsi),%rbx
+.cfi_restore	%rbx
 	lea	48(%rsi),%rsp
+.cfi_def_cfa	%rsp,16
 .Lcbc_popfq:
 	popfq
+# This could be .cfi_pop 49, but libunwind fails on registers it does not
+# recognize. See https://bugzilla.redhat.com/show_bug.cgi?id=217087.
+.cfi_adjust_cfa_offset	-8
 .Lcbc_epilogue:
 	ret
+.cfi_endproc
 .size	AES_cbc_encrypt,.-AES_cbc_encrypt
 ___
 }
@@ -2579,7 +2688,6 @@ block_se_handler:
 	jae	.Lin_block_prologue
 
 	mov	24(%rax),%rax		# pull saved real stack pointer
-	lea	48(%rax),%rax		# adjust...
 
 	mov	-8(%rax),%rbx
 	mov	-16(%rax),%rbp
@@ -2776,13 +2884,13 @@ cbc_se_handler:
 	.rva	.LSEH_end_AES_decrypt
 	.rva	.LSEH_info_AES_decrypt
 
-	.rva	.LSEH_begin_private_AES_set_encrypt_key
-	.rva	.LSEH_end_private_AES_set_encrypt_key
-	.rva	.LSEH_info_private_AES_set_encrypt_key
+	.rva	.LSEH_begin_AES_set_encrypt_key
+	.rva	.LSEH_end_AES_set_encrypt_key
+	.rva	.LSEH_info_AES_set_encrypt_key
 
-	.rva	.LSEH_begin_private_AES_set_decrypt_key
-	.rva	.LSEH_end_private_AES_set_decrypt_key
-	.rva	.LSEH_info_private_AES_set_decrypt_key
+	.rva	.LSEH_begin_AES_set_decrypt_key
+	.rva	.LSEH_end_AES_set_decrypt_key
+	.rva	.LSEH_info_AES_set_decrypt_key
 
 	.rva	.LSEH_begin_AES_cbc_encrypt
 	.rva	.LSEH_end_AES_cbc_encrypt
@@ -2798,11 +2906,11 @@ cbc_se_handler:
 	.byte	9,0,0,0
 	.rva	block_se_handler
 	.rva	.Ldec_prologue,.Ldec_epilogue	# HandlerData[]
-.LSEH_info_private_AES_set_encrypt_key:
+.LSEH_info_AES_set_encrypt_key:
 	.byte	9,0,0,0
 	.rva	key_se_handler
 	.rva	.Lenc_key_prologue,.Lenc_key_epilogue	# HandlerData[]
-.LSEH_info_private_AES_set_decrypt_key:
+.LSEH_info_AES_set_decrypt_key:
 	.byte	9,0,0,0
 	.rva	key_se_handler
 	.rva	.Ldec_key_prologue,.Ldec_key_epilogue	# HandlerData[]
@@ -2816,4 +2924,4 @@ $code =~ s/\`([^\`]*)\`/eval($1)/gem;
 
 print $code;
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

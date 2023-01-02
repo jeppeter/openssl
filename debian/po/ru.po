@@ -92,3 +92,28 @@ msgid ""
 msgstr ""
 "Вам нужно будет перезапустить их вручную с помощью команд '/etc/init.d/"
 "<служба> start'."
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid "Restart services during package upgrades without asking?"
+msgstr "Перезапускать службы при обновлении пакета без подтверждения?"
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid ""
+"There are services installed on your system which need to be restarted when "
+"certain libraries, such as libpam, libc, and libssl, are upgraded. Since "
+"these restarts may cause interruptions of service for the system, you will "
+"normally be prompted on each upgrade for the list of services you wish to "
+"restart.  You can choose this option to avoid being prompted; instead, all "
+"necessary restarts will be done for you automatically so you can avoid being "
+"asked questions on each library upgrade."
+msgstr ""
+"В системе установлены службы, которые требуют перезапуска после обновления "
+"определённых библиотек (например, libpam, libc и libssl). Так как это может "
+"вызвать перерыв в работе службы, то обычно при каждом обновлении "
+"запрашивается подтверждение списка служб, которые нужно перезапустить. Чтобы "
+"этот вопрос не задавался, вы можете ответить утвердительно; в этом случае "
+"все необходимые службы будут перезапущены автоматически."

@@ -47,8 +47,8 @@ msgid ""
 "initialization script names in /etc/init.d and separated by spaces. No "
 "services will be restarted if the list is empty."
 msgstr ""
-"Proszę sprawdzić listę wykrytych usług, które powinny zostać zrestartowane, i "
-"poprawić ją, jeśli to konieczne. Nazwy usług muszą się zgadzać z nazwami "
+"Proszę sprawdzić listę wykrytych usług, które powinny zostać zrestartowane, "
+"i poprawić ją, jeśli to konieczne. Nazwy usług muszą się zgadzać z nazwami "
 "skryptów startowych w /etc/init.d i muszą być rozdzielone spacjami. Jeśli "
 "lista będzie pusta, żadne usługi nie zostaną zrestartowane."
 
@@ -60,9 +60,9 @@ msgid ""
 "restarted. It is recommended to reboot this host to avoid any SSL-related "
 "trouble."
 msgstr ""
-"Każda usługa w której wystąpi nieoczekiwany błąd po tej aktualizacji, powinna "
-"zostać zrestartowana. Zaleca się ponowne uruchomienie komputera, co umożliwi "
-"uniknięcie wszystkich problemów związanych z SSL."
+"Każda usługa w której wystąpi nieoczekiwany błąd po tej aktualizacji, "
+"powinna zostać zrestartowana. Zaleca się ponowne uruchomienie komputera, co "
+"umożliwi uniknięcie wszystkich problemów związanych z SSL."
 
 #. Type: error
 #. Description
@@ -90,7 +90,31 @@ msgid ""
 "You will need to start these manually by running '/etc/init.d/<service> "
 "start'."
 msgstr ""
-"Należy zrestartować te usługi ręcznie, przez wykonanie \"/etc/init.d/<usługa> "
-"start\""
+"Należy zrestartować te usługi ręcznie, przez wykonanie \"/etc/init.d/"
+"<usługa> start\""
 
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid "Restart services during package upgrades without asking?"
+msgstr "Zrestartować usługi podczas aktualizacji pakietu bez pytania?"
 
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid ""
+"There are services installed on your system which need to be restarted when "
+"certain libraries, such as libpam, libc, and libssl, are upgraded. Since "
+"these restarts may cause interruptions of service for the system, you will "
+"normally be prompted on each upgrade for the list of services you wish to "
+"restart.  You can choose this option to avoid being prompted; instead, all "
+"necessary restarts will be done for you automatically so you can avoid being "
+"asked questions on each library upgrade."
+msgstr ""
+"Niektóre z zainstalowanych usług wymagają restartu, gdy są aktualizowane "
+"określone biblioteki (np. libpam, libc i libss1). Ponieważ restarty mogą "
+"spowodować przerwanie tych usług, użytkownik jest zwykle pytany podczas "
+"każdej aktualizacji o listę usług, które chce zrestartować. Można wybrać tę "
+"opcję, aby zapobiec takim pytaniom; wtedy wszystkie potrzebne restarty "
+"odbędą się automatycznie, a użytkownik uniknie pytania przy każdej "
+"aktualizacji biblioteki."

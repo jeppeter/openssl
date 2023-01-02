@@ -1,0 +1,3 @@
+Tests: run-25-test-verify
+Depends: openssl, perl:native
+Restrictions: rw-build-tree, allow-stderr

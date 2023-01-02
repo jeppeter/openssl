@@ -1,0 +1,58 @@
+From ba77d0fd57d869f037a9c4520b1c66094125f9bc Mon Sep 17 00:00:00 2001
+From: Tomas Mraz <tomas@openssl.org>
+Date: Thu, 5 May 2022 08:11:24 +0200
+Subject: [PATCH 01/11] EVP_PKEY_Q_keygen: Call OPENSSL_init_crypto to init
+ strcasecmp
+
+Reviewed-by: Dmitry Belyavskiy <beldmit@gmail.com>
+Reviewed-by: Matt Caswell <matt@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18247)
+
+(cherry picked from commit b807c2fbab2128cf3746bb2ebd51cbe3bb6914a9)
+Origin: upstream, https://github.com/openssl/openssl/pull/18247
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1974037
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010958
+Applied-Upstream: 3.0 branch (probably upcoming 3.0.4)
+---
+ crypto/evp/evp_lib.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/crypto/evp/evp_lib.c b/crypto/evp/evp_lib.c
+index da3ef28b3d..d086dc94df 100644
+--- a/crypto/evp/evp_lib.c
++++ b/crypto/evp/evp_lib.c
+@@ -24,6 +24,7 @@
+ #include <openssl/dh.h>
+ #include <openssl/ec.h>
+ #include "crypto/evp.h"
++#include "crypto/cryptlib.h"
+ #include "internal/provider.h"
+ #include "evp_local.h"
+ 
+@@ -1094,6 +1095,8 @@ int EVP_CIPHER_CTX_test_flags(const EVP_CIPHER_CTX *ctx, int flags)
+     return (ctx->flags & flags);
+ }
+ 
++#if !defined(FIPS_MODULE)
++
+ int EVP_PKEY_CTX_set_group_name(EVP_PKEY_CTX *ctx, const char *name)
+ {
+     OSSL_PARAM params[] = { OSSL_PARAM_END, OSSL_PARAM_END };
+@@ -1169,6 +1172,8 @@ EVP_PKEY *EVP_PKEY_Q_keygen(OSSL_LIB_CTX *libctx, const char *propq,
+ 
+     va_start(args, type);
+ 
++    OPENSSL_init_crypto(OPENSSL_INIT_BASE_ONLY, NULL);
++
+     if (OPENSSL_strcasecmp(type, "RSA") == 0) {
+         bits = va_arg(args, size_t);
+         params[0] = OSSL_PARAM_construct_size_t(OSSL_PKEY_PARAM_RSA_BITS, &bits);
+@@ -1189,3 +1194,5 @@ EVP_PKEY *EVP_PKEY_Q_keygen(OSSL_LIB_CTX *libctx, const char *propq,
+     va_end(args);
+     return ret;
+ }
++
++#endif /* !defined(FIPS_MODULE) */
+-- 
+2.34.1
+

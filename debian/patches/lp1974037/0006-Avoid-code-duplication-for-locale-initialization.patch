@@ -1,0 +1,190 @@
+From 6eb0ed5cda248bf60f4673f9380f6d481908bedd Mon Sep 17 00:00:00 2001
+From: Tomas Mraz <tomas@openssl.org>
+Date: Tue, 10 May 2022 16:46:35 +0200
+Subject: [PATCH 06/11] Avoid code duplication for locale initialization
+
+Reviewed-by: Dmitry Belyavskiy <beldmit@gmail.com>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18293)
+
+Origin: upstream, https://github.com/openssl/openssl/pull/18293
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1974037
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010958
+Applied-Upstream: 3.0 branch (probably upcoming 3.0.4)
+---
+ crypto/o_str.c            | 20 ++++------------
+ include/internal/core.h   |  3 ---
+ providers/fips/fipsprov.c | 49 +++------------------------------------
+ 3 files changed, 8 insertions(+), 64 deletions(-)
+
+diff --git a/crypto/o_str.c b/crypto/o_str.c
+index 30e5820c49..9309a7bad4 100644
+--- a/crypto/o_str.c
++++ b/crypto/o_str.c
+@@ -18,7 +18,6 @@
+ #endif
+ #include <openssl/crypto.h>
+ #include "internal/cryptlib.h"
+-#include "internal/core.h"
+ 
+ #define DEFAULT_SEPARATOR ':'
+ #define CH_ZERO '\0'
+@@ -348,15 +347,13 @@ int openssl_strerror_r(int errnum, char *buf, size_t buflen)
+ }
+ 
+ #ifndef OPENSSL_NO_LOCALE
+-# ifndef FIPS_MODULE
+ static locale_t loc;
+ 
+-
+-void *ossl_c_locale() {
++static void *ossl_c_locale(void) {
+     return (void *)loc;
+ }
+ 
+-int ossl_init_casecmp_int() {
++int ossl_init_casecmp_int(void) {
+ # ifdef OPENSSL_SYS_WINDOWS
+     loc = _create_locale(LC_COLLATE, "C");
+ # else
+@@ -365,10 +362,9 @@ int ossl_init_casecmp_int() {
+     return (loc == (locale_t) 0) ? 0 : 1;
+ }
+ 
+-void ossl_deinit_casecmp() {
++void ossl_deinit_casecmp(void) {
+     freelocale(loc);
+ }
+-# endif
+ 
+ int OPENSSL_strcasecmp(const char *s1, const char *s2)
+ {
+@@ -380,17 +376,11 @@ int OPENSSL_strncasecmp(const char *s1, const char *s2, size_t n)
+     return strncasecmp_l(s1, s2, n, (locale_t)ossl_c_locale());
+ }
+ #else
+-# ifndef FIPS_MODULE
+-void *ossl_c_locale() {
+-    return NULL;
+-}
+-# endif
+-
+-int ossl_init_casecmp_int() {
++int ossl_init_casecmp_int(void) {
+     return 1;
+ }
+ 
+-void ossl_deinit_casecmp() {
++void ossl_deinit_casecmp(void) {
+ }
+ 
+ int OPENSSL_strcasecmp(const char *s1, const char *s2)
+diff --git a/include/internal/core.h b/include/internal/core.h
+index b63af84787..6f3fd79682 100644
+--- a/include/internal/core.h
++++ b/include/internal/core.h
+@@ -62,7 +62,4 @@ __owur int ossl_lib_ctx_write_lock(OSSL_LIB_CTX *ctx);
+ __owur int ossl_lib_ctx_read_lock(OSSL_LIB_CTX *ctx);
+ int ossl_lib_ctx_unlock(OSSL_LIB_CTX *ctx);
+ int ossl_lib_ctx_is_child(OSSL_LIB_CTX *ctx);
+-
+-void *ossl_c_locale(void);
+-
+ #endif
+diff --git a/providers/fips/fipsprov.c b/providers/fips/fipsprov.c
+index c2a6bc1701..a8a508d9ac 100644
+--- a/providers/fips/fipsprov.c
++++ b/providers/fips/fipsprov.c
+@@ -23,7 +23,6 @@
+ #include "prov/seeding.h"
+ #include "self_test.h"
+ #include "internal/core.h"
+-#include "e_os.h"
+ 
+ static const char FIPS_DEFAULT_PROPERTIES[] = "provider=fips,fips=yes";
+ static const char FIPS_UNAPPROVED_PROPERTIES[] = "provider=fips,fips=no";
+@@ -37,18 +36,6 @@ static OSSL_FUNC_provider_gettable_params_fn fips_gettable_params;
+ static OSSL_FUNC_provider_get_params_fn fips_get_params;
+ static OSSL_FUNC_provider_query_operation_fn fips_query;
+ 
+-/* Locale object accessor functions */
+-#ifndef OPENSSL_NO_LOCALE
+-# include <locale.h>
+-# ifdef OPENSSL_SYS_MACOSX
+-#  include <xlocale.h>
+-# endif
+-static locale_t loc;
+-#endif
+-
+-static int fips_init_casecmp(void);
+-static void fips_deinit_casecmp(void);
+-
+ #define ALGC(NAMES, FUNC, CHECK) { { NAMES, FIPS_DEFAULT_PROPERTIES, FUNC }, CHECK }
+ #define ALG(NAMES, FUNC) ALGC(NAMES, FUNC, NULL)
+ 
+@@ -500,40 +487,11 @@ static const OSSL_ALGORITHM *fips_query(void *provctx, int operation_id,
+     return NULL;
+ }
+ 
+-# ifndef OPENSSL_NO_LOCALE
+-void *ossl_c_locale() {
+-    return (void *)loc;
+-}
+-
+-static int fips_init_casecmp(void) {
+-#  ifdef OPENSSL_SYS_WINDOWS
+-    loc = _create_locale(LC_COLLATE, "C");
+-#  else
+-    loc = newlocale(LC_COLLATE_MASK, "C", (locale_t) 0);
+-#  endif
+-    return (loc == (locale_t) 0) ? 0 : 1;
+-}
+-
+-static void fips_deinit_casecmp(void) {
+-    freelocale(loc);
+-}
+-# else
+-void *ossl_c_locale() {
+-    return NULL;
+-}
+-
+-static int fips_init_casecmp(void) {
+-    return 1;
+-}
+-
+-static void fips_deinit_casecmp(void) {
+-}
+-# endif
+-
+ static void fips_teardown(void *provctx)
+ {
+     OSSL_LIB_CTX_free(PROV_LIBCTX_OF(provctx));
+     ossl_prov_ctx_free(provctx);
++    ossl_deinit_casecmp();
+ }
+ 
+ static void fips_intern_teardown(void *provctx)
+@@ -542,7 +500,6 @@ static void fips_intern_teardown(void *provctx)
+      * We know that the library context is the same as for the outer provider,
+      * so no need to destroy it here.
+      */
+-    fips_deinit_casecmp();
+     ossl_prov_ctx_free(provctx);
+ }
+ 
+@@ -592,10 +549,10 @@ int OSSL_provider_init_int(const OSSL_CORE_HANDLE *handle,
+ 
+     memset(&selftest_params, 0, sizeof(selftest_params));
+ 
+-    if (!fips_init_casecmp())
++    if (!ossl_init_casecmp_int())
+         return 0;
+     if (!ossl_prov_seeding_from_dispatch(in))
+-        return 0;
++        goto err;
+     for (; in->function_id != 0; in++) {
+         /*
+          * We do not support the scenario of an application linked against
+-- 
+2.34.1
+

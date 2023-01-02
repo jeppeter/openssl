@@ -1,0 +1,36 @@
+From 6eaaa39e36d6ca37697e7cc3d301733947e43da0 Mon Sep 17 00:00:00 2001
+From: Richard Levitte <levitte@openssl.org>
+Date: Mon, 23 May 2022 09:30:36 +0200
+Subject: [PATCH 11/11] Drop the last ossl_init_casecmp() call
+
+This was missed in an earlier merge that removed it.
+
+Reviewed-by: Dmitry Belyavskiy <beldmit@gmail.com>
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18380)
+
+Origin: upstream, https://github.com/openssl/openssl/pull/18380
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1974037
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010958
+Applied-Upstream: 3.0 branch (probably upcoming 3.0.4)
+---
+ crypto/context.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/crypto/context.c b/crypto/context.c
+index 4fef24cadd..bdfc4d02a3 100644
+--- a/crypto/context.c
++++ b/crypto/context.c
+@@ -151,8 +151,7 @@ static CRYPTO_THREAD_LOCAL default_context_thread_local;
+ DEFINE_RUN_ONCE_STATIC(default_context_do_init)
+ {
+     return CRYPTO_THREAD_init_local(&default_context_thread_local, NULL)
+-        && context_init(&default_context_int)
+-        && ossl_init_casecmp();
++        && context_init(&default_context_int);
+ }
+ 
+ void ossl_lib_ctx_default_deinit(void)
+-- 
+2.34.1
+

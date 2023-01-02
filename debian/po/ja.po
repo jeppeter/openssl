@@ -80,3 +80,30 @@ msgid ""
 "start'."
 msgstr ""
 "開始するには '/etc/init.d/<service> start' を手動で実行する必要があります。"
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid "Restart services during package upgrades without asking?"
+msgstr ""
+"パッケージのアップグレード中、質問することなくサービスを再起動しますか?"
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid ""
+"There are services installed on your system which need to be restarted when "
+"certain libraries, such as libpam, libc, and libssl, are upgraded. Since "
+"these restarts may cause interruptions of service for the system, you will "
+"normally be prompted on each upgrade for the list of services you wish to "
+"restart.  You can choose this option to avoid being prompted; instead, all "
+"necessary restarts will be done for you automatically so you can avoid being "
+"asked questions on each library upgrade."
+msgstr ""
+"このシステムには、libpam や libc、libssl といった特定のライブラリがアップグ"
+"レードされたときに再起動を必要とするサービスがインストールされています。この"
+"再起動はそのシステムで動作しているサービスの中断を伴う可能性があるため、通常"
+"は再起動させるサービス一覧をアップグレードの度に質問します。このオプションを"
+"選択するとその質問を避けられます。代わりに、再起動が必要な場合は全て自動で再"
+"起動させるため、ライブラリをアップグレードする度に質問されるのを避けられま"
+"す。"

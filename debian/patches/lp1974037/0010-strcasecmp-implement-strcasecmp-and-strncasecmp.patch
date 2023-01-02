@@ -1,0 +1,215 @@
+From 5083f5e0713b7027e33a0cb702bb2863f9970980 Mon Sep 17 00:00:00 2001
+From: Pauli <pauli@openssl.org>
+Date: Thu, 19 May 2022 12:51:07 +1000
+Subject: [PATCH 10/11] strcasecmp: implement strcasecmp and strncasecmp
+
+Rather than relying on the locale code working, instead implement these
+functions directly.
+
+Fixes #18322
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Tim Hudson <tjh@openssl.org>
+Reviewed-by: Dmitry Belyavskiy <beldmit@gmail.com>
+(Merged from https://github.com/openssl/openssl/pull/18344)
+
+(cherry picked from commit fb4cdca053fb9d3f0e11eeaf31f4b4ff87f69a95)
+
+Origin: upstream, https://github.com/openssl/openssl/pull/18344
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1974037
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010958
+Applied-Upstream: 3.0 branch (probably upcoming 3.0.4)
+---
+ crypto/init.c               |   6 ---
+ crypto/o_str.c              | 102 +++++-------------------------------
+ include/internal/cryptlib.h |   3 --
+ providers/fips/fipsprov.c   |   3 --
+ 4 files changed, 14 insertions(+), 100 deletions(-)
+
+diff --git a/crypto/init.c b/crypto/init.c
+index 447a009e38..85bf76ae8b 100644
+--- a/crypto/init.c
++++ b/crypto/init.c
+@@ -448,9 +448,6 @@ void OPENSSL_cleanup(void)
+     OSSL_TRACE(INIT, "OPENSSL_cleanup: ossl_trace_cleanup()\n");
+     ossl_trace_cleanup();
+ 
+-    OSSL_TRACE(INIT, "OPENSSL_cleanup: ossl_deinit_casecmp()\n");
+-    ossl_deinit_casecmp();
+-
+     base_inited = 0;
+ }
+ 
+@@ -490,9 +487,6 @@ int OPENSSL_init_crypto(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings)
+         aloaddone = 1;
+     }
+ 
+-    if (!ossl_init_casecmp())
+-        return 0;
+-
+     /*
+      * At some point we should look at this function with a view to moving
+      * most/all of this into OSSL_LIB_CTX.
+diff --git a/crypto/o_str.c b/crypto/o_str.c
+index 789de7bd4d..7fa487dd5f 100644
+--- a/crypto/o_str.c
++++ b/crypto/o_str.c
+@@ -10,13 +10,8 @@
+ #include "e_os.h"
+ #include <string.h>
+ #include <limits.h>
+-#ifndef OPENSSL_NO_LOCALE
+-# include <locale.h>
+-# ifdef OPENSSL_SYS_MACOSX
+-#  include <xlocale.h>
+-# endif
+-#endif
+ #include <openssl/crypto.h>
++#include "crypto/ctype.h"
+ #include "internal/cryptlib.h"
+ #include "internal/thread_once.h"
+ 
+@@ -347,94 +342,25 @@ int openssl_strerror_r(int errnum, char *buf, size_t buflen)
+ #endif
+ }
+ 
+-#ifndef OPENSSL_NO_LOCALE
+-# ifndef FIPS_MODULE
+-static CRYPTO_ONCE casecmp = CRYPTO_ONCE_STATIC_INIT;
+-DEFINE_RUN_ONCE_STATIC(init_casecmp)
+-{
+-    int ret = ossl_init_casecmp_int();
+-
+-    return ret;
+-}
+-
+-int ossl_init_casecmp(void)
+-{
+-    if (!RUN_ONCE(&casecmp, init_casecmp))
+-        return 0;
+-    return 1;
+-}
+-# endif
+-
+-static locale_t loc;
+-
+-static locale_t ossl_c_locale(void)
+-{
+-# ifndef FIPS_MODULE
+-    if (!ossl_init_casecmp())
+-        return (locale_t)0;
+-# endif
+-    return loc;
+-}
+-
+-int ossl_init_casecmp_int(void)
+-{
+-# ifdef OPENSSL_SYS_WINDOWS
+-    loc = _create_locale(LC_COLLATE, "C");
+-# else
+-    loc = newlocale(LC_COLLATE_MASK, "C", (locale_t) 0);
+-# endif
+-    return (loc == (locale_t)0) ? 0 : 1;
+-}
+-
+-void ossl_deinit_casecmp(void)
+-{
+-    if (loc != (locale_t)0) {
+-        freelocale(loc);
+-        loc = (locale_t)0;
+-    }
+-}
+-
+ int OPENSSL_strcasecmp(const char *s1, const char *s2)
+ {
+-    locale_t l = ossl_c_locale();
++    int t;
+ 
+-    /* Fallback in case of locale initialization failure */
+-    if (l == (locale_t)0)
+-        return strcasecmp(s1, s2);
+-    return strcasecmp_l(s1, s2, l);
++    while ((t = ossl_tolower(*s1) - ossl_tolower(*s2++)) == 0)
++        if (*s1++ == '\0')
++            return 0;
++    return t;
+ }
+ 
+ int OPENSSL_strncasecmp(const char *s1, const char *s2, size_t n)
+ {
+-    locale_t l = ossl_c_locale();
+-
+-    /* Fallback in case of locale initialization failure */
+-    if (l == (locale_t)0)
+-        return strncasecmp(s1, s2, n);
+-    return strncasecmp_l(s1, s2, n, l);
+-}
+-#else
+-int ossl_init_casecmp(void)
+-{
+-    return 1;
+-}
+-
+-int ossl_init_casecmp_int(void)
+-{
+-    return 1;
+-}
+-
+-void ossl_deinit_casecmp(void)
+-{
+-}
+-
+-int OPENSSL_strcasecmp(const char *s1, const char *s2)
+-{
+-    return strcasecmp(s1, s2);
+-}
++    int t;
++    size_t i;
+ 
+-int OPENSSL_strncasecmp(const char *s1, const char *s2, size_t n)
+-{
+-    return strncasecmp(s1, s2, n);
++    for (i = 0; i < n; i++)
++        if ((t = ossl_tolower(*s1) - ossl_tolower(*s2++)) != 0)
++            return t;
++        else if (*s1++ == '\0')
++            return 0;
++    return 0;
+ }
+-#endif
+diff --git a/include/internal/cryptlib.h b/include/internal/cryptlib.h
+index 4915680c26..1291299b6e 100644
+--- a/include/internal/cryptlib.h
++++ b/include/internal/cryptlib.h
+@@ -258,7 +258,4 @@ static ossl_inline int ossl_is_absolute_path(const char *path)
+     return path[0] == '/';
+ }
+ 
+-int ossl_init_casecmp_int(void);
+-int ossl_init_casecmp(void);
+-void ossl_deinit_casecmp(void);
+ #endif
+diff --git a/providers/fips/fipsprov.c b/providers/fips/fipsprov.c
+index a8a508d9ac..872ba4ba0f 100644
+--- a/providers/fips/fipsprov.c
++++ b/providers/fips/fipsprov.c
+@@ -491,7 +491,6 @@ static void fips_teardown(void *provctx)
+ {
+     OSSL_LIB_CTX_free(PROV_LIBCTX_OF(provctx));
+     ossl_prov_ctx_free(provctx);
+-    ossl_deinit_casecmp();
+ }
+ 
+ static void fips_intern_teardown(void *provctx)
+@@ -549,8 +548,6 @@ int OSSL_provider_init_int(const OSSL_CORE_HANDLE *handle,
+ 
+     memset(&selftest_params, 0, sizeof(selftest_params));
+ 
+-    if (!ossl_init_casecmp_int())
+-        return 0;
+     if (!ossl_prov_seeding_from_dispatch(in))
+         goto err;
+     for (; in->function_id != 0; in++) {
+-- 
+2.34.1
+

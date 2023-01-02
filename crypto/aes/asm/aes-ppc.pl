@@ -1,7 +1,14 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2007-2020 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License 2.0 (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 # ====================================================================
-# Written by Andy Polyakov <appro@fy.chalmers.se> for the OpenSSL
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
 # project. The module is, however, dual licensed under OpenSSL and
 # CRYPTOGAMS licenses depending on where you obtain it. For further
 # details see http://www.openssl.org/~appro/cryptogams/.
@@ -19,7 +26,7 @@
 # February 2010
 #
 # Rescheduling instructions to favour Power6 pipeline gave 10%
-# performance improvement on the platfrom in question (and marginal
+# performance improvement on the platform in question (and marginal
 # improvement even on others). It should be noted that Power6 fails
 # to process byte in 18 cycles, only in 23, because it fails to issue
 # 4 load instructions in two cycles, only in 3. As result non-compact
@@ -29,7 +36,10 @@
 # ppc_AES_encrypt_compact operates at 42 cycles per byte, while
 # ppc_AES_decrypt_compact - at 55 (in 64-bit build).
 
-$flavour = shift;
+# $output is the last argument if it looks like a file (it has an extension)
+# $flavour is the first argument if it doesn't look like a file
+$output = $#ARGV >= 0 && $ARGV[$#ARGV] =~ m|\.\w+$| ? pop : undef;
+$flavour = $#ARGV >= 0 && $ARGV[0] !~ m|\.| ? shift : undef;
 
 if ($flavour =~ /64/) {
 	$SIZE_T	=8;
@@ -45,18 +55,15 @@ if ($flavour =~ /64/) {
 	$PUSH	="stw";
 } else { die "nonsense $flavour"; }
 
-$LITTLE_ENDIAN=0;
-if ($flavour =~ /le$/) {
-	die "little-endian is 64-bit only: $flavour" if ($SIZE_T == 4);
-	$LITTLE_ENDIAN=1;
-}
+$LITTLE_ENDIAN = ($flavour=~/le$/) ? $SIZE_T : 0;
 
 $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
 ( $xlate="${dir}ppc-xlate.pl" and -f $xlate ) or
 ( $xlate="${dir}../../perlasm/ppc-xlate.pl" and -f $xlate) or
 die "can't locate ppc-xlate.pl";
 
-open STDOUT,"| $^X $xlate $flavour ".shift || die "can't call $xlate: $!";
+open STDOUT,"| $^X $xlate $flavour \"$output\""
+    or die "can't call $xlate: $!";
 
 $FRAME=32*$SIZE_T;
 
@@ -74,7 +81,7 @@ $key="r5";
 $Tbl0="r3";
 $Tbl1="r6";
 $Tbl2="r7";
-$Tbl3="r2";
+$Tbl3=$out;	# stay away from "r2"; $out is offloaded to stack
 
 $s0="r8";
 $s1="r9";
@@ -82,7 +89,7 @@ $s2="r10";
 $s3="r11";
 
 $t0="r12";
-$t1="r13";
+$t1="r0";	# stay away from "r13";
 $t2="r14";
 $t3="r15";
 
@@ -106,9 +113,6 @@ $acc13="r29";
 $acc14="r30";
 $acc15="r31";
 
-# stay away from TLS pointer
-if ($SIZE_T==8)	{ die if ($t1 ne "r13");  $t1="r0";		}
-else		{ die if ($Tbl3 ne "r2"); $Tbl3=$t0; $t0="r0";	}
 $mask80=$Tbl2;
 $mask1b=$Tbl3;
 
@@ -343,8 +347,7 @@ $code.=<<___;
 	$STU	$sp,-$FRAME($sp)
 	mflr	r0
 
-	$PUSH	$toc,`$FRAME-$SIZE_T*20`($sp)
-	$PUSH	r13,`$FRAME-$SIZE_T*19`($sp)
+	$PUSH	$out,`$FRAME-$SIZE_T*19`($sp)
 	$PUSH	r14,`$FRAME-$SIZE_T*18`($sp)
 	$PUSH	r15,`$FRAME-$SIZE_T*17`($sp)
 	$PUSH	r16,`$FRAME-$SIZE_T*16`($sp)
@@ -399,6 +402,7 @@ ___
 $code.=<<___;
 	bl	LAES_Te
 	bl	Lppc_AES_encrypt_compact
+	$POP	$out,`$FRAME-$SIZE_T*19`($sp)
 ___
 $code.=<<___ if ($LITTLE_ENDIAN);
 	rotlwi	$t0,$s0,8
@@ -467,6 +471,7 @@ Lenc_xpage:
 
 	bl	LAES_Te
 	bl	Lppc_AES_encrypt_compact
+	$POP	$out,`$FRAME-$SIZE_T*19`($sp)
 
 	extrwi	$acc00,$s0,8,0
 	extrwi	$acc01,$s0,8,8
@@ -499,8 +504,6 @@ Lenc_xpage:
 
 Lenc_done:
 	$POP	r0,`$FRAME+$LRSAVE`($sp)
-	$POP	$toc,`$FRAME-$SIZE_T*20`($sp)
-	$POP	r13,`$FRAME-$SIZE_T*19`($sp)
 	$POP	r14,`$FRAME-$SIZE_T*18`($sp)
 	$POP	r15,`$FRAME-$SIZE_T*17`($sp)
 	$POP	r16,`$FRAME-$SIZE_T*16`($sp)
@@ -598,7 +601,7 @@ Lenc_loop:
 	xor	$s2,$t2,$acc14
 	xor	$s3,$t3,$acc15
 	addi	$key,$key,16
-	bdnz-	Lenc_loop
+	bdnz	Lenc_loop
 
 	addi	$Tbl2,$Tbl0,2048
 	nop
@@ -814,6 +817,7 @@ Lenc_compact_done:
 	blr
 	.long	0
 	.byte	0,12,0x14,0,0,0,0,0
+.size	.AES_encrypt,.-.AES_encrypt
 
 .globl	.AES_decrypt
 .align	7
@@ -821,8 +825,7 @@ Lenc_compact_done:
 	$STU	$sp,-$FRAME($sp)
 	mflr	r0
 
-	$PUSH	$toc,`$FRAME-$SIZE_T*20`($sp)
-	$PUSH	r13,`$FRAME-$SIZE_T*19`($sp)
+	$PUSH	$out,`$FRAME-$SIZE_T*19`($sp)
 	$PUSH	r14,`$FRAME-$SIZE_T*18`($sp)
 	$PUSH	r15,`$FRAME-$SIZE_T*17`($sp)
 	$PUSH	r16,`$FRAME-$SIZE_T*16`($sp)
@@ -877,6 +880,7 @@ ___
 $code.=<<___;
 	bl	LAES_Td
 	bl	Lppc_AES_decrypt_compact
+	$POP	$out,`$FRAME-$SIZE_T*19`($sp)
 ___
 $code.=<<___ if ($LITTLE_ENDIAN);
 	rotlwi	$t0,$s0,8
@@ -945,6 +949,7 @@ Ldec_xpage:
 
 	bl	LAES_Td
 	bl	Lppc_AES_decrypt_compact
+	$POP	$out,`$FRAME-$SIZE_T*19`($sp)
 
 	extrwi	$acc00,$s0,8,0
 	extrwi	$acc01,$s0,8,8
@@ -977,8 +982,6 @@ Ldec_xpage:
 
 Ldec_done:
 	$POP	r0,`$FRAME+$LRSAVE`($sp)
-	$POP	$toc,`$FRAME-$SIZE_T*20`($sp)
-	$POP	r13,`$FRAME-$SIZE_T*19`($sp)
 	$POP	r14,`$FRAME-$SIZE_T*18`($sp)
 	$POP	r15,`$FRAME-$SIZE_T*17`($sp)
 	$POP	r16,`$FRAME-$SIZE_T*16`($sp)
@@ -1076,7 +1079,7 @@ Ldec_loop:
 	xor	$s2,$t2,$acc14
 	xor	$s3,$t3,$acc15
 	addi	$key,$key,16
-	bdnz-	Ldec_loop
+	bdnz	Ldec_loop
 
 	addi	$Tbl2,$Tbl0,2048
 	nop
@@ -1434,10 +1437,10 @@ $code.=<<___;
 	xor	$s1,$s1,$acc05
 	xor	$s2,$s2,$acc06
 	xor	$s3,$s3,$acc07
-	xor	$s0,$s0,$acc08		# ^= ROTATE(r8,8)	
-	xor	$s1,$s1,$acc09	
-	xor	$s2,$s2,$acc10	
-	xor	$s3,$s3,$acc11	
+	xor	$s0,$s0,$acc08		# ^= ROTATE(r8,8)
+	xor	$s1,$s1,$acc09
+	xor	$s2,$s2,$acc10
+	xor	$s3,$s3,$acc11
 
 	b	Ldec_compact_loop
 .align	4
@@ -1449,6 +1452,7 @@ Ldec_compact_done:
 	blr
 	.long	0
 	.byte	0,12,0x14,0,0,0,0,0
+.size	.AES_decrypt,.-.AES_decrypt
 
 .asciz	"AES for PPC, CRYPTOGAMS by <appro\@openssl.org>"
 .align	7
@@ -1456,4 +1460,4 @@ ___
 
 $code =~ s/\`([^\`]*)\`/eval $1/gem;
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

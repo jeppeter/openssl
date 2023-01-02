@@ -1,0 +1,1793 @@
+From 2d595f1b8173997d7a62738c72d712dbe24c412d Mon Sep 17 00:00:00 2001
+From: Dmitry Belyavskiy <beldmit@gmail.com>
+Date: Tue, 12 Apr 2022 12:30:08 +0200
+Subject: [PATCH 4/5] str[n]casecmp => OPENSSL_strncasecmp
+
+Reviewed-by: Tim Hudson <tjh@openssl.org>
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18103)
+
+Origin: https://github.com/openssl/openssl/pull/18103
+Applied-Upstream: 3.0.3, master@2022-04-22
+---
+ apps/ca.c                                     |  4 +--
+ apps/cmp.c                                    |  2 +-
+ apps/ecparam.c                                |  2 +-
+ apps/lib/apps.c                               | 16 ++++-----
+ apps/lib/engine_loader.c                      |  2 +-
+ apps/lib/http_server.c                        |  7 ++--
+ apps/lib/names.c                              |  7 ++--
+ apps/lib/vms_term_sock.c                      |  2 +-
+ apps/list.c                                   |  8 ++---
+ apps/rehash.c                                 |  4 +--
+ apps/s_server.c                               |  2 +-
+ crypto/LPdir_unix.c                           |  3 +-
+ crypto/asn1/ameth_lib.c                       |  3 +-
+ crypto/asn1/asn1_gen.c                        |  4 +--
+ crypto/conf/conf_def.c                        | 16 +++++----
+ crypto/core_namemap.c                         |  3 +-
+ crypto/dh/dh_group_params.c                   |  1 -
+ crypto/ec/ec_backend.c                        |  6 ++--
+ crypto/ec/ec_lib.c                            |  6 ++--
+ crypto/encode_decode/decoder_lib.c            | 10 +++---
+ crypto/encode_decode/decoder_pkey.c           |  1 -
+ crypto/encode_decode/encoder_lib.c            |  9 +++--
+ crypto/encode_decode/encoder_pkey.c           |  1 -
+ crypto/engine/tb_asnmth.c                     |  4 +--
+ crypto/evp/ctrl_params_translate.c            | 12 +++----
+ crypto/evp/ec_support.c                       |  4 +--
+ crypto/evp/evp_lib.c                          | 13 ++++---
+ crypto/evp/p_lib.c                            |  4 +--
+ crypto/ffc/ffc_dh.c                           |  3 +-
+ crypto/ffc/ffc_params.c                       |  1 -
+ crypto/http/http_client.c                     | 16 ++++-----
+ crypto/objects/o_names.c                      | 21 ++---------
+ crypto/params_dup.c                           |  5 ++-
+ crypto/property/property_parse.c              |  2 +-
+ crypto/rand/rand_lib.c                        | 12 +++----
+ crypto/rsa/rsa_backend.c                      |  6 ++--
+ crypto/store/store_lib.c                      |  2 +-
+ crypto/store/store_result.c                   |  2 +-
+ crypto/trace.c                                |  4 +--
+ crypto/x509/v3_tlsf.c                         |  2 +-
+ crypto/x509/v3_utl.c                          |  4 +--
+ engines/e_devcrypto.c                         |  8 ++---
+ engines/e_loader_attic.c                      |  9 +++--
+ engines/e_ossltest.c                          |  6 +---
+ providers/common/capabilities.c               |  2 +-
+ .../implementations/ciphers/cipher_cts.c      |  3 +-
+ providers/implementations/kdfs/hkdf.c         |  6 ++--
+ providers/implementations/kdfs/kbkdf.c        |  5 +--
+ providers/implementations/kdfs/tls1_prf.c     |  2 +-
+ providers/implementations/kem/rsa_kem.c       |  4 +--
+ providers/implementations/keymgmt/dsa_kmgmt.c |  3 +-
+ providers/implementations/keymgmt/ec_kmgmt.c  |  1 -
+ providers/implementations/keymgmt/ecx_kmgmt.c |  4 +--
+ .../keymgmt/mac_legacy_kmgmt.c                |  1 -
+ providers/implementations/rands/drbg_ctr.c    |  3 +-
+ providers/implementations/signature/rsa_sig.c |  3 +-
+ .../implementations/storemgmt/file_store.c    |  9 +++--
+ ssl/ssl_conf.c                                | 11 +++---
+ test/bntest.c                                 |  9 +----
+ test/evp_extra_test.c                         |  3 +-
+ test/evp_libctx_test.c                        |  3 +-
+ test/evp_test.c                               | 19 +++++-----
+ test/helpers/ssl_test_ctx.c                   |  8 ++---
+ test/params_conversion_test.c                 | 36 +++++++++----------
+ test/ssl_old_test.c                           |  2 +-
+ test/v3nametest.c                             |  6 +---
+ 66 files changed, 169 insertions(+), 233 deletions(-)
+
+diff --git a/apps/ca.c b/apps/ca.c
+index 24883615ed..8a2b315795 100644
+--- a/apps/ca.c
++++ b/apps/ca.c
+@@ -2367,7 +2367,7 @@ static char *make_revocation_str(REVINFO_TYPE rev_type, const char *rev_arg)
+ 
+     case REV_CRL_REASON:
+         for (i = 0; i < 8; i++) {
+-            if (strcasecmp(rev_arg, crl_reasons[i]) == 0) {
++            if (OPENSSL_strcasecmp(rev_arg, crl_reasons[i]) == 0) {
+                 reason = crl_reasons[i];
+                 break;
+             }
+@@ -2584,7 +2584,7 @@ int unpack_revinfo(ASN1_TIME **prevtm, int *preason, ASN1_OBJECT **phold,
+     }
+     if (reason_str) {
+         for (i = 0; i < NUM_REASONS; i++) {
+-            if (strcasecmp(reason_str, crl_reasons[i]) == 0) {
++            if (OPENSSL_strcasecmp(reason_str, crl_reasons[i]) == 0) {
+                 reason_code = i;
+                 break;
+             }
+diff --git a/apps/cmp.c b/apps/cmp.c
+index 9ea5cee412..5c6bcdad0a 100644
+--- a/apps/cmp.c
++++ b/apps/cmp.c
+@@ -1745,7 +1745,7 @@ static int handle_opt_geninfo(OSSL_CMP_CTX *ctx)
+     valptr[0] = '\0';
+     valptr++;
+ 
+-    if (strncasecmp(valptr, "int:", 4) != 0) {
++    if (OPENSSL_strncasecmp(valptr, "int:", 4) != 0) {
+         CMP_err("missing 'int:' in -geninfo option");
+         return 0;
+     }
+diff --git a/apps/ecparam.c b/apps/ecparam.c
+index 12eed703de..ecce36be71 100644
+--- a/apps/ecparam.c
++++ b/apps/ecparam.c
+@@ -229,7 +229,7 @@ int ecparam_main(int argc, char **argv)
+                        point_format, 0);
+         *p = OSSL_PARAM_construct_end();
+ 
+-        if (strcasecmp(curve_name, "SM2") == 0)
++        if (OPENSSL_strcasecmp(curve_name, "SM2") == 0)
+             gctx_params = EVP_PKEY_CTX_new_from_name(NULL, "sm2", NULL);
+         else
+             gctx_params = EVP_PKEY_CTX_new_from_name(NULL, "ec", NULL);
+diff --git a/apps/lib/apps.c b/apps/lib/apps.c
+index 30da6e8a8c..227da4982d 100644
+--- a/apps/lib/apps.c
++++ b/apps/lib/apps.c
+@@ -688,8 +688,8 @@ int load_cert_certs(const char *uri,
+     int ret = 0;
+     char *pass_string;
+ 
+-    if (exclude_http && (strncasecmp(uri, "http://", 7) == 0
+-                         || strncasecmp(uri, "https://", 8) == 0)) {
++    if (exclude_http && (OPENSSL_strncasecmp(uri, "http://", 7) == 0
++                         || OPENSSL_strncasecmp(uri, "https://", 8) == 0)) {
+         BIO_printf(bio_err, "error: HTTP retrieval not allowed for %s\n", desc);
+         return ret;
+     }
+@@ -1182,20 +1182,20 @@ int set_name_ex(unsigned long *flags, const char *arg)
+ 
+ int set_dateopt(unsigned long *dateopt, const char *arg)
+ {
+-    if (strcasecmp(arg, "rfc_822") == 0)
++    if (OPENSSL_strcasecmp(arg, "rfc_822") == 0)
+         *dateopt = ASN1_DTFLGS_RFC822;
+-    else if (strcasecmp(arg, "iso_8601") == 0)
++    else if (OPENSSL_strcasecmp(arg, "iso_8601") == 0)
+         *dateopt = ASN1_DTFLGS_ISO8601;
+     return 0;
+ }
+ 
+ int set_ext_copy(int *copy_type, const char *arg)
+ {
+-    if (strcasecmp(arg, "none") == 0)
++    if (OPENSSL_strcasecmp(arg, "none") == 0)
+         *copy_type = EXT_COPY_NONE;
+-    else if (strcasecmp(arg, "copy") == 0)
++    else if (OPENSSL_strcasecmp(arg, "copy") == 0)
+         *copy_type = EXT_COPY_ADD;
+-    else if (strcasecmp(arg, "copyall") == 0)
++    else if (OPENSSL_strcasecmp(arg, "copyall") == 0)
+         *copy_type = EXT_COPY_ALL;
+     else
+         return 0;
+@@ -1275,7 +1275,7 @@ static int set_table_opts(unsigned long *flags, const char *arg,
+     }
+ 
+     for (ptbl = in_tbl; ptbl->name; ptbl++) {
+-        if (strcasecmp(arg, ptbl->name) == 0) {
++        if (OPENSSL_strcasecmp(arg, ptbl->name) == 0) {
+             *flags &= ~ptbl->mask;
+             if (c)
+                 *flags |= ptbl->flag;
+diff --git a/apps/lib/engine_loader.c b/apps/lib/engine_loader.c
+index c093f31e1b..42775a89f3 100644
+--- a/apps/lib/engine_loader.c
++++ b/apps/lib/engine_loader.c
+@@ -71,7 +71,7 @@ static OSSL_STORE_LOADER_CTX *engine_open(const OSSL_STORE_LOADER *loader,
+     char *keyid = NULL;
+     OSSL_STORE_LOADER_CTX *ctx = NULL;
+ 
+-    if (strncasecmp(p, ENGINE_SCHEME_COLON, sizeof(ENGINE_SCHEME_COLON) - 1)
++    if (OPENSSL_strncasecmp(p, ENGINE_SCHEME_COLON, sizeof(ENGINE_SCHEME_COLON) - 1)
+         != 0)
+         return NULL;
+     p += sizeof(ENGINE_SCHEME_COLON) - 1;
+diff --git a/apps/lib/http_server.c b/apps/lib/http_server.c
+index 03faac7707..df9575e2cd 100644
+--- a/apps/lib/http_server.c
++++ b/apps/lib/http_server.c
+@@ -453,10 +453,11 @@ int http_server_get_asn1_req(const ASN1_ITEM *it, ASN1_VALUE **preq,
+         }
+         *line_end = '\0';
+         /* https://tools.ietf.org/html/rfc7230#section-6.3 Persistence */
+-        if (found_keep_alive != NULL && strcasecmp(key, "Connection") == 0) {
+-            if (strcasecmp(value, "keep-alive") == 0)
++        if (found_keep_alive != NULL
++            && OPENSSL_strcasecmp(key, "Connection") == 0) {
++            if (OPENSSL_strcasecmp(value, "keep-alive") == 0)
+                 *found_keep_alive = 1;
+-            else if (strcasecmp(value, "close") == 0)
++            else if (OPENSSL_strcasecmp(value, "close") == 0)
+                 *found_keep_alive = 0;
+         }
+     }
+diff --git a/apps/lib/names.c b/apps/lib/names.c
+index 5e2e7e147c..462703c646 100644
+--- a/apps/lib/names.c
++++ b/apps/lib/names.c
+@@ -11,14 +11,11 @@
+ #include <openssl/bio.h>
+ #include <openssl/safestack.h>
+ #include "names.h"
+-
+-#ifdef _WIN32
+-# define strcasecmp _stricmp
+-#endif
++#include "openssl/crypto.h"
+ 
+ int name_cmp(const char * const *a, const char * const *b)
+ {
+-    return strcasecmp(*a, *b);
++    return OPENSSL_strcasecmp(*a, *b);
+ }
+ 
+ void collect_names(const char *name, void *vdata)
+diff --git a/apps/lib/vms_term_sock.c b/apps/lib/vms_term_sock.c
+index 1b27699b9d..4d9a69b29e 100644
+--- a/apps/lib/vms_term_sock.c
++++ b/apps/lib/vms_term_sock.c
+@@ -132,7 +132,7 @@ int main (int argc, char *argv[], char *envp[])
+         len;
+ 
+     LogMessage ("Enter 'q' or 'Q' to quit ...");
+-    while (strcasecmp (TermBuff, "Q")) {
++    while (OPENSSL_strcasecmp (TermBuff, "Q")) {
+         /*
+         ** Create the terminal socket
+         */
+diff --git a/apps/list.c b/apps/list.c
+index 9732d6625a..620ce00831 100644
+--- a/apps/list.c
++++ b/apps/list.c
+@@ -71,7 +71,7 @@ static void legacy_cipher_fn(const EVP_CIPHER *c,
+ {
+     if (select_name != NULL
+         && (c == NULL
+-            || strcasecmp(select_name,  EVP_CIPHER_get0_name(c)) != 0))
++            || OPENSSL_strcasecmp(select_name,  EVP_CIPHER_get0_name(c)) != 0))
+         return;
+     if (c != NULL) {
+         BIO_printf(arg, "  %s\n", EVP_CIPHER_get0_name(c));
+@@ -370,7 +370,7 @@ DEFINE_STACK_OF(EVP_RAND)
+ 
+ static int rand_cmp(const EVP_RAND * const *a, const EVP_RAND * const *b)
+ {
+-    int ret = strcasecmp(EVP_RAND_get0_name(*a), EVP_RAND_get0_name(*b));
++    int ret = OPENSSL_strcasecmp(EVP_RAND_get0_name(*a), EVP_RAND_get0_name(*b));
+ 
+     if (ret == 0)
+         ret = strcmp(OSSL_PROVIDER_get0_name(EVP_RAND_get0_provider(*a)),
+@@ -404,7 +404,7 @@ static void list_random_generators(void)
+         const EVP_RAND *m = sk_EVP_RAND_value(rands, i);
+ 
+         if (select_name != NULL
+-            && strcasecmp(EVP_RAND_get0_name(m), select_name) != 0)
++            && OPENSSL_strcasecmp(EVP_RAND_get0_name(m), select_name) != 0)
+             continue;
+         BIO_printf(bio_out, "  %s", EVP_RAND_get0_name(m));
+         BIO_printf(bio_out, " @ %s\n",
+@@ -463,7 +463,7 @@ static void display_random(const char *name, EVP_RAND_CTX *drbg)
+         if (gettables != NULL)
+             for (; gettables->key != NULL; gettables++) {
+                 /* State has been dealt with already, so ignore */
+-                if (strcasecmp(gettables->key, OSSL_RAND_PARAM_STATE) == 0)
++                if (OPENSSL_strcasecmp(gettables->key, OSSL_RAND_PARAM_STATE) == 0)
+                     continue;
+                 /* Outside of verbose mode, we skip non-string values */
+                 if (gettables->data_type != OSSL_PARAM_UTF8_STRING
+diff --git a/apps/rehash.c b/apps/rehash.c
+index fb6c08c420..e4a4e14fd4 100644
+--- a/apps/rehash.c
++++ b/apps/rehash.c
+@@ -214,7 +214,7 @@ static int handle_symlink(const char *filename, const char *fullpath)
+         return -1;
+     for (type = OSSL_NELEM(suffixes) - 1; type > 0; type--) {
+         const char *suffix = suffixes[type];
+-        if (strncasecmp(suffix, &filename[i], strlen(suffix)) == 0)
++        if (OPENSSL_strncasecmp(suffix, &filename[i], strlen(suffix)) == 0)
+             break;
+     }
+     i += strlen(suffixes[type]);
+@@ -249,7 +249,7 @@ static int do_file(const char *filename, const char *fullpath, enum Hash h)
+     if ((ext = strrchr(filename, '.')) == NULL)
+         goto end;
+     for (i = 0; i < OSSL_NELEM(extensions); i++) {
+-        if (strcasecmp(extensions[i], ext + 1) == 0)
++        if (OPENSSL_strcasecmp(extensions[i], ext + 1) == 0)
+             break;
+     }
+     if (i >= OSSL_NELEM(extensions))
+diff --git a/apps/s_server.c b/apps/s_server.c
+index ccaec3124b..e93cfa1e2c 100644
+--- a/apps/s_server.c
++++ b/apps/s_server.c
+@@ -432,7 +432,7 @@ static int ssl_servername_cb(SSL *s, int *ad, void *arg)
+         return SSL_TLSEXT_ERR_NOACK;
+ 
+     if (servername != NULL) {
+-        if (strcasecmp(servername, p->servername))
++        if (OPENSSL_strcasecmp(servername, p->servername))
+             return p->extension_error;
+         if (ctx2 != NULL) {
+             BIO_printf(p->biodebug, "Switching server context.\n");
+diff --git a/crypto/LPdir_unix.c b/crypto/LPdir_unix.c
+index ddf68b576f..fe9fc0dd43 100644
+--- a/crypto/LPdir_unix.c
++++ b/crypto/LPdir_unix.c
+@@ -141,7 +141,8 @@ const char *LP_find_file(LP_DIR_CTX **ctx, const char *directory)
+             p--;
+         if (p > (*ctx)->entry_name && p[-1] == ';')
+             p[-1] = '\0';
+-        if (strcasecmp((*ctx)->entry_name, (*ctx)->previous_entry_name) == 0)
++        if (OPENSSL_strcasecmp((*ctx)->entry_name,
++                               (*ctx)->previous_entry_name) == 0)
+             goto again;
+     }
+ #endif
+diff --git a/crypto/asn1/ameth_lib.c b/crypto/asn1/ameth_lib.c
+index 031a6c936a..0de5785c27 100644
+--- a/crypto/asn1/ameth_lib.c
++++ b/crypto/asn1/ameth_lib.c
+@@ -10,7 +10,6 @@
+ /* We need to use some engine deprecated APIs */
+ #define OPENSSL_SUPPRESS_DEPRECATED
+ 
+-#include "e_os.h"               /* for strncasecmp */
+ #include "internal/cryptlib.h"
+ #include <stdio.h>
+ #include <openssl/asn1t.h>
+@@ -134,7 +133,7 @@ const EVP_PKEY_ASN1_METHOD *EVP_PKEY_asn1_find_str(ENGINE **pe,
+         if (ameth->pkey_flags & ASN1_PKEY_ALIAS)
+             continue;
+         if ((int)strlen(ameth->pem_str) == len
+-            && strncasecmp(ameth->pem_str, str, len) == 0)
++            && OPENSSL_strncasecmp(ameth->pem_str, str, len) == 0)
+             return ameth;
+     }
+     return NULL;
+diff --git a/crypto/asn1/asn1_gen.c b/crypto/asn1/asn1_gen.c
+index ecff2be02e..59d42daf4a 100644
+--- a/crypto/asn1/asn1_gen.c
++++ b/crypto/asn1/asn1_gen.c
+@@ -10,7 +10,6 @@
+ #include "internal/cryptlib.h"
+ #include <openssl/asn1.h>
+ #include <openssl/x509v3.h>
+-#include "e_os.h" /* strncasecmp() */
+ 
+ #define ASN1_GEN_FLAG           0x10000
+ #define ASN1_GEN_FLAG_IMP       (ASN1_GEN_FLAG|1)
+@@ -565,7 +564,8 @@ static int asn1_str2tag(const char *tagstr, int len)
+ 
+     tntmp = tnst;
+     for (i = 0; i < OSSL_NELEM(tnst); i++, tntmp++) {
+-        if ((len == tntmp->len) && (strncasecmp(tntmp->strnam, tagstr, len) == 0))
++        if ((len == tntmp->len)
++            && (OPENSSL_strncasecmp(tntmp->strnam, tagstr, len) == 0))
+             return tntmp->tag;
+     }
+ 
+diff --git a/crypto/conf/conf_def.c b/crypto/conf/conf_def.c
+index c05c3c6b10..6fe8427dc5 100644
+--- a/crypto/conf/conf_def.c
++++ b/crypto/conf/conf_def.c
+@@ -11,7 +11,7 @@
+ 
+ #include <stdio.h>
+ #include <string.h>
+-#include "e_os.h" /* strcasecmp and struct stat */
++#include "e_os.h" /* struct stat */
+ #ifdef __TANDEM
+ # include <sys/types.h> /* needed for stat.h */
+ # include <sys/stat.h> /* struct stat */
+@@ -192,11 +192,11 @@ static int def_load(CONF *conf, const char *name, long *line)
+ /* Parse a boolean value and fill in *flag. Return 0 on error. */
+ static int parsebool(const char *pval, int *flag)
+ {
+-    if (strcasecmp(pval, "on") == 0
+-            || strcasecmp(pval, "true") == 0) {
++    if (OPENSSL_strcasecmp(pval, "on") == 0
++            || OPENSSL_strcasecmp(pval, "true") == 0) {
+         *flag = 1;
+-    } else if (strcasecmp(pval, "off") == 0
+-            || strcasecmp(pval, "false") == 0) {
++    } else if (OPENSSL_strcasecmp(pval, "off") == 0
++            || OPENSSL_strcasecmp(pval, "false") == 0) {
+         *flag = 0;
+     } else {
+         ERR_raise(ERR_LIB_CONF, CONF_R_INVALID_PRAGMA);
+@@ -839,8 +839,10 @@ static BIO *get_next_file(const char *path, OPENSSL_DIR_CTX **dirctx)
+         namelen = strlen(filename);
+ 
+ 
+-        if ((namelen > 5 && strcasecmp(filename + namelen - 5, ".conf") == 0)
+-            || (namelen > 4 && strcasecmp(filename + namelen - 4, ".cnf") == 0)) {
++        if ((namelen > 5
++             && OPENSSL_strcasecmp(filename + namelen - 5, ".conf") == 0)
++             || (namelen > 4
++                 && OPENSSL_strcasecmp(filename + namelen - 4, ".cnf") == 0)) {
+             size_t newlen;
+             char *newpath;
+             BIO *bio;
+diff --git a/crypto/core_namemap.c b/crypto/core_namemap.c
+index 55248affc6..7e11ab1c88 100644
+--- a/crypto/core_namemap.c
++++ b/crypto/core_namemap.c
+@@ -7,7 +7,6 @@
+  * https://www.openssl.org/source/license.html
+  */
+ 
+-#include "e_os.h"                /* strcasecmp */
+ #include "internal/namemap.h"
+ #include <openssl/lhash.h>
+ #include "crypto/lhash.h"      /* ossl_lh_strcasehash */
+@@ -49,7 +48,7 @@ static unsigned long namenum_hash(const NAMENUM_ENTRY *n)
+ 
+ static int namenum_cmp(const NAMENUM_ENTRY *a, const NAMENUM_ENTRY *b)
+ {
+-    return strcasecmp(a->name, b->name);
++    return OPENSSL_strcasecmp(a->name, b->name);
+ }
+ 
+ static void namenum_free(NAMENUM_ENTRY *n)
+diff --git a/crypto/dh/dh_group_params.c b/crypto/dh/dh_group_params.c
+index c71f4053da..7608cbae5a 100644
+--- a/crypto/dh/dh_group_params.c
++++ b/crypto/dh/dh_group_params.c
+@@ -23,7 +23,6 @@
+ #include <openssl/objects.h>
+ #include "internal/nelem.h"
+ #include "crypto/dh.h"
+-#include "e_os.h" /* strcasecmp */
+ 
+ static DH *dh_param_init(OSSL_LIB_CTX *libctx, const DH_NAMED_GROUP *group)
+ {
+diff --git a/crypto/ec/ec_backend.c b/crypto/ec/ec_backend.c
+index 381da71f33..0d84a33322 100644
+--- a/crypto/ec/ec_backend.c
++++ b/crypto/ec/ec_backend.c
+@@ -54,7 +54,7 @@ int ossl_ec_encoding_name2id(const char *name)
+         return OPENSSL_EC_NAMED_CURVE;
+ 
+     for (i = 0, sz = OSSL_NELEM(encoding_nameid_map); i < sz; i++) {
+-        if (strcasecmp(name, encoding_nameid_map[i].ptr) == 0)
++        if (OPENSSL_strcasecmp(name, encoding_nameid_map[i].ptr) == 0)
+             return encoding_nameid_map[i].id;
+     }
+     return -1;
+@@ -91,7 +91,7 @@ static int ec_check_group_type_name2id(const char *name)
+         return 0;
+ 
+     for (i = 0, sz = OSSL_NELEM(check_group_type_nameid_map); i < sz; i++) {
+-        if (strcasecmp(name, check_group_type_nameid_map[i].ptr) == 0)
++        if (OPENSSL_strcasecmp(name, check_group_type_nameid_map[i].ptr) == 0)
+             return check_group_type_nameid_map[i].id;
+     }
+     return -1;
+@@ -136,7 +136,7 @@ int ossl_ec_pt_format_name2id(const char *name)
+         return (int)POINT_CONVERSION_UNCOMPRESSED;
+ 
+     for (i = 0, sz = OSSL_NELEM(format_nameid_map); i < sz; i++) {
+-        if (strcasecmp(name, format_nameid_map[i].ptr) == 0)
++        if (OPENSSL_strcasecmp(name, format_nameid_map[i].ptr) == 0)
+             return format_nameid_map[i].id;
+     }
+     return -1;
+diff --git a/crypto/ec/ec_lib.c b/crypto/ec/ec_lib.c
+index 2ee8284eaf..ecd53fee00 100644
+--- a/crypto/ec/ec_lib.c
++++ b/crypto/ec/ec_lib.c
+@@ -22,7 +22,6 @@
+ #include "crypto/ec.h"
+ #include "internal/nelem.h"
+ #include "ec_local.h"
+-#include "e_os.h" /* strcasecmp */
+ 
+ /* functions for EC_GROUP objects */
+ 
+@@ -1581,9 +1580,10 @@ EC_GROUP *EC_GROUP_new_from_params(const OSSL_PARAM params[],
+         ERR_raise(ERR_LIB_EC, EC_R_INVALID_FIELD);
+         goto err;
+     }
+-    if (strcasecmp(ptmp->data, SN_X9_62_prime_field) == 0) {
++    if (OPENSSL_strcasecmp(ptmp->data, SN_X9_62_prime_field) == 0) {
+         is_prime_field = 1;
+-    } else if (strcasecmp(ptmp->data, SN_X9_62_characteristic_two_field) == 0) {
++    } else if (OPENSSL_strcasecmp(ptmp->data,
++                                  SN_X9_62_characteristic_two_field) == 0) {
+         is_prime_field = 0;
+     } else {
+         /* Invalid field */
+diff --git a/crypto/encode_decode/decoder_lib.c b/crypto/encode_decode/decoder_lib.c
+index 10a38b6f82..de6d3def31 100644
+--- a/crypto/encode_decode/decoder_lib.c
++++ b/crypto/encode_decode/decoder_lib.c
+@@ -789,7 +789,7 @@ static int decoder_process(const OSSL_PARAM params[], void *arg)
+          */
+         trace_data_structure = data_structure;
+         if (data_type != NULL && data_structure != NULL
+-            && strcasecmp(data_structure, "type-specific") == 0)
++            && OPENSSL_strcasecmp(data_structure, "type-specific") == 0)
+             data_structure = NULL;
+ 
+         OSSL_TRACE_BEGIN(DECODER) {
+@@ -850,7 +850,7 @@ static int decoder_process(const OSSL_PARAM params[], void *arg)
+          * that's the case, we do this extra check.
+          */
+         if (decoder == NULL && ctx->start_input_type != NULL
+-            && strcasecmp(ctx->start_input_type, new_input_type) != 0) {
++            && OPENSSL_strcasecmp(ctx->start_input_type, new_input_type) != 0) {
+             OSSL_TRACE_BEGIN(DECODER) {
+                 BIO_printf(trc_out,
+                            "(ctx %p) %s [%u] the start input type '%s' doesn't match the input type of the considered decoder, skipping...\n",
+@@ -896,7 +896,8 @@ static int decoder_process(const OSSL_PARAM params[], void *arg)
+          */
+         if (data_structure != NULL
+             && (new_input_structure == NULL
+-                || strcasecmp(data_structure, new_input_structure) != 0)) {
++                || OPENSSL_strcasecmp(data_structure,
++                                      new_input_structure) != 0)) {
+             OSSL_TRACE_BEGIN(DECODER) {
+                 BIO_printf(trc_out,
+                            "(ctx %p) %s [%u] the previous decoder's data structure doesn't match the input structure of the considered decoder, skipping...\n",
+@@ -915,7 +916,8 @@ static int decoder_process(const OSSL_PARAM params[], void *arg)
+             && ctx->input_structure != NULL
+             && new_input_structure != NULL) {
+             data->flag_input_structure_checked = 1;
+-            if (strcasecmp(new_input_structure, ctx->input_structure) != 0) {
++            if (OPENSSL_strcasecmp(new_input_structure,
++                                   ctx->input_structure) != 0) {
+                 OSSL_TRACE_BEGIN(DECODER) {
+                     BIO_printf(trc_out,
+                                "(ctx %p) %s [%u] the previous decoder's data structure doesn't match the input structure given by the user, skipping...\n",
+diff --git a/crypto/encode_decode/decoder_pkey.c b/crypto/encode_decode/decoder_pkey.c
+index 475117a463..833061d873 100644
+--- a/crypto/encode_decode/decoder_pkey.c
++++ b/crypto/encode_decode/decoder_pkey.c
+@@ -18,7 +18,6 @@
+ #include "crypto/evp.h"
+ #include "crypto/decoder.h"
+ #include "encoder_local.h"
+-#include "e_os.h"                /* strcasecmp on Windows */
+ 
+ int OSSL_DECODER_CTX_set_passphrase(OSSL_DECODER_CTX *ctx,
+                                     const unsigned char *kstr,
+diff --git a/crypto/encode_decode/encoder_lib.c b/crypto/encode_decode/encoder_lib.c
+index cfd9275172..2a83af825c 100644
+--- a/crypto/encode_decode/encoder_lib.c
++++ b/crypto/encode_decode/encoder_lib.c
+@@ -7,7 +7,6 @@
+  * https://www.openssl.org/source/license.html
+  */
+ 
+-#include "e_os.h"                /* strcasecmp on Windows */
+ #include <openssl/core_names.h>
+ #include <openssl/bio.h>
+ #include <openssl/encoder.h>
+@@ -453,8 +452,8 @@ static int encoder_process(struct encoder_process_data_st *data)
+          */
+         if (top) {
+             if (data->ctx->output_type != NULL
+-                && strcasecmp(current_output_type,
+-                              data->ctx->output_type) != 0) {
++                && OPENSSL_strcasecmp(current_output_type,
++                                      data->ctx->output_type) != 0) {
+                 OSSL_TRACE_BEGIN(ENCODER) {
+                     BIO_printf(trc_out,
+                                "[%d]    Skipping because current encoder output type (%s) != desired output type (%s)\n",
+@@ -482,8 +481,8 @@ static int encoder_process(struct encoder_process_data_st *data)
+          */
+         if (data->ctx->output_structure != NULL
+             && current_output_structure != NULL) {
+-            if (strcasecmp(data->ctx->output_structure,
+-                           current_output_structure) != 0) {
++            if (OPENSSL_strcasecmp(data->ctx->output_structure,
++                                   current_output_structure) != 0) {
+                 OSSL_TRACE_BEGIN(ENCODER) {
+                     BIO_printf(trc_out,
+                                "[%d]    Skipping because current encoder output structure (%s) != ctx output structure (%s)\n",
+diff --git a/crypto/encode_decode/encoder_pkey.c b/crypto/encode_decode/encoder_pkey.c
+index c37edf966d..3a24317cf4 100644
+--- a/crypto/encode_decode/encoder_pkey.c
++++ b/crypto/encode_decode/encoder_pkey.c
+@@ -7,7 +7,6 @@
+  * https://www.openssl.org/source/license.html
+  */
+ 
+-#include "e_os.h"                /* strcasecmp on Windows */
+ #include <openssl/err.h>
+ #include <openssl/ui.h>
+ #include <openssl/params.h>
+diff --git a/crypto/engine/tb_asnmth.c b/crypto/engine/tb_asnmth.c
+index e3a5c82e99..09d0ed9d3a 100644
+--- a/crypto/engine/tb_asnmth.c
++++ b/crypto/engine/tb_asnmth.c
+@@ -152,7 +152,7 @@ const EVP_PKEY_ASN1_METHOD *ENGINE_get_pkey_asn1_meth_str(ENGINE *e,
+         e->pkey_asn1_meths(e, &ameth, NULL, nids[i]);
+         if (ameth != NULL
+             && ((int)strlen(ameth->pem_str) == len)
+-            && strncasecmp(ameth->pem_str, str, len) == 0)
++            && OPENSSL_strncasecmp(ameth->pem_str, str, len) == 0)
+             return ameth;
+     }
+     return NULL;
+@@ -177,7 +177,7 @@ static void look_str_cb(int nid, STACK_OF(ENGINE) *sk, ENGINE *def, void *arg)
+         e->pkey_asn1_meths(e, &ameth, NULL, nid);
+         if (ameth != NULL
+                 && ((int)strlen(ameth->pem_str) == lk->len)
+-                && strncasecmp(ameth->pem_str, lk->str, lk->len) == 0) {
++                && OPENSSL_strncasecmp(ameth->pem_str, lk->str, lk->len) == 0) {
+             lk->e = e;
+             lk->ameth = ameth;
+             return;
+diff --git a/crypto/evp/ctrl_params_translate.c b/crypto/evp/ctrl_params_translate.c
+index 961ca116b3..0aa1c23bee 100644
+--- a/crypto/evp/ctrl_params_translate.c
++++ b/crypto/evp/ctrl_params_translate.c
+@@ -37,8 +37,6 @@
+ #include "crypto/dh.h"
+ #include "crypto/ec.h"
+ 
+-#include "e_os.h"                /* strcasecmp() for Windows */
+-
+ struct translation_ctx_st;       /* Forwarding */
+ struct translation_st;           /* Forwarding */
+ 
+@@ -905,7 +903,7 @@ static int fix_kdf_type(enum state state,
+ 
+         /* Convert KDF type strings to numbers */
+         for (; kdf_type_map->kdf_type_str != NULL; kdf_type_map++)
+-            if (strcasecmp(ctx->p2, kdf_type_map->kdf_type_str) == 0) {
++            if (OPENSSL_strcasecmp(ctx->p2, kdf_type_map->kdf_type_str) == 0) {
+                 ctx->p1 = kdf_type_map->kdf_type_num;
+                 ret = 1;
+                 break;
+@@ -2469,10 +2467,11 @@ lookup_translation(struct translation_st *tmpl,
+              * cmd name in the template.
+              */
+             if (item->ctrl_str != NULL
+-                && strcasecmp(tmpl->ctrl_str, item->ctrl_str) == 0)
++                && OPENSSL_strcasecmp(tmpl->ctrl_str, item->ctrl_str) == 0)
+                 ctrl_str = tmpl->ctrl_str;
+             else if (item->ctrl_hexstr != NULL
+-                     && strcasecmp(tmpl->ctrl_hexstr, item->ctrl_hexstr) == 0)
++                     && OPENSSL_strcasecmp(tmpl->ctrl_hexstr,
++                                           item->ctrl_hexstr) == 0)
+                 ctrl_hexstr = tmpl->ctrl_hexstr;
+             else
+                 continue;
+@@ -2500,7 +2499,8 @@ lookup_translation(struct translation_st *tmpl,
+             if ((item->action_type != NONE
+                  && tmpl->action_type != item->action_type)
+                 || (item->param_key != NULL
+-                    && strcasecmp(tmpl->param_key, item->param_key) != 0))
++                    && OPENSSL_strcasecmp(tmpl->param_key,
++                                          item->param_key) != 0))
+                 continue;
+         } else {
+             return NULL;
+diff --git a/crypto/evp/ec_support.c b/crypto/evp/ec_support.c
+index 8550be65e7..aa3c7fa4ef 100644
+--- a/crypto/evp/ec_support.c
++++ b/crypto/evp/ec_support.c
+@@ -10,7 +10,7 @@
+ #include <string.h>
+ #include <openssl/ec.h>
+ #include "crypto/ec.h"
+-#include "e_os.h" /* strcasecmp required by windows */
++#include "internal/nelem.h"
+ 
+ typedef struct ec_name2nid_st {
+     const char *name;
+@@ -139,7 +139,7 @@ int ossl_ec_curve_name2nid(const char *name)
+             return nid;
+ 
+         for (i = 0; i < OSSL_NELEM(curve_list); i++) {
+-            if (strcasecmp(curve_list[i].name, name) == 0)
++            if (OPENSSL_strcasecmp(curve_list[i].name, name) == 0)
+                 return curve_list[i].nid;
+         }
+     }
+diff --git a/crypto/evp/evp_lib.c b/crypto/evp/evp_lib.c
+index 24092cfd5b..da3ef28b3d 100644
+--- a/crypto/evp/evp_lib.c
++++ b/crypto/evp/evp_lib.c
+@@ -15,7 +15,6 @@
+ 
+ #include <stdio.h>
+ #include <string.h>
+-#include "e_os.h" /* strcasecmp */
+ #include "internal/cryptlib.h"
+ #include <openssl/evp.h>
+ #include <openssl/objects.h>
+@@ -1170,17 +1169,17 @@ EVP_PKEY *EVP_PKEY_Q_keygen(OSSL_LIB_CTX *libctx, const char *propq,
+ 
+     va_start(args, type);
+ 
+-    if (strcasecmp(type, "RSA") == 0) {
++    if (OPENSSL_strcasecmp(type, "RSA") == 0) {
+         bits = va_arg(args, size_t);
+         params[0] = OSSL_PARAM_construct_size_t(OSSL_PKEY_PARAM_RSA_BITS, &bits);
+-    } else if (strcasecmp(type, "EC") == 0) {
++    } else if (OPENSSL_strcasecmp(type, "EC") == 0) {
+         name = va_arg(args, char *);
+         params[0] = OSSL_PARAM_construct_utf8_string(OSSL_PKEY_PARAM_GROUP_NAME,
+                                                      name, 0);
+-    } else if (strcasecmp(type, "ED25519") != 0
+-               && strcasecmp(type, "X25519") != 0
+-               && strcasecmp(type, "ED448") != 0
+-               && strcasecmp(type, "X448") != 0) {
++    } else if (OPENSSL_strcasecmp(type, "ED25519") != 0
++               && OPENSSL_strcasecmp(type, "X25519") != 0
++               && OPENSSL_strcasecmp(type, "ED448") != 0
++               && OPENSSL_strcasecmp(type, "X448") != 0) {
+         ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_INVALID_ARGUMENT);
+         goto end;
+     }
+diff --git a/crypto/evp/p_lib.c b/crypto/evp/p_lib.c
+index 27138af564..668607a723 100644
+--- a/crypto/evp/p_lib.c
++++ b/crypto/evp/p_lib.c
+@@ -50,8 +50,6 @@
+ #include "internal/provider.h"
+ #include "evp_local.h"
+ 
+-#include "e_os.h"                /* strcasecmp on Windows */
+-
+ static int pkey_set_type(EVP_PKEY *pkey, ENGINE *e, int type, const char *str,
+                          int len, EVP_KEYMGMT *keymgmt);
+ static void evp_pkey_free_it(EVP_PKEY *key);
+@@ -1018,7 +1016,7 @@ int evp_pkey_name2type(const char *name)
+     size_t i;
+ 
+     for (i = 0; i < OSSL_NELEM(standard_name2type); i++) {
+-        if (strcasecmp(name, standard_name2type[i].ptr) == 0)
++        if (OPENSSL_strcasecmp(name, standard_name2type[i].ptr) == 0)
+             return (int)standard_name2type[i].id;
+     }
+ 
+diff --git a/crypto/ffc/ffc_dh.c b/crypto/ffc/ffc_dh.c
+index e9f597c46c..266cb30bc2 100644
+--- a/crypto/ffc/ffc_dh.c
++++ b/crypto/ffc/ffc_dh.c
+@@ -10,7 +10,6 @@
+ #include "internal/ffc.h"
+ #include "internal/nelem.h"
+ #include "crypto/bn_dh.h"
+-#include "e_os.h" /* strcasecmp */
+ 
+ #ifndef OPENSSL_NO_DH
+ 
+@@ -84,7 +83,7 @@ const DH_NAMED_GROUP *ossl_ffc_name_to_dh_named_group(const char *name)
+     size_t i;
+ 
+     for (i = 0; i < OSSL_NELEM(dh_named_groups); ++i) {
+-        if (strcasecmp(dh_named_groups[i].name, name) == 0)
++        if (OPENSSL_strcasecmp(dh_named_groups[i].name, name) == 0)
+             return &dh_named_groups[i];
+     }
+     return NULL;
+diff --git a/crypto/ffc/ffc_params.c b/crypto/ffc/ffc_params.c
+index 6e025a06be..500189e49f 100644
+--- a/crypto/ffc/ffc_params.c
++++ b/crypto/ffc/ffc_params.c
+@@ -12,7 +12,6 @@
+ #include "internal/ffc.h"
+ #include "internal/param_build_set.h"
+ #include "internal/nelem.h"
+-#include "e_os.h" /* strcasecmp */
+ 
+ #ifndef FIPS_MODULE
+ # include <openssl/asn1.h> /* ossl_ffc_params_print */
+diff --git a/crypto/http/http_client.c b/crypto/http/http_client.c
+index 33e7b82b9e..8133a04936 100644
+--- a/crypto/http/http_client.c
++++ b/crypto/http/http_client.c
+@@ -322,7 +322,7 @@ static int add1_headers(OSSL_HTTP_REQ_CTX *rctx,
+ 
+     for (i = 0; i < sk_CONF_VALUE_num(headers); i++) {
+         hdr = sk_CONF_VALUE_value(headers, i);
+-        if (add_host && strcasecmp("host", hdr->name) == 0)
++        if (add_host && OPENSSL_strcasecmp("host", hdr->name) == 0)
+             add_host = 0;
+         if (!OSSL_HTTP_REQ_CTX_add1_header(rctx, hdr->name, hdr->value))
+             return 0;
+@@ -666,13 +666,13 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
+         }
+         if (value != NULL && line_end != NULL) {
+             if (rctx->state == OHS_REDIRECT
+-                    && strcasecmp(key, "Location") == 0) {
++                    && OPENSSL_strcasecmp(key, "Location") == 0) {
+                 rctx->redirection_url = value;
+                 return 0;
+             }
+             if (rctx->expected_ct != NULL
+-                    && strcasecmp(key, "Content-Type") == 0) {
+-                if (strcasecmp(rctx->expected_ct, value) != 0) {
++                    && OPENSSL_strcasecmp(key, "Content-Type") == 0) {
++                if (OPENSSL_strcasecmp(rctx->expected_ct, value) != 0) {
+                     ERR_raise_data(ERR_LIB_HTTP, HTTP_R_UNEXPECTED_CONTENT_TYPE,
+                                    "expected=%s, actual=%s",
+                                    rctx->expected_ct, value);
+@@ -682,12 +682,12 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
+             }
+ 
+             /* https://tools.ietf.org/html/rfc7230#section-6.3 Persistence */
+-            if (strcasecmp(key, "Connection") == 0) {
+-                if (strcasecmp(value, "keep-alive") == 0)
++            if (OPENSSL_strcasecmp(key, "Connection") == 0) {
++                if (OPENSSL_strcasecmp(value, "keep-alive") == 0)
+                     found_keep_alive = 1;
+-                else if (strcasecmp(value, "close") == 0)
++                else if (OPENSSL_strcasecmp(value, "close") == 0)
+                     found_keep_alive = 0;
+-            } else if (strcasecmp(key, "Content-Length") == 0) {
++            } else if (OPENSSL_strcasecmp(key, "Content-Length") == 0) {
+                 resp_len = (size_t)strtoul(value, &line_end, 10);
+                 if (line_end == value || *line_end != '\0') {
+                     ERR_raise_data(ERR_LIB_HTTP,
+diff --git a/crypto/objects/o_names.c b/crypto/objects/o_names.c
+index 92152eeb66..7596d720e9 100644
+--- a/crypto/objects/o_names.c
++++ b/crypto/objects/o_names.c
+@@ -21,23 +21,6 @@
+ #include "obj_local.h"
+ #include "e_os.h"
+ 
+-/*
+- * We define this wrapper for two reasons. Firstly, later versions of
+- * DEC C add linkage information to certain functions, which makes it
+- * tricky to use them as values to regular function pointers.
+- * Secondly, in the EDK2 build environment, the strcasecmp function is
+- * actually an external function with the Microsoft ABI, so we can't
+- * transparently assign function pointers to it.
+- */
+-#if defined(OPENSSL_SYS_VMS_DECC) || defined(OPENSSL_SYS_UEFI)
+-static int obj_strcasecmp(const char *a, const char *b)
+-{
+-    return strcasecmp(a, b);
+-}
+-#else
+-#define obj_strcasecmp strcasecmp
+-#endif
+-
+ /*
+  * I use the ex_data stuff to manage the identifiers for the obj_name_types
+  * that applications may define.  I only really use the free function field.
+@@ -111,7 +94,7 @@ int OBJ_NAME_new_index(unsigned long (*hash_func) (const char *),
+             goto out;
+         }
+         name_funcs->hash_func = ossl_lh_strcasehash;
+-        name_funcs->cmp_func = obj_strcasecmp;
++        name_funcs->cmp_func = OPENSSL_strcasecmp;
+         push = sk_NAME_FUNCS_push(name_funcs_stack, name_funcs);
+ 
+         if (!push) {
+@@ -145,7 +128,7 @@ static int obj_name_cmp(const OBJ_NAME *a, const OBJ_NAME *b)
+             ret = sk_NAME_FUNCS_value(name_funcs_stack,
+                                       a->type)->cmp_func(a->name, b->name);
+         } else
+-            ret = strcasecmp(a->name, b->name);
++            ret = OPENSSL_strcasecmp(a->name, b->name);
+     }
+     return ret;
+ }
+diff --git a/crypto/params_dup.c b/crypto/params_dup.c
+index 6a58b52f65..d92176da46 100644
+--- a/crypto/params_dup.c
++++ b/crypto/params_dup.c
+@@ -11,7 +11,6 @@
+ #include <openssl/params.h>
+ #include <openssl/param_build.h>
+ #include "internal/param_build_set.h"
+-#include "e_os.h" /* strcasecmp */
+ 
+ #define OSSL_PARAM_ALLOCATED_END    127
+ #define OSSL_PARAM_MERGE_LIST_MAX   128
+@@ -142,7 +141,7 @@ static int compare_params(const void *left, const void *right)
+     const OSSL_PARAM *l = *(const OSSL_PARAM **)left;
+     const OSSL_PARAM *r = *(const OSSL_PARAM **)right;
+ 
+-    return strcasecmp(l->key, r->key);
++    return OPENSSL_strcasecmp(l->key, r->key);
+ }
+ 
+ OSSL_PARAM *OSSL_PARAM_merge(const OSSL_PARAM *p1, const OSSL_PARAM *p2)
+@@ -205,7 +204,7 @@ OSSL_PARAM *OSSL_PARAM_merge(const OSSL_PARAM *p1, const OSSL_PARAM *p2)
+             break;
+         }
+         /* consume the list element with the smaller key */
+-        diff = strcasecmp((*p1cur)->key, (*p2cur)->key);
++        diff = OPENSSL_strcasecmp((*p1cur)->key, (*p2cur)->key);
+         if (diff == 0) {
+             /* If the keys are the same then throw away the list1 element */
+             *dst++ = **p2cur;
+diff --git a/crypto/property/property_parse.c b/crypto/property/property_parse.c
+index 8954ec7246..c5691395c4 100644
+--- a/crypto/property/property_parse.c
++++ b/crypto/property/property_parse.c
+@@ -45,7 +45,7 @@ static int match(const char *t[], const char m[], size_t m_len)
+ {
+     const char *s = *t;
+ 
+-    if (strncasecmp(s, m, m_len) == 0) {
++    if (OPENSSL_strncasecmp(s, m, m_len) == 0) {
+         *t = skip_space(s + m_len);
+         return 1;
+     }
+diff --git a/crypto/rand/rand_lib.c b/crypto/rand/rand_lib.c
+index afe3521186..c453d32261 100644
+--- a/crypto/rand/rand_lib.c
++++ b/crypto/rand/rand_lib.c
+@@ -768,22 +768,22 @@ static int random_conf_init(CONF_IMODULE *md, const CONF *cnf)
+ 
+     for (i = 0; i < sk_CONF_VALUE_num(elist); i++) {
+         cval = sk_CONF_VALUE_value(elist, i);
+-        if (strcasecmp(cval->name, "random") == 0) {
++        if (OPENSSL_strcasecmp(cval->name, "random") == 0) {
+             if (!random_set_string(&dgbl->rng_name, cval->value))
+                 return 0;
+-        } else if (strcasecmp(cval->name, "cipher") == 0) {
++        } else if (OPENSSL_strcasecmp(cval->name, "cipher") == 0) {
+             if (!random_set_string(&dgbl->rng_cipher, cval->value))
+                 return 0;
+-        } else if (strcasecmp(cval->name, "digest") == 0) {
++        } else if (OPENSSL_strcasecmp(cval->name, "digest") == 0) {
+             if (!random_set_string(&dgbl->rng_digest, cval->value))
+                 return 0;
+-        } else if (strcasecmp(cval->name, "properties") == 0) {
++        } else if (OPENSSL_strcasecmp(cval->name, "properties") == 0) {
+             if (!random_set_string(&dgbl->rng_propq, cval->value))
+                 return 0;
+-        } else if (strcasecmp(cval->name, "seed") == 0) {
++        } else if (OPENSSL_strcasecmp(cval->name, "seed") == 0) {
+             if (!random_set_string(&dgbl->seed_name, cval->value))
+                 return 0;
+-        } else if (strcasecmp(cval->name, "seed_properties") == 0) {
++        } else if (OPENSSL_strcasecmp(cval->name, "seed_properties") == 0) {
+             if (!random_set_string(&dgbl->seed_propq, cval->value))
+                 return 0;
+         } else {
+diff --git a/crypto/rsa/rsa_backend.c b/crypto/rsa/rsa_backend.c
+index ad1623dd14..254ebdb242 100644
+--- a/crypto/rsa/rsa_backend.c
++++ b/crypto/rsa/rsa_backend.c
+@@ -27,8 +27,6 @@
+ #include "crypto/rsa.h"
+ #include "rsa_local.h"
+ 
+-#include "e_os.h"                /* strcasecmp for Windows() */
+-
+ /*
+  * The intention with the "backend" source file is to offer backend support
+  * for legacy backends (EVP_PKEY_ASN1_METHOD and EVP_PKEY_METHOD) and provider
+@@ -275,8 +273,8 @@ int ossl_rsa_pss_params_30_fromdata(RSA_PSS_PARAMS_30 *pss_params,
+         else if (!OSSL_PARAM_get_utf8_ptr(param_mgf, &mgfname))
+             return 0;
+ 
+-        if (strcasecmp(param_mgf->data,
+-                       ossl_rsa_mgf_nid2name(default_maskgenalg_nid)) != 0)
++        if (OPENSSL_strcasecmp(param_mgf->data,
++                               ossl_rsa_mgf_nid2name(default_maskgenalg_nid)) != 0)
+             return 0;
+     }
+ 
+diff --git a/crypto/store/store_lib.c b/crypto/store/store_lib.c
+index 7dcb939066..42bf9d555a 100644
+--- a/crypto/store/store_lib.c
++++ b/crypto/store/store_lib.c
+@@ -93,7 +93,7 @@ OSSL_STORE_open_ex(const char *uri, OSSL_LIB_CTX *libctx, const char *propq,
+     OPENSSL_strlcpy(scheme_copy, uri, sizeof(scheme_copy));
+     if ((p = strchr(scheme_copy, ':')) != NULL) {
+         *p++ = '\0';
+-        if (strcasecmp(scheme_copy, "file") != 0) {
++        if (OPENSSL_strcasecmp(scheme_copy, "file") != 0) {
+             if (strncmp(p, "//", 2) == 0)
+                 schemes_n--;         /* Invalidate the file scheme */
+             schemes[schemes_n++] = scheme_copy;
+diff --git a/crypto/store/store_result.c b/crypto/store/store_result.c
+index 1306b270bb..6f83da4beb 100644
+--- a/crypto/store/store_result.c
++++ b/crypto/store/store_result.c
+@@ -457,7 +457,7 @@ static int try_cert(struct extracted_param_data_st *data, OSSL_STORE_INFO **v,
+ 
+         /* If we have a data type, it should be a PEM name */
+         if (data->data_type != NULL
+-            && (strcasecmp(data->data_type, PEM_STRING_X509_TRUSTED) == 0))
++            && (OPENSSL_strcasecmp(data->data_type, PEM_STRING_X509_TRUSTED) == 0))
+             ignore_trusted = 0;
+ 
+         if (d2i_X509_AUX(&cert, (const unsigned char **)&data->octet_data,
+diff --git a/crypto/trace.c b/crypto/trace.c
+index 40941990e6..d790409a2d 100644
+--- a/crypto/trace.c
++++ b/crypto/trace.c
+@@ -19,8 +19,6 @@
+ #include "internal/refcount.h"
+ #include "crypto/cryptlib.h"
+ 
+-#include "e_os.h"                /* strcasecmp for Windows */
+-
+ #ifndef OPENSSL_NO_TRACE
+ 
+ static CRYPTO_RWLOCK *trace_lock = NULL;
+@@ -158,7 +156,7 @@ int OSSL_trace_get_category_num(const char *name)
+     size_t i;
+ 
+     for (i = 0; i < OSSL_NELEM(trace_categories); i++)
+-        if (strcasecmp(name, trace_categories[i].name) == 0)
++        if (OPENSSL_strcasecmp(name, trace_categories[i].name) == 0)
+             return trace_categories[i].num;
+     return -1; /* not found */
+ }
+diff --git a/crypto/x509/v3_tlsf.c b/crypto/x509/v3_tlsf.c
+index 6a613d64e6..9927c083b1 100644
+--- a/crypto/x509/v3_tlsf.c
++++ b/crypto/x509/v3_tlsf.c
+@@ -108,7 +108,7 @@ static TLS_FEATURE *v2i_TLS_FEATURE(const X509V3_EXT_METHOD *method,
+             extval = val->name;
+ 
+         for (j = 0; j < OSSL_NELEM(tls_feature_tbl); j++)
+-            if (strcasecmp(extval, tls_feature_tbl[j].name) == 0)
++            if (OPENSSL_strcasecmp(extval, tls_feature_tbl[j].name) == 0)
+                 break;
+         if (j < OSSL_NELEM(tls_feature_tbl))
+             tlsextid = tls_feature_tbl[j].num;
+diff --git a/crypto/x509/v3_utl.c b/crypto/x509/v3_utl.c
+index 734e083a7a..7e767b67d8 100644
+--- a/crypto/x509/v3_utl.c
++++ b/crypto/x509/v3_utl.c
+@@ -707,7 +707,7 @@ static int wildcard_match(const unsigned char *prefix, size_t prefix_len,
+     }
+     /* IDNA labels cannot match partial wildcards */
+     if (!allow_idna &&
+-        subject_len >= 4 && strncasecmp((char *)subject, "xn--", 4) == 0)
++        subject_len >= 4 && OPENSSL_strncasecmp((char *)subject, "xn--", 4) == 0)
+         return 0;
+     /* The wildcard may match a literal '*' */
+     if (wildcard_end == wildcard_start + 1 && *wildcard_start == '*')
+@@ -767,7 +767,7 @@ static const unsigned char *valid_star(const unsigned char *p, size_t len,
+                    || ('A' <= p[i] && p[i] <= 'Z')
+                    || ('0' <= p[i] && p[i] <= '9')) {
+             if ((state & LABEL_START) != 0
+-                && len - i >= 4 && strncasecmp((char *)&p[i], "xn--", 4) == 0)
++                && len - i >= 4 && OPENSSL_strncasecmp((char *)&p[i], "xn--", 4) == 0)
+                 state |= LABEL_IDNA;
+             state &= ~(LABEL_HYPHEN | LABEL_START);
+         } else if (p[i] == '.') {
+diff --git a/engines/e_devcrypto.c b/engines/e_devcrypto.c
+index fa01317db5..a9c10d375a 100644
+--- a/engines/e_devcrypto.c
++++ b/engines/e_devcrypto.c
+@@ -1159,9 +1159,9 @@ static int devcrypto_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) (void))
+     case DEVCRYPTO_CMD_CIPHERS:
+         if (p == NULL)
+             return 1;
+-        if (strcasecmp((const char *)p, "ALL") == 0) {
++        if (OPENSSL_strcasecmp((const char *)p, "ALL") == 0) {
+             devcrypto_select_all_ciphers(selected_ciphers);
+-        } else if (strcasecmp((const char*)p, "NONE") == 0) {
++        } else if (OPENSSL_strcasecmp((const char*)p, "NONE") == 0) {
+             memset(selected_ciphers, 0, sizeof(selected_ciphers));
+         } else {
+             new_list=OPENSSL_zalloc(sizeof(selected_ciphers));
+@@ -1179,9 +1179,9 @@ static int devcrypto_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) (void))
+     case DEVCRYPTO_CMD_DIGESTS:
+         if (p == NULL)
+             return 1;
+-        if (strcasecmp((const char *)p, "ALL") == 0) {
++        if (OPENSSL_strcasecmp((const char *)p, "ALL") == 0) {
+             devcrypto_select_all_digests(selected_digests);
+-        } else if (strcasecmp((const char*)p, "NONE") == 0) {
++        } else if (OPENSSL_strcasecmp((const char*)p, "NONE") == 0) {
+             memset(selected_digests, 0, sizeof(selected_digests));
+         } else {
+             new_list=OPENSSL_zalloc(sizeof(selected_digests));
+diff --git a/engines/e_loader_attic.c b/engines/e_loader_attic.c
+index 391ed33d5e..f6de29c0c3 100644
+--- a/engines/e_loader_attic.c
++++ b/engines/e_loader_attic.c
+@@ -14,7 +14,6 @@
+ /* We need to use some engine deprecated APIs */
+ #define OPENSSL_SUPPRESS_DEPRECATED
+ 
+-/* #include "e_os.h" */
+ #include <string.h>
+ #include <sys/stat.h>
+ #include <ctype.h>
+@@ -44,7 +43,6 @@ DEFINE_STACK_OF(OSSL_STORE_INFO)
+ 
+ #ifdef _WIN32
+ # define stat _stat
+-# define strncasecmp _strnicmp
+ #endif
+ 
+ #ifndef S_ISDIR
+@@ -971,12 +969,12 @@ static OSSL_STORE_LOADER_CTX *file_open_ex
+      * There's a special case if the URI also contains an authority, then
+      * the full URI shouldn't be used as a path anywhere.
+      */
+-    if (strncasecmp(uri, "file:", 5) == 0) {
++    if (OPENSSL_strncasecmp(uri, "file:", 5) == 0) {
+         const char *p = &uri[5];
+ 
+         if (strncmp(&uri[5], "//", 2) == 0) {
+             path_data_n--;           /* Invalidate using the full URI */
+-            if (strncasecmp(&uri[7], "localhost/", 10) == 0) {
++            if (OPENSSL_strncasecmp(&uri[7], "localhost/", 10) == 0) {
+                 p = &uri[16];
+             } else if (uri[7] == '/') {
+                 p = &uri[7];
+@@ -1466,7 +1464,8 @@ static int file_name_check(OSSL_STORE_LOADER_CTX *ctx, const char *name)
+     /*
+      * First, check the basename
+      */
+-    if (strncasecmp(name, ctx->_.dir.search_name, len) != 0 || name[len] != '.')
++    if (OPENSSL_strncasecmp(name, ctx->_.dir.search_name, len) != 0
++        || name[len] != '.')
+         return 0;
+     p = &name[len + 1];
+ 
+diff --git a/engines/e_ossltest.c b/engines/e_ossltest.c
+index 0506faa628..5d31b31c11 100644
+--- a/engines/e_ossltest.c
++++ b/engines/e_ossltest.c
+@@ -42,10 +42,6 @@
+ 
+ #include "e_ossltest_err.c"
+ 
+-#ifdef _WIN32
+-# define strncasecmp _strnicmp
+-#endif
+-
+ /* Engine Id and Name */
+ static const char *engine_ossltest_id = "ossltest";
+ static const char *engine_ossltest_name = "OpenSSL Test engine support";
+@@ -383,7 +379,7 @@ static EVP_PKEY *load_key(ENGINE *eng, const char *key_id, int pub,
+     BIO *in;
+     EVP_PKEY *key;
+ 
+-    if (strncasecmp(key_id, "ot:", 3) != 0)
++    if (OPENSSL_strncasecmp(key_id, "ot:", 3) != 0)
+         return NULL;
+     key_id += 3;
+ 
+diff --git a/providers/common/capabilities.c b/providers/common/capabilities.c
+index f6d95197f0..e1e1961b23 100644
+--- a/providers/common/capabilities.c
++++ b/providers/common/capabilities.c
+@@ -217,7 +217,7 @@ static int tls_group_capability(OSSL_CALLBACK *cb, void *arg)
+ int ossl_prov_get_capabilities(void *provctx, const char *capability,
+                                OSSL_CALLBACK *cb, void *arg)
+ {
+-    if (strcasecmp(capability, "TLS-GROUP") == 0)
++    if (OPENSSL_strcasecmp(capability, "TLS-GROUP") == 0)
+         return tls_group_capability(cb, arg);
+ 
+     /* We don't support this capability */
+diff --git a/providers/implementations/ciphers/cipher_cts.c b/providers/implementations/ciphers/cipher_cts.c
+index cb3372c646..5c48f37c95 100644
+--- a/providers/implementations/ciphers/cipher_cts.c
++++ b/providers/implementations/ciphers/cipher_cts.c
+@@ -46,7 +46,6 @@
+  *      Otherwise it is the same as CS2.
+  */
+ 
+-#include "e_os.h" /* strcasecmp */
+ #include <openssl/core_names.h>
+ #include "prov/ciphercommon.h"
+ #include "internal/nelem.h"
+@@ -92,7 +91,7 @@ int ossl_cipher_cbc_cts_mode_name2id(const char *name)
+     size_t i;
+ 
+     for (i = 0; i < OSSL_NELEM(cts_modes); ++i) {
+-        if (strcasecmp(name, cts_modes[i].name) == 0)
++        if (OPENSSL_strcasecmp(name, cts_modes[i].name) == 0)
+             return (int)cts_modes[i].id;
+     }
+     return -1;
+diff --git a/providers/implementations/kdfs/hkdf.c b/providers/implementations/kdfs/hkdf.c
+index 667d5e9619..89f304b418 100644
+--- a/providers/implementations/kdfs/hkdf.c
++++ b/providers/implementations/kdfs/hkdf.c
+@@ -199,11 +199,11 @@ static int hkdf_common_set_ctx_params(KDF_HKDF *ctx, const OSSL_PARAM params[])
+ 
+     if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_MODE)) != NULL) {
+         if (p->data_type == OSSL_PARAM_UTF8_STRING) {
+-            if (strcasecmp(p->data, "EXTRACT_AND_EXPAND") == 0) {
++            if (OPENSSL_strcasecmp(p->data, "EXTRACT_AND_EXPAND") == 0) {
+                 ctx->mode = EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND;
+-            } else if (strcasecmp(p->data, "EXTRACT_ONLY") == 0) {
++            } else if (OPENSSL_strcasecmp(p->data, "EXTRACT_ONLY") == 0) {
+                 ctx->mode = EVP_KDF_HKDF_MODE_EXTRACT_ONLY;
+-            } else if (strcasecmp(p->data, "EXPAND_ONLY") == 0) {
++            } else if (OPENSSL_strcasecmp(p->data, "EXPAND_ONLY") == 0) {
+                 ctx->mode = EVP_KDF_HKDF_MODE_EXPAND_ONLY;
+             } else {
+                 ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_MODE);
+diff --git a/providers/implementations/kdfs/kbkdf.c b/providers/implementations/kdfs/kbkdf.c
+index 5f30b037d9..6be7f45fc5 100644
+--- a/providers/implementations/kdfs/kbkdf.c
++++ b/providers/implementations/kdfs/kbkdf.c
+@@ -298,10 +298,11 @@ static int kbkdf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
+     }
+ 
+     p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_MODE);
+-    if (p != NULL && strncasecmp("counter", p->data, p->data_size) == 0) {
++    if (p != NULL
++        && OPENSSL_strncasecmp("counter", p->data, p->data_size) == 0) {
+         ctx->mode = COUNTER;
+     } else if (p != NULL
+-               && strncasecmp("feedback", p->data, p->data_size) == 0) {
++               && OPENSSL_strncasecmp("feedback", p->data, p->data_size) == 0) {
+         ctx->mode = FEEDBACK;
+     } else if (p != NULL) {
+         ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_MODE);
+diff --git a/providers/implementations/kdfs/tls1_prf.c b/providers/implementations/kdfs/tls1_prf.c
+index 74a0f7e1f3..e0b5971a3b 100644
+--- a/providers/implementations/kdfs/tls1_prf.c
++++ b/providers/implementations/kdfs/tls1_prf.c
+@@ -172,7 +172,7 @@ static int kdf_tls1_prf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
+         return 1;
+ 
+     if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_DIGEST)) != NULL) {
+-        if (strcasecmp(p->data, SN_md5_sha1) == 0) {
++        if (OPENSSL_strcasecmp(p->data, SN_md5_sha1) == 0) {
+             if (!ossl_prov_macctx_load_from_params(&ctx->P_hash, params,
+                                                    OSSL_MAC_NAME_HMAC,
+                                                    NULL, SN_md5, libctx)
+diff --git a/providers/implementations/kem/rsa_kem.c b/providers/implementations/kem/rsa_kem.c
+index 313ab133b3..bfc3da6908 100644
+--- a/providers/implementations/kem/rsa_kem.c
++++ b/providers/implementations/kem/rsa_kem.c
+@@ -12,8 +12,8 @@
+  * internal use.
+  */
+ #include "internal/deprecated.h"
++#include "internal/nelem.h"
+ 
+-#include "e_os.h"  /* strcasecmp */
+ #include <openssl/crypto.h>
+ #include <openssl/evp.h>
+ #include <openssl/core_dispatch.h>
+@@ -69,7 +69,7 @@ static int name2id(const char *name, const OSSL_ITEM *map, size_t sz)
+         return -1;
+ 
+     for (i = 0; i < sz; ++i) {
+-        if (strcasecmp(map[i].ptr, name) == 0)
++        if (OPENSSL_strcasecmp(map[i].ptr, name) == 0)
+             return map[i].id;
+     }
+     return -1;
+diff --git a/providers/implementations/keymgmt/dsa_kmgmt.c b/providers/implementations/keymgmt/dsa_kmgmt.c
+index 885bd62eea..2ab69f5f32 100644
+--- a/providers/implementations/keymgmt/dsa_kmgmt.c
++++ b/providers/implementations/keymgmt/dsa_kmgmt.c
+@@ -13,7 +13,6 @@
+  */
+ #include "internal/deprecated.h"
+ 
+-#include "e_os.h" /* strcasecmp */
+ #include <openssl/core_dispatch.h>
+ #include <openssl/core_names.h>
+ #include <openssl/bn.h>
+@@ -90,7 +89,7 @@ static int dsa_gen_type_name2id(const char *name)
+     size_t i;
+ 
+     for (i = 0; i < OSSL_NELEM(dsatype2id); ++i) {
+-        if (strcasecmp(dsatype2id[i].name, name) == 0)
++        if (OPENSSL_strcasecmp(dsatype2id[i].name, name) == 0)
+             return dsatype2id[i].id;
+     }
+     return -1;
+diff --git a/providers/implementations/keymgmt/ec_kmgmt.c b/providers/implementations/keymgmt/ec_kmgmt.c
+index 15b4532cd7..c61d884e97 100644
+--- a/providers/implementations/keymgmt/ec_kmgmt.c
++++ b/providers/implementations/keymgmt/ec_kmgmt.c
+@@ -13,7 +13,6 @@
+  */
+ #include "internal/deprecated.h"
+ 
+-#include "e_os.h" /* strcasecmp */
+ #include <string.h>
+ #include <openssl/core_dispatch.h>
+ #include <openssl/core_names.h>
+diff --git a/providers/implementations/keymgmt/ecx_kmgmt.c b/providers/implementations/keymgmt/ecx_kmgmt.c
+index 99d685735e..2a7f867aa5 100644
+--- a/providers/implementations/keymgmt/ecx_kmgmt.c
++++ b/providers/implementations/keymgmt/ecx_kmgmt.c
+@@ -9,8 +9,6 @@
+ 
+ #include <assert.h>
+ #include <string.h>
+-/* For strcasecmp on Windows */
+-#include "e_os.h"
+ #include <openssl/core_dispatch.h>
+ #include <openssl/core_names.h>
+ #include <openssl/params.h>
+@@ -546,7 +544,7 @@ static int ecx_gen_set_params(void *genctx, const OSSL_PARAM params[])
+         }
+         if (p->data_type != OSSL_PARAM_UTF8_STRING
+                 || groupname == NULL
+-                || strcasecmp(p->data, groupname) != 0) {
++                || OPENSSL_strcasecmp(p->data, groupname) != 0) {
+             ERR_raise(ERR_LIB_PROV, ERR_R_PASSED_INVALID_ARGUMENT);
+             return 0;
+         }
+diff --git a/providers/implementations/keymgmt/mac_legacy_kmgmt.c b/providers/implementations/keymgmt/mac_legacy_kmgmt.c
+index ec34a3ee71..ecfd2eaaa5 100644
+--- a/providers/implementations/keymgmt/mac_legacy_kmgmt.c
++++ b/providers/implementations/keymgmt/mac_legacy_kmgmt.c
+@@ -26,7 +26,6 @@
+ #include "prov/providercommon.h"
+ #include "prov/provider_ctx.h"
+ #include "prov/macsignature.h"
+-#include "e_os.h" /* strcasecmp */
+ 
+ static OSSL_FUNC_keymgmt_new_fn mac_new;
+ static OSSL_FUNC_keymgmt_free_fn mac_free;
+diff --git a/providers/implementations/rands/drbg_ctr.c b/providers/implementations/rands/drbg_ctr.c
+index dbe57b0d28..c51eb4b4e5 100644
+--- a/providers/implementations/rands/drbg_ctr.c
++++ b/providers/implementations/rands/drbg_ctr.c
+@@ -14,7 +14,6 @@
+ #include <openssl/rand.h>
+ #include <openssl/aes.h>
+ #include <openssl/proverr.h>
+-#include "e_os.h" /* strcasecmp */
+ #include "crypto/modes.h"
+ #include "internal/thread_once.h"
+ #include "prov/implementations.h"
+@@ -690,7 +689,7 @@ static int drbg_ctr_set_ctx_params(void *vctx, const OSSL_PARAM params[])
+         if (p->data_type != OSSL_PARAM_UTF8_STRING
+                 || p->data_size < ctr_str_len)
+             return 0;
+-        if (strcasecmp("CTR", base + p->data_size - ctr_str_len) != 0) {
++        if (OPENSSL_strcasecmp("CTR", base + p->data_size - ctr_str_len) != 0) {
+             ERR_raise(ERR_LIB_PROV, PROV_R_REQUIRE_CTR_MODE_CIPHER);
+             return 0;
+         }
+diff --git a/providers/implementations/signature/rsa_sig.c b/providers/implementations/signature/rsa_sig.c
+index 325e855333..9460136bca 100644
+--- a/providers/implementations/signature/rsa_sig.c
++++ b/providers/implementations/signature/rsa_sig.c
+@@ -13,7 +13,6 @@
+  */
+ #include "internal/deprecated.h"
+ 
+-#include "e_os.h" /* strcasecmp */
+ #include <string.h>
+ #include <openssl/crypto.h>
+ #include <openssl/core_dispatch.h>
+@@ -854,7 +853,7 @@ static int rsa_digest_signverify_init(void *vprsactx, const char *mdname,
+ 
+     if (mdname != NULL
+         /* was rsa_setup_md already called in rsa_signverify_init()? */
+-        && (mdname[0] == '\0' || strcasecmp(prsactx->mdname, mdname) != 0)
++        && (mdname[0] == '\0' || OPENSSL_strcasecmp(prsactx->mdname, mdname) != 0)
+         && !rsa_setup_md(prsactx, mdname, prsactx->propq))
+         return 0;
+ 
+diff --git a/providers/implementations/storemgmt/file_store.c b/providers/implementations/storemgmt/file_store.c
+index fef2b1d290..fceef73b7c 100644
+--- a/providers/implementations/storemgmt/file_store.c
++++ b/providers/implementations/storemgmt/file_store.c
+@@ -9,8 +9,6 @@
+ 
+ /* This file has quite some overlap with engines/e_loader_attic.c */
+ 
+-#include "e_os.h"                /* To get strncasecmp() on Windows */
+-
+ #include <string.h>
+ #include <sys/stat.h>
+ #include <ctype.h>  /* isdigit */
+@@ -220,12 +218,12 @@ static void *file_open(void *provctx, const char *uri)
+      * There's a special case if the URI also contains an authority, then
+      * the full URI shouldn't be used as a path anywhere.
+      */
+-    if (strncasecmp(uri, "file:", 5) == 0) {
++    if (OPENSSL_strncasecmp(uri, "file:", 5) == 0) {
+         const char *p = &uri[5];
+ 
+         if (strncmp(&uri[5], "//", 2) == 0) {
+             path_data_n--;           /* Invalidate using the full URI */
+-            if (strncasecmp(&uri[7], "localhost/", 10) == 0) {
++            if (OPENSSL_strncasecmp(&uri[7], "localhost/", 10) == 0) {
+                 p = &uri[16];
+             } else if (uri[7] == '/') {
+                 p = &uri[7];
+@@ -592,7 +590,8 @@ static int file_name_check(struct file_ctx_st *ctx, const char *name)
+     /*
+      * First, check the basename
+      */
+-    if (strncasecmp(name, ctx->_.dir.search_name, len) != 0 || name[len] != '.')
++    if (OPENSSL_strncasecmp(name, ctx->_.dir.search_name, len) != 0
++        || name[len] != '.')
+         return 0;
+     p = &name[len + 1];
+ 
+diff --git a/ssl/ssl_conf.c b/ssl/ssl_conf.c
+index c0cbbe5e2c..52bd20b60e 100644
+--- a/ssl/ssl_conf.c
++++ b/ssl/ssl_conf.c
+@@ -148,7 +148,8 @@ static int ssl_match_option(SSL_CONF_CTX *cctx, const ssl_flag_tbl *tbl,
+     if (namelen == -1) {
+         if (strcmp(tbl->name, name))
+             return 0;
+-    } else if (tbl->namelen != namelen || strncasecmp(tbl->name, name, namelen))
++    } else if (tbl->namelen != namelen
++               || OPENSSL_strncasecmp(tbl->name, name, namelen))
+         return 0;
+     ssl_set_option(cctx, tbl->name_flags, tbl->option_value, onoff);
+     return 1;
+@@ -232,8 +233,8 @@ static int cmd_ECDHParameters(SSL_CONF_CTX *cctx, const char *value)
+ 
+     /* Ignore values supported by 1.0.2 for the automatic selection */
+     if ((cctx->flags & SSL_CONF_FLAG_FILE)
+-            && (strcasecmp(value, "+automatic") == 0
+-                || strcasecmp(value, "automatic") == 0))
++            && (OPENSSL_strcasecmp(value, "+automatic") == 0
++                || OPENSSL_strcasecmp(value, "automatic") == 0))
+         return 1;
+     if ((cctx->flags & SSL_CONF_FLAG_CMDLINE) &&
+         strcmp(value, "auto") == 0)
+@@ -808,7 +809,7 @@ static int ssl_conf_cmd_skip_prefix(SSL_CONF_CTX *cctx, const char **pcmd)
+             strncmp(*pcmd, cctx->prefix, cctx->prefixlen))
+             return 0;
+         if (cctx->flags & SSL_CONF_FLAG_FILE &&
+-            strncasecmp(*pcmd, cctx->prefix, cctx->prefixlen))
++            OPENSSL_strncasecmp(*pcmd, cctx->prefix, cctx->prefixlen))
+             return 0;
+         *pcmd += cctx->prefixlen;
+     } else if (cctx->flags & SSL_CONF_FLAG_CMDLINE) {
+@@ -850,7 +851,7 @@ static const ssl_conf_cmd_tbl *ssl_conf_cmd_lookup(SSL_CONF_CTX *cctx,
+                     return t;
+             }
+             if (cctx->flags & SSL_CONF_FLAG_FILE) {
+-                if (t->str_file && strcasecmp(t->str_file, cmd) == 0)
++                if (t->str_file && OPENSSL_strcasecmp(t->str_file, cmd) == 0)
+                     return t;
+             }
+         }
+diff --git a/test/bntest.c b/test/bntest.c
+index 4c1ee0c13b..c5894c157b 100644
+--- a/test/bntest.c
++++ b/test/bntest.c
+@@ -10,9 +10,6 @@
+ #include <errno.h>
+ #include <stdio.h>
+ #include <string.h>
+-#ifdef __TANDEM
+-# include <strings.h> /* strcasecmp */
+-#endif
+ #include <ctype.h>
+ 
+ #include <openssl/bn.h>
+@@ -23,10 +20,6 @@
+ #include "internal/numbers.h"
+ #include "testutil.h"
+ 
+-#ifdef OPENSSL_SYS_WINDOWS
+-# define strcasecmp _stricmp
+-#endif
+-
+ /*
+  * Things in boring, not in openssl.
+  */
+@@ -64,7 +57,7 @@ static const char *findattr(STANZA *s, const char *key)
+     PAIR *pp = s->pairs;
+ 
+     for ( ; --i >= 0; pp++)
+-        if (strcasecmp(pp->key, key) == 0)
++        if (OPENSSL_strcasecmp(pp->key, key) == 0)
+             return pp->value;
+     return NULL;
+ }
+diff --git a/test/evp_extra_test.c b/test/evp_extra_test.c
+index 113ec2bd66..1819c5890c 100644
+--- a/test/evp_extra_test.c
++++ b/test/evp_extra_test.c
+@@ -35,7 +35,6 @@
+ #include "internal/nelem.h"
+ #include "internal/sizes.h"
+ #include "crypto/evp.h"
+-#include "../e_os.h" /* strcasecmp */
+ 
+ static OSSL_LIB_CTX *testctx = NULL;
+ static char *testpropq = NULL;
+@@ -1739,7 +1738,7 @@ static int ec_export_get_encoding_cb(const OSSL_PARAM params[], void *arg)
+         return 0;
+ 
+     for (i = 0; i < OSSL_NELEM(ec_encodings); i++) {
+-        if (strcasecmp(enc_name, ec_encodings[i].encoding_name) == 0) {
++        if (OPENSSL_strcasecmp(enc_name, ec_encodings[i].encoding_name) == 0) {
+             *enc = ec_encodings[i].encoding;
+             break;
+         }
+diff --git a/test/evp_libctx_test.c b/test/evp_libctx_test.c
+index e2663dc029..9b2f4a0168 100644
+--- a/test/evp_libctx_test.c
++++ b/test/evp_libctx_test.c
+@@ -33,7 +33,6 @@
+ #include "testutil.h"
+ #include "internal/nelem.h"
+ #include "crypto/bn_dh.h"   /* _bignum_ffdhe2048_p */
+-#include "../e_os.h"        /* strcasecmp */
+ 
+ static OSSL_LIB_CTX *libctx = NULL;
+ static OSSL_PROVIDER *nullprov = NULL;
+@@ -478,7 +477,7 @@ err:
+ 
+ static int name_cmp(const char * const *a, const char * const *b)
+ {
+-    return strcasecmp(*a, *b);
++    return OPENSSL_strcasecmp(*a, *b);
+ }
+ 
+ static void collect_cipher_names(EVP_CIPHER *cipher, void *cipher_names_list)
+diff --git a/test/evp_test.c b/test/evp_test.c
+index 7a5b9345e0..8a0758f857 100644
+--- a/test/evp_test.c
++++ b/test/evp_test.c
+@@ -12,7 +12,6 @@
+ #include <string.h>
+ #include <stdlib.h>
+ #include <ctype.h>
+-#include "../e_os.h" /* strcasecmp */
+ #include <openssl/evp.h>
+ #include <openssl/pem.h>
+ #include <openssl/err.h>
+@@ -3886,9 +3885,9 @@ void cleanup_tests(void)
+     OSSL_LIB_CTX_free(libctx);
+ }
+ 
+-#define STR_STARTS_WITH(str, pre) strncasecmp(pre, str, strlen(pre)) == 0
++#define STR_STARTS_WITH(str, pre) OPENSSL_strncasecmp(pre, str, strlen(pre)) == 0
+ #define STR_ENDS_WITH(str, pre)                                                \
+-strlen(str) < strlen(pre) ? 0 : (strcasecmp(pre, str + strlen(str) - strlen(pre)) == 0)
++strlen(str) < strlen(pre) ? 0 : (OPENSSL_strcasecmp(pre, str + strlen(str) - strlen(pre)) == 0)
+ 
+ static int is_digest_disabled(const char *name)
+ {
+@@ -3897,31 +3896,31 @@ static int is_digest_disabled(const char *name)
+         return 1;
+ #endif
+ #ifdef OPENSSL_NO_MD2
+-    if (strcasecmp(name, "MD2") == 0)
++    if (OPENSSL_strcasecmp(name, "MD2") == 0)
+         return 1;
+ #endif
+ #ifdef OPENSSL_NO_MDC2
+-    if (strcasecmp(name, "MDC2") == 0)
++    if (OPENSSL_strcasecmp(name, "MDC2") == 0)
+         return 1;
+ #endif
+ #ifdef OPENSSL_NO_MD4
+-    if (strcasecmp(name, "MD4") == 0)
++    if (OPENSSL_strcasecmp(name, "MD4") == 0)
+         return 1;
+ #endif
+ #ifdef OPENSSL_NO_MD5
+-    if (strcasecmp(name, "MD5") == 0)
++    if (OPENSSL_strcasecmp(name, "MD5") == 0)
+         return 1;
+ #endif
+ #ifdef OPENSSL_NO_RMD160
+-    if (strcasecmp(name, "RIPEMD160") == 0)
++    if (OPENSSL_strcasecmp(name, "RIPEMD160") == 0)
+         return 1;
+ #endif
+ #ifdef OPENSSL_NO_SM3
+-    if (strcasecmp(name, "SM3") == 0)
++    if (OPENSSL_strcasecmp(name, "SM3") == 0)
+         return 1;
+ #endif
+ #ifdef OPENSSL_NO_WHIRLPOOL
+-    if (strcasecmp(name, "WHIRLPOOL") == 0)
++    if (OPENSSL_strcasecmp(name, "WHIRLPOOL") == 0)
+         return 1;
+ #endif
+     return 0;
+diff --git a/test/helpers/ssl_test_ctx.c b/test/helpers/ssl_test_ctx.c
+index 1374b04cf0..7236ffd4a6 100644
+--- a/test/helpers/ssl_test_ctx.c
++++ b/test/helpers/ssl_test_ctx.c
+@@ -16,21 +16,17 @@
+ #include "ssl_test_ctx.h"
+ #include "../testutil.h"
+ 
+-#ifdef OPENSSL_SYS_WINDOWS
+-# define strcasecmp _stricmp
+-#endif
+-
+ static const int default_app_data_size = 256;
+ /* Default set to be as small as possible to exercise fragmentation. */
+ static const int default_max_fragment_size = 512;
+ 
+ static int parse_boolean(const char *value, int *result)
+ {
+-    if (strcasecmp(value, "Yes") == 0) {
++    if (OPENSSL_strcasecmp(value, "Yes") == 0) {
+         *result = 1;
+         return 1;
+     }
+-    else if (strcasecmp(value, "No") == 0) {
++    else if (OPENSSL_strcasecmp(value, "No") == 0) {
+         *result = 0;
+         return 1;
+     }
+diff --git a/test/params_conversion_test.c b/test/params_conversion_test.c
+index 9422ef1473..710c2a9a2e 100644
+--- a/test/params_conversion_test.c
++++ b/test/params_conversion_test.c
+@@ -15,10 +15,6 @@
+ /* On machines that dont support <inttypes.h> just disable the tests */
+ #if !defined(OPENSSL_NO_INTTYPES_H)
+ 
+-# ifdef OPENSSL_SYS_WINDOWS
+-#  define strcasecmp _stricmp
+-# endif
+-
+ # ifdef OPENSSL_SYS_VMS
+ #  define strtoumax strtoull
+ #  define strtoimax strtoll
+@@ -62,7 +58,7 @@ static int param_conversion_load_stanza(PARAM_CONVERSION *pc, const STANZA *s)
+ 
+     for (i = 0; i < s->numpairs; i++, pp++) {
+         p = "";
+-        if (strcasecmp(pp->key, "type") == 0) {
++        if (OPENSSL_strcasecmp(pp->key, "type") == 0) {
+             if (type != NULL) {
+                 TEST_info("Line %d: multiple type lines", s->curr);
+                 return 0;
+@@ -72,48 +68,48 @@ static int param_conversion_load_stanza(PARAM_CONVERSION *pc, const STANZA *s)
+                 TEST_info("Line %d: unknown type line", s->curr);
+                 return 0;
+             }
+-        } else if (strcasecmp(pp->key, "int32") == 0) {
++        } else if (OPENSSL_strcasecmp(pp->key, "int32") == 0) {
+             if (def_i32++) {
+                 TEST_info("Line %d: multiple int32 lines", s->curr);
+                 return 0;
+             }
+-            if (strcasecmp(pp->value, "invalid") != 0) {
++            if (OPENSSL_strcasecmp(pp->value, "invalid") != 0) {
+                 pc->valid_i32 = 1;
+                 pc->i32 = (int32_t)strtoimax(pp->value, &p, 10);
+             }
+-        } else if (strcasecmp(pp->key, "int64") == 0) {
++        } else if (OPENSSL_strcasecmp(pp->key, "int64") == 0) {
+             if (def_i64++) {
+                 TEST_info("Line %d: multiple int64 lines", s->curr);
+                 return 0;
+             }
+-            if (strcasecmp(pp->value, "invalid") != 0) {
++            if (OPENSSL_strcasecmp(pp->value, "invalid") != 0) {
+                 pc->valid_i64 = 1;
+                 pc->i64 = (int64_t)strtoimax(pp->value, &p, 10);
+             }
+-        } else if (strcasecmp(pp->key, "uint32") == 0) {
++        } else if (OPENSSL_strcasecmp(pp->key, "uint32") == 0) {
+             if (def_u32++) {
+                 TEST_info("Line %d: multiple uint32 lines", s->curr);
+                 return 0;
+             }
+-            if (strcasecmp(pp->value, "invalid") != 0) {
++            if (OPENSSL_strcasecmp(pp->value, "invalid") != 0) {
+                 pc->valid_u32 = 1;
+                 pc->u32 = (uint32_t)strtoumax(pp->value, &p, 10);
+             }
+-        } else if (strcasecmp(pp->key, "uint64") == 0) {
++        } else if (OPENSSL_strcasecmp(pp->key, "uint64") == 0) {
+             if (def_u64++) {
+                 TEST_info("Line %d: multiple uint64 lines", s->curr);
+                 return 0;
+             }
+-            if (strcasecmp(pp->value, "invalid") != 0) {
++            if (OPENSSL_strcasecmp(pp->value, "invalid") != 0) {
+                 pc->valid_u64 = 1;
+                 pc->u64 = (uint64_t)strtoumax(pp->value, &p, 10);
+             }
+-        } else if (strcasecmp(pp->key, "double") == 0) {
++        } else if (OPENSSL_strcasecmp(pp->key, "double") == 0) {
+             if (def_d++) {
+                 TEST_info("Line %d: multiple double lines", s->curr);
+                 return 0;
+             }
+-            if (strcasecmp(pp->value, "invalid") != 0) {
++            if (OPENSSL_strcasecmp(pp->value, "invalid") != 0) {
+                 pc->valid_d = 1;
+                 pc->d = strtod(pp->value, &p);
+             }
+@@ -133,7 +129,7 @@ static int param_conversion_load_stanza(PARAM_CONVERSION *pc, const STANZA *s)
+         return 0;
+     }
+ 
+-    if (strcasecmp(type, "int32") == 0) {
++    if (OPENSSL_strcasecmp(type, "int32") == 0) {
+         if (!TEST_true(def_i32) || !TEST_true(pc->valid_i32)) {
+             TEST_note("errant int32 on line %d", s->curr);
+             return 0;
+@@ -142,7 +138,7 @@ static int param_conversion_load_stanza(PARAM_CONVERSION *pc, const STANZA *s)
+         pc->datum = &datum_i32;
+         pc->ref = &ref_i32;
+         pc->size = sizeof(ref_i32);
+-    } else if (strcasecmp(type, "int64") == 0) {
++    } else if (OPENSSL_strcasecmp(type, "int64") == 0) {
+         if (!TEST_true(def_i64) || !TEST_true(pc->valid_i64)) {
+             TEST_note("errant int64 on line %d", s->curr);
+             return 0;
+@@ -151,7 +147,7 @@ static int param_conversion_load_stanza(PARAM_CONVERSION *pc, const STANZA *s)
+         pc->datum = &datum_i64;
+         pc->ref = &ref_i64;
+         pc->size = sizeof(ref_i64);
+-    } else if (strcasecmp(type, "uint32") == 0) {
++    } else if (OPENSSL_strcasecmp(type, "uint32") == 0) {
+         if (!TEST_true(def_u32) || !TEST_true(pc->valid_u32)) {
+             TEST_note("errant uint32 on line %d", s->curr);
+             return 0;
+@@ -160,7 +156,7 @@ static int param_conversion_load_stanza(PARAM_CONVERSION *pc, const STANZA *s)
+         pc->datum = &datum_u32;
+         pc->ref = &ref_u32;
+         pc->size = sizeof(ref_u32);
+-    } else if (strcasecmp(type, "uint64") == 0) {
++    } else if (OPENSSL_strcasecmp(type, "uint64") == 0) {
+         if (!TEST_true(def_u64) || !TEST_true(pc->valid_u64)) {
+             TEST_note("errant uint64 on line %d", s->curr);
+             return 0;
+@@ -169,7 +165,7 @@ static int param_conversion_load_stanza(PARAM_CONVERSION *pc, const STANZA *s)
+         pc->datum = &datum_u64;
+         pc->ref = &ref_u64;
+         pc->size = sizeof(ref_u64);
+-    } else if (strcasecmp(type, "double") == 0) {
++    } else if (OPENSSL_strcasecmp(type, "double") == 0) {
+         if (!TEST_true(def_d) || !TEST_true(pc->valid_d)) {
+             TEST_note("errant double on line %d", s->curr);
+             return 0;
+diff --git a/test/ssl_old_test.c b/test/ssl_old_test.c
+index b07b980624..5fb54a3a2e 100644
+--- a/test/ssl_old_test.c
++++ b/test/ssl_old_test.c
+@@ -216,7 +216,7 @@ static int servername_cb(SSL *s, int *ad, void *arg)
+ 
+     if (servername) {
+         if (s_ctx2 != NULL && sn_server2 != NULL &&
+-            !strcasecmp(servername, sn_server2)) {
++            !OPENSSL_strcasecmp(servername, sn_server2)) {
+             BIO_printf(bio_stdout, "Switching server context.\n");
+             SSL_set_SSL_CTX(s, s_ctx2);
+         }
+diff --git a/test/v3nametest.c b/test/v3nametest.c
+index 06d713b2fe..ce1f4949fe 100644
+--- a/test/v3nametest.c
++++ b/test/v3nametest.c
+@@ -15,10 +15,6 @@
+ #include "internal/nelem.h"
+ #include "testutil.h"
+ 
+-#ifdef OPENSSL_SYS_WINDOWS
+-# define strcasecmp _stricmp
+-#endif
+-
+ static const char *const names[] = {
+     "a", "b", ".", "*", "@",
+     ".a", "a.", ".b", "b.", ".*", "*.", "*@", "@*", "a@", "@a", "b@", "..",
+@@ -287,7 +283,7 @@ static int run_cert(X509 *crt, const char *nameincert,
+     int failed = 0;
+ 
+     for (; *pname != NULL; ++pname) {
+-        int samename = strcasecmp(nameincert, *pname) == 0;
++        int samename = OPENSSL_strcasecmp(nameincert, *pname) == 0;
+         size_t namelen = strlen(*pname);
+         char *name = OPENSSL_malloc(namelen + 1);
+         int match, ret;
+-- 
+2.34.1
+

@@ -1,13 +1,19 @@
-Index: openssl-1.0.0c/Makefile.shared
-===================================================================
---- openssl-1.0.0c.orig/Makefile.shared	2010-12-12 16:13:36.000000000 +0100
-+++ openssl-1.0.0c/Makefile.shared	2010-12-12 16:13:44.000000000 +0100
-@@ -151,7 +151,7 @@
- 	SHLIB_SUFFIX=; \
- 	ALLSYMSFLAGS='-Wl,--whole-archive'; \
- 	NOALLSYMSFLAGS='-Wl,--no-whole-archive'; \
--	SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared -Wl,-Bsymbolic -Wl,-soname=$$SHLIB$$SHLIB_SOVER$$SHLIB_SUFFIX"
-+	SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared -Wl,-soname=$$SHLIB$$SHLIB_SOVER$$SHLIB_SUFFIX"
- 
- DO_GNU_APP=LDFLAGS="$(CFLAGS)"
- 
+From: Debian OpenSSL Team <pkg-openssl-devel@lists.alioth.debian.org>
+Date: Sun, 5 Nov 2017 15:09:09 +0100
+Subject: no-symbolic
+
+---
+ Configurations/shared-info.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/Configurations/shared-info.pl
++++ b/Configurations/shared-info.pl
+@@ -25,7 +25,7 @@
+ my %shared_info;
+ %shared_info = (
+     'gnu-shared' => {
+-        shared_ldflag         => '-shared -Wl,-Bsymbolic',
++        shared_ldflag         => '-shared',
+         shared_sonameflag     => '-Wl,-soname=',
+     },
+     'linux-shared' => sub {

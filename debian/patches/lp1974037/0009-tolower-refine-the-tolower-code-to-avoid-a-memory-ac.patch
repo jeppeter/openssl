@@ -1,0 +1,139 @@
+From 267850a9afeedca6dc1cfca1f20c3d06873849e5 Mon Sep 17 00:00:00 2001
+From: Pauli <pauli@openssl.org>
+Date: Thu, 19 May 2022 12:23:55 +1000
+Subject: [PATCH 09/11] tolower: refine the tolower code to avoid a memory
+ access
+
+This improves the performance of this function and the ones that rely on it
+(ossl_lh_strcasehash primarily).
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Tim Hudson <tjh@openssl.org>
+Reviewed-by: Dmitry Belyavskiy <beldmit@gmail.com>
+(Merged from https://github.com/openssl/openssl/pull/18344)
+
+(cherry picked from commit 286053fc8f78e34828a576830ef879c021640aee)
+
+Origin: upstream, https://github.com/openssl/openssl/pull/18344
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1974037
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010958
+Applied-Upstream: 3.0 branch (probably upcoming 3.0.4)
+---
+ crypto/ctype.c         | 45 ++++++++++++++++++++++++++++++++++++------
+ include/crypto/ctype.h | 12 +++++++----
+ 2 files changed, 47 insertions(+), 10 deletions(-)
+
+diff --git a/crypto/ctype.c b/crypto/ctype.c
+index 83c24a546f..9d2442e1e4 100644
+--- a/crypto/ctype.c
++++ b/crypto/ctype.c
+@@ -257,6 +257,36 @@ int ossl_ctype_check(int c, unsigned int mask)
+     return a >= 0 && a < max && (ctype_char_map[a] & mask) != 0;
+ }
+ 
++/*
++ * Implement some of the simplier functions directly to avoid the overhead of
++ * accessing memory via ctype_char_map[].
++ */
++
++#define ASCII_IS_DIGIT(c)   (c >= 0x30 && c <= 0x39)
++#define ASCII_IS_UPPER(c)   (c >= 0x41 && c <= 0x5A)
++#define ASCII_IS_LOWER(c)   (c >= 0x61 && c <= 0x7A)
++
++int ossl_isdigit(int c)
++{
++    int a = ossl_toascii(c);
++
++    return ASCII_IS_DIGIT(a);
++}
++
++int ossl_isupper(int c)
++{
++    int a = ossl_toascii(c);
++
++    return ASCII_IS_UPPER(a);
++}
++
++int ossl_islower(int c)
++{
++    int a = ossl_toascii(c);
++
++    return ASCII_IS_LOWER(a);
++}
++
+ #if defined(CHARSET_EBCDIC) && !defined(CHARSET_EBCDIC_TEST)
+ static const int case_change = 0x40;
+ #else
+@@ -265,16 +295,19 @@ static const int case_change = 0x20;
+ 
+ int ossl_tolower(int c)
+ {
+-    return ossl_isupper(c) ? c ^ case_change : c;
++    int a = ossl_toascii(c);
++
++    return ASCII_IS_UPPER(a) ? c ^ case_change : c;
+ }
+ 
+ int ossl_toupper(int c)
+ {
+-    return ossl_islower(c) ? c ^ case_change : c;
++    int a = ossl_toascii(c);
++
++    return ASCII_IS_LOWER(a) ? c ^ case_change : c;
+ }
+ 
+-int ossl_ascii_isdigit(const char inchar) {
+-    if (inchar > 0x2F && inchar < 0x3A)
+-        return 1;
+-    return 0;
++int ossl_ascii_isdigit(int c)
++{
++    return ASCII_IS_DIGIT(c);
+ }
+diff --git a/include/crypto/ctype.h b/include/crypto/ctype.h
+index 8032ccc447..e958a977f8 100644
+--- a/include/crypto/ctype.h
++++ b/include/crypto/ctype.h
+@@ -22,6 +22,8 @@
+ # define OSSL_CRYPTO_CTYPE_H
+ # pragma once
+ 
++# include <openssl/e_os2.h>
++
+ # define CTYPE_MASK_lower       0x1
+ # define CTYPE_MASK_upper       0x2
+ # define CTYPE_MASK_digit       0x4
+@@ -55,10 +57,15 @@ int ossl_fromascii(int c);
+ #  define ossl_fromascii(c)     (c)
+ # endif
+ int ossl_ctype_check(int c, unsigned int mask);
++
+ int ossl_tolower(int c);
+ int ossl_toupper(int c);
+ 
+-int ossl_ascii_isdigit(const char inchar);
++int ossl_isdigit(int c);
++int ossl_islower(int c);
++int ossl_isupper(int c);
++
++int ossl_ascii_isdigit(int c);
+ 
+ # define ossl_isalnum(c)        (ossl_ctype_check((c), CTYPE_MASK_alnum))
+ # define ossl_isalpha(c)        (ossl_ctype_check((c), CTYPE_MASK_alpha))
+@@ -69,13 +76,10 @@ int ossl_ascii_isdigit(const char inchar);
+ # endif
+ # define ossl_isblank(c)        (ossl_ctype_check((c), CTYPE_MASK_blank))
+ # define ossl_iscntrl(c)        (ossl_ctype_check((c), CTYPE_MASK_cntrl))
+-# define ossl_isdigit(c)        (ossl_ctype_check((c), CTYPE_MASK_digit))
+ # define ossl_isgraph(c)        (ossl_ctype_check((c), CTYPE_MASK_graph))
+-# define ossl_islower(c)        (ossl_ctype_check((c), CTYPE_MASK_lower))
+ # define ossl_isprint(c)        (ossl_ctype_check((c), CTYPE_MASK_print))
+ # define ossl_ispunct(c)        (ossl_ctype_check((c), CTYPE_MASK_punct))
+ # define ossl_isspace(c)        (ossl_ctype_check((c), CTYPE_MASK_space))
+-# define ossl_isupper(c)        (ossl_ctype_check((c), CTYPE_MASK_upper))
+ # define ossl_isxdigit(c)       (ossl_ctype_check((c), CTYPE_MASK_xdigit))
+ # define ossl_isbase64(c)       (ossl_ctype_check((c), CTYPE_MASK_base64))
+ # define ossl_isasn1print(c)    (ossl_ctype_check((c), CTYPE_MASK_asn1print))
+-- 
+2.34.1
+

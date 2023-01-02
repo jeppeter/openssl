@@ -1,0 +1,63 @@
+Description: TLS versions below 1.2 are not permitted as security level 2.
+
+--- a/ssl/ssl_cert.c
++++ b/ssl/ssl_cert.c
+@@ -1012,18 +1012,12 @@
+         }
+     case SSL_SECOP_VERSION:
+         if (!SSL_IS_DTLS(s)) {
+-            /* SSLv3 not allowed at level 2 */
+-            if (nid <= SSL3_VERSION && level >= 2)
+-                return 0;
+-            /* TLS v1.1 and above only for level 3 */
+-            if (nid <= TLS1_VERSION && level >= 3)
+-                return 0;
+-            /* TLS v1.2 only for level 4 and above */
+-            if (nid <= TLS1_1_VERSION && level >= 4)
++            /* TLS v1.2 only for level 2 and above */
++            if (nid <= TLS1_1_VERSION && level >= 2)
+                 return 0;
+         } else {
+-            /* DTLS v1.2 only for level 4 and above */
+-            if (DTLS_VERSION_LT(nid, DTLS1_2_VERSION) && level >= 4)
++            /* DTLS v1.2 only for level 2 and above */
++            if (DTLS_VERSION_LT(nid, DTLS1_2_VERSION) && level >= 2)
+                 return 0;
+         }
+         break;
+--- a/doc/man3/SSL_CTX_set_security_level.pod
++++ b/doc/man3/SSL_CTX_set_security_level.pod
+@@ -84,22 +84,20 @@
+ Security level set to 112 bits of security. As a result RSA, DSA and DH keys
+ shorter than 2048 bits and ECC keys shorter than 224 bits are prohibited.
+ In addition to the level 1 exclusions any cipher suite using RC4 is also
+-prohibited. SSL version 3 is also not allowed. Compression is disabled.
++prohibited. On Ubuntu, TLS versions below 1.2 are not permitted. Compression is disabled.
+ 
+ =item B<Level 3>
+ 
+ Security level set to 128 bits of security. As a result RSA, DSA and DH keys
+ shorter than 3072 bits and ECC keys shorter than 256 bits are prohibited.
+ In addition to the level 2 exclusions cipher suites not offering forward
+-secrecy are prohibited. TLS versions below 1.1 are not permitted. Session
+-tickets are disabled.
++secrecy are prohibited. Session tickets are disabled.
+ 
+ =item B<Level 4>
+ 
+ Security level set to 192 bits of security. As a result RSA, DSA and
+ DH keys shorter than 7680 bits and ECC keys shorter than 384 bits are
+-prohibited.  Cipher suites using SHA1 for the MAC are prohibited. TLS
+-versions below 1.2 are not permitted.
++prohibited.  Cipher suites using SHA1 for the MAC are prohibited.
+ 
+ =item B<Level 5>
+ 
+@@ -116,6 +114,7 @@
+ 
+ The default security level can be configured when OpenSSL is compiled by
+ setting B<-DOPENSSL_TLS_SECURITY_LEVEL=level>. If not set then 1 is used.
++On Ubuntu, 2 is used.
+ 
+ The security framework disables or reject parameters inconsistent with the
+ set security level. In the past this was difficult as applications had to set

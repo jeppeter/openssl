@@ -90,3 +90,30 @@ msgid ""
 msgstr ""
 "Sie werden sie manuell durch Aufruf von »/etc/init.d/<dienst> start« starten "
 "müssen."
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid "Restart services during package upgrades without asking?"
+msgstr "Dienste bei Paket-Upgrades ohne Rückfrage neu starten?"
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid ""
+"There are services installed on your system which need to be restarted when "
+"certain libraries, such as libpam, libc, and libssl, are upgraded. Since "
+"these restarts may cause interruptions of service for the system, you will "
+"normally be prompted on each upgrade for the list of services you wish to "
+"restart.  You can choose this option to avoid being prompted; instead, all "
+"necessary restarts will be done for you automatically so you can avoid being "
+"asked questions on each library upgrade."
+msgstr ""
+"Auf Ihrem System sind Dienste installiert, die beim Upgrade bestimmter "
+"Bibliotheken, wie Libpam, Libc und Libssl, neu gestartet werden müssen. Da "
+"diese Neustarts zu Unterbrechungen der Dienste für dieses System führen "
+"können, werden Sie normalerweise bei jedem Upgrade über die Liste der neu zu "
+"startenden Dienste befragt. Sie können diese Option wählen, um diese Abfrage "
+"zu vermeiden; stattdessen werden alle notwendigen Dienste-Neustarts für Sie "
+"automatisch vorgenommen und die Beantwortung dieser Fragen bei jedem Upgrade "
+"von Bibliotheken vermieden."

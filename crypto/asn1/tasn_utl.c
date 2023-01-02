@@ -1,382 +1,286 @@
-/* tasn_utl.c */
-/* Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL
- * project 2000.
+/*
+ * Copyright 2000-2021 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
-/* ====================================================================
- * Copyright (c) 2000-2004 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    licensing@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
-
 
 #include <stddef.h>
 #include <string.h>
+#include "internal/cryptlib.h"
+#include "internal/refcount.h"
 #include <openssl/asn1.h>
 #include <openssl/asn1t.h>
 #include <openssl/objects.h>
 #include <openssl/err.h>
+#include "asn1_local.h"
 
 /* Utility functions for manipulating fields and offsets */
 
 /* Add 'offset' to 'addr' */
 #define offset2ptr(addr, offset) (void *)(((char *) addr) + offset)
 
-#define FORMAT_SNPRINTF(...)                                     \
-do {                                                             \
-	ret = snprintf(ptr, leftlen,__VA_ARGS__);                    \
-	if (ret >= 0 && ret < leftlen) {                             \
-		ptr += ret;                                              \
-		leftlen -= ret;                                          \
-	}                                                            \
-} while(0)
-
-char* format_ASN1_ADB_TABLE(const ASN1_ADB_TABLE* adbtbl)
-	{
-		static char st_asn1_adb_table_buf[2048];
-		char* ptr;
-		int leftlen = sizeof(st_asn1_adb_table_buf);
-		int ret;
-		ptr = st_asn1_adb_table_buf;
-		if (adbtbl != NULL) {
-			FORMAT_SNPRINTF("ASN1_ADB_TABLE[%p];value[%ld:0x%lx];tt[%s];", adbtbl, adbtbl->value, adbtbl->value,format_ASN1_TEMPLATE(&(adbtbl->tt)));
-		} else {
-			FORMAT_SNPRINTF("ASN1_ADB_TABLE[nil]");
-		}
-		return st_asn1_adb_table_buf;
-	}
-
-char* format_ASN1_ADB(const ASN1_ADB* adb)
-	{
-		static char st_asn1_adb_buf[2048];
-		char* ptr;
-		int leftlen = sizeof(st_asn1_adb_buf);
-		int ret;
-		int i;
-
-		ptr =st_asn1_adb_buf;
-		if (adb != NULL) {
-			FORMAT_SNPRINTF("ASN1_ADB[%p];flags[%ld:0x%lx];offset[%ld:0x%lx];", adb, adb->flags, adb->flags, adb->offset, adb->offset);
-
-			if (adb->app_items != NULL) {
-				for (i=0;adb->app_items[i] != NULL; i ++) {
-					FORMAT_SNPRINTF("app_items[%d][%p];",i, adb->app_items[i]);
-				}
-			}
-
-			FORMAT_SNPRINTF("%s",format_ASN1_ADB_TABLE(adb->tbl));
-			FORMAT_SNPRINTF("tcount[%ld:0x%lx];default_tt[%s];null_tt[%s];",adb->tblcount, adb->tblcount, format_ASN1_TEMPLATE(adb->default_tt),format_ASN1_TEMPLATE(adb->null_tt));
-		} else {
-			FORMAT_SNPRINTF("ASN1_ADB[nil]");
-		}		
-
-		return st_asn1_adb_buf;
-	}
-
-char* format_ASN1_TEMPLATE(const ASN1_TEMPLATE* template) 
-	{
-		static char st_asn1_template_buf[2048];
-		char* ptr;
-		int ret;
-		int leftlen = sizeof(st_asn1_template_buf);
-		ptr = st_asn1_template_buf;
-
-		if (template != NULL) {
-			FORMAT_SNPRINTF("ASN1_TEMPLATE[%p];",template);
-#ifndef NO_ASN1_FIELD_NAMES
-			FORMAT_SNPRINTF("field_name[%s];", template->field_name);
-#endif		
-			FORMAT_SNPRINTF("flags[%ld:0x%lx];tag[%ld:0x%lx];offset[%ld:0x%lx];", template->flags,template->flags, template->tag,template->tag, template->offset,template->offset);
-			FORMAT_SNPRINTF("item [%p];", template->item);
-		} else {
-			FORMAT_SNPRINTF("ASN1_TEMPLATE[nil]");
-		}
-		return st_asn1_template_buf;
-	}
-
-char* format_ASN1_ITEM(const ASN1_ITEM* it)
-	{
-		static char st_asn1_item_buf[2048];
-		int ret;
-		int leftlen = sizeof(st_asn1_item_buf);
-		char* ptr=NULL;
-		int i;
-		ptr = st_asn1_item_buf;
-
-		if (it != NULL) {
-			FORMAT_SNPRINTF("ASN1_ITEM[%p];",it);
-
-#ifndef NO_ASN1_FIELD_NAMES
-			FORMAT_SNPRINTF("name[%s];", it->sname);
-#endif			
-			FORMAT_SNPRINTF("itype[%d:0x%x];utype[%ld:0x%lx];tcount[%ld];", it->itype,it->itype,it->utype,it->utype,it->tcount);
-
-			for (i=0;i<it->tcount ;i ++) {
-				FORMAT_SNPRINTF("\n[%d]%s", i, format_ASN1_TEMPLATE(&(it->templates[i])));
-			}
-
-			if (it->tcount > 0){
-				FORMAT_SNPRINTF("\n");
-			}
-
-			FORMAT_SNPRINTF("funcs[%p];size[%ld:0x%lx];",it->funcs,it->size,it->size);
-		} else {
-			FORMAT_SNPRINTF("ASN1_ITEM[nil]");
-		}
-		return st_asn1_item_buf;
-	}
-/* Given an ASN1_ITEM CHOICE type return
- * the selector value
+/*
+ * Given an ASN1_ITEM CHOICE type return the selector value
  */
 
-int asn1_get_choice_selector(ASN1_VALUE **pval, const ASN1_ITEM *it)
-	{
-	int *sel = offset2ptr(*pval, it->utype);
-	return *sel;
-	}
+int ossl_asn1_get_choice_selector(ASN1_VALUE **pval, const ASN1_ITEM *it)
+{
+    int *sel = offset2ptr(*pval, it->utype);
 
-/* Given an ASN1_ITEM CHOICE type set
- * the selector value, return old value.
+    return *sel;
+}
+
+int ossl_asn1_get_choice_selector_const(const ASN1_VALUE **pval,
+                                        const ASN1_ITEM *it)
+{
+    int *sel = offset2ptr(*pval, it->utype);
+
+    return *sel;
+}
+
+/*
+ * Given an ASN1_ITEM CHOICE type set the selector value, return old value.
  */
 
-int asn1_set_choice_selector(ASN1_VALUE **pval, int value, const ASN1_ITEM *it)
-	{	
-	int *sel, ret;
-	sel = offset2ptr(*pval, it->utype);
-	ret = *sel;
-	*sel = value;
-	return ret;
-	}
+int ossl_asn1_set_choice_selector(ASN1_VALUE **pval, int value,
+                                  const ASN1_ITEM *it)
+{
+    int *sel, ret;
 
-/* Do reference counting. The value 'op' decides what to do. 
- * if it is +1 then the count is incremented. If op is 0 count is
- * set to 1. If op is -1 count is decremented and the return value
- * is the current refrence count or 0 if no reference count exists.
+    sel = offset2ptr(*pval, it->utype);
+    ret = *sel;
+    *sel = value;
+    return ret;
+}
+
+/*
+ * Do atomic reference counting. The value 'op' decides what to do.
+ * If it is +1 then the count is incremented.
+ * If |op| is 0, lock is initialised and count is set to 1.
+ * If |op| is -1, count is decremented and the return value is the current
+ * reference count or 0 if no reference count is active.
+ * It returns -1 on initialisation error.
+ * Used by ASN1_SEQUENCE construct of X509, X509_REQ, X509_CRL objects
  */
+int ossl_asn1_do_lock(ASN1_VALUE **pval, int op, const ASN1_ITEM *it)
+{
+    const ASN1_AUX *aux;
+    CRYPTO_REF_COUNT *lck;
+    CRYPTO_RWLOCK **lock;
+    int ret = -1;
 
-int asn1_do_lock(ASN1_VALUE **pval, int op, const ASN1_ITEM *it)
-	{
-	const ASN1_AUX *aux;
-	int *lck, ret;
-	if ((it->itype != ASN1_ITYPE_SEQUENCE)
-	   && (it->itype != ASN1_ITYPE_NDEF_SEQUENCE))
-		return 0;
-	aux = it->funcs;
-	if (!aux || !(aux->flags & ASN1_AFLG_REFCOUNT))
-		return 0;
-	lck = offset2ptr(*pval, aux->ref_offset);
-	if (op == 0)
-		{
-		*lck = 1;
-		return 1;
-		}
-	ret = CRYPTO_add(lck, op, aux->ref_lock);
-#ifdef REF_PRINT
-	fprintf(stderr, "%s: Reference Count: %d\n", it->sname, *lck);
-#endif
-#ifdef REF_CHECK
-	if (ret < 0) 
-		fprintf(stderr, "%s, bad reference count\n", it->sname);
-#endif
-	return ret;
-	}
+    if ((it->itype != ASN1_ITYPE_SEQUENCE)
+        && (it->itype != ASN1_ITYPE_NDEF_SEQUENCE))
+        return 0;
+    aux = it->funcs;
+    if (aux == NULL || (aux->flags & ASN1_AFLG_REFCOUNT) == 0)
+        return 0;
+    lck = offset2ptr(*pval, aux->ref_offset);
+    lock = offset2ptr(*pval, aux->ref_lock);
+
+    switch (op) {
+    case 0:
+        *lck = ret = 1;
+        *lock = CRYPTO_THREAD_lock_new();
+        if (*lock == NULL) {
+            ERR_raise(ERR_LIB_ASN1, ERR_R_MALLOC_FAILURE);
+            return -1;
+        }
+        break;
+    case 1:
+        if (!CRYPTO_UP_REF(lck, &ret, *lock))
+            return -1;
+        break;
+    case -1:
+        if (!CRYPTO_DOWN_REF(lck, &ret, *lock))
+            return -1;  /* failed */
+        REF_PRINT_EX(it->sname, ret, (void *)it);
+        REF_ASSERT_ISNT(ret < 0);
+        if (ret == 0) {
+            CRYPTO_THREAD_lock_free(*lock);
+            *lock = NULL;
+        }
+        break;
+    }
+
+    return ret;
+}
 
 static ASN1_ENCODING *asn1_get_enc_ptr(ASN1_VALUE **pval, const ASN1_ITEM *it)
-	{
-	const ASN1_AUX *aux;
-	if (!pval || !*pval)
-		return NULL;
-	aux = it->funcs;
-	if (!aux || !(aux->flags & ASN1_AFLG_ENCODING))
-		return NULL;
-	return offset2ptr(*pval, aux->enc_offset);
-	}
+{
+    const ASN1_AUX *aux;
 
-void asn1_enc_init(ASN1_VALUE **pval, const ASN1_ITEM *it)
-	{
-	ASN1_ENCODING *enc;
-	enc = asn1_get_enc_ptr(pval, it);
-	if (enc)
-		{
-		enc->enc = NULL;
-		enc->len = 0;
-		enc->modified = 1;
-		}
-	}
+    if (pval == NULL || *pval == NULL)
+        return NULL;
+    aux = it->funcs;
+    if (aux == NULL || (aux->flags & ASN1_AFLG_ENCODING) == 0)
+        return NULL;
+    return offset2ptr(*pval, aux->enc_offset);
+}
 
-void asn1_enc_free(ASN1_VALUE **pval, const ASN1_ITEM *it)
-	{
-	ASN1_ENCODING *enc;
-	enc = asn1_get_enc_ptr(pval, it);
-	if (enc)
-		{
-		if (enc->enc)
-			OPENSSL_free(enc->enc);
-		enc->enc = NULL;
-		enc->len = 0;
-		enc->modified = 1;
-		}
-	}
+static const ASN1_ENCODING *asn1_get_const_enc_ptr(const ASN1_VALUE **pval,
+                                                   const ASN1_ITEM *it)
+{
+    const ASN1_AUX *aux;
 
-int asn1_enc_save(ASN1_VALUE **pval, const unsigned char *in, int inlen,
-							 const ASN1_ITEM *it)
-	{
-	ASN1_ENCODING *enc;
-	enc = asn1_get_enc_ptr(pval, it);
-	if (!enc)
-		return 1;
+    if (pval == NULL || *pval == NULL)
+        return NULL;
+    aux = it->funcs;
+    if (aux == NULL || (aux->flags & ASN1_AFLG_ENCODING) == 0)
+        return NULL;
+    return offset2ptr(*pval, aux->enc_offset);
+}
 
-	if (enc->enc)
-		OPENSSL_free(enc->enc);
-	enc->enc = OPENSSL_malloc(inlen);
-	if (!enc->enc)
-		return 0;
-	memcpy(enc->enc, in, inlen);
-	enc->len = inlen;
-	enc->modified = 0;
+void ossl_asn1_enc_init(ASN1_VALUE **pval, const ASN1_ITEM *it)
+{
+    ASN1_ENCODING *enc = asn1_get_enc_ptr(pval, it);
 
-	return 1;
-	}
-		
-int asn1_enc_restore(int *len, unsigned char **out, ASN1_VALUE **pval,
-							const ASN1_ITEM *it)
-	{
-	ASN1_ENCODING *enc;
-	enc = asn1_get_enc_ptr(pval, it);
-	if (!enc || enc->modified)
-		return 0;
-	if (out)
-		{
-		memcpy(*out, enc->enc, enc->len);
-		*out += enc->len;
-		}
-	if (len)
-		*len = enc->len;
-	return 1;
-	}
+    if (enc != NULL) {
+        enc->enc = NULL;
+        enc->len = 0;
+        enc->modified = 1;
+    }
+}
+
+void ossl_asn1_enc_free(ASN1_VALUE **pval, const ASN1_ITEM *it)
+{
+    ASN1_ENCODING *enc = asn1_get_enc_ptr(pval, it);
+
+    if (enc != NULL) {
+        OPENSSL_free(enc->enc);
+        enc->enc = NULL;
+        enc->len = 0;
+        enc->modified = 1;
+    }
+}
+
+int ossl_asn1_enc_save(ASN1_VALUE **pval, const unsigned char *in, int inlen,
+                       const ASN1_ITEM *it)
+{
+    ASN1_ENCODING *enc = asn1_get_enc_ptr(pval, it);
+
+    if (enc == NULL)
+        return 1;
+
+    OPENSSL_free(enc->enc);
+    if (inlen <= 0)
+        return 0;
+    if ((enc->enc = OPENSSL_malloc(inlen)) == NULL) {
+        ERR_raise(ERR_LIB_ASN1, ERR_R_MALLOC_FAILURE);
+        return 0;
+    }
+    memcpy(enc->enc, in, inlen);
+    enc->len = inlen;
+    enc->modified = 0;
+
+    return 1;
+}
+
+int ossl_asn1_enc_restore(int *len, unsigned char **out, const ASN1_VALUE **pval,
+                          const ASN1_ITEM *it)
+{
+    const ASN1_ENCODING *enc = asn1_get_const_enc_ptr(pval, it);
+
+    if (enc == NULL || enc->modified)
+        return 0;
+    if (out) {
+        memcpy(*out, enc->enc, enc->len);
+        *out += enc->len;
+    }
+    if (len != NULL)
+        *len = enc->len;
+    return 1;
+}
 
 /* Given an ASN1_TEMPLATE get a pointer to a field */
-ASN1_VALUE ** asn1_get_field_ptr(ASN1_VALUE **pval, const ASN1_TEMPLATE *tt)
-	{
-	ASN1_VALUE **pvaltmp;
-	if (tt->flags & ASN1_TFLG_COMBINE)
-		return pval;
-	pvaltmp = offset2ptr(*pval, tt->offset);
-	/* NOTE for BOOLEAN types the field is just a plain
- 	 * int so we can't return int **, so settle for
-	 * (int *).
-	 */
-	return pvaltmp;
-	}
+ASN1_VALUE **ossl_asn1_get_field_ptr(ASN1_VALUE **pval, const ASN1_TEMPLATE *tt)
+{
+    ASN1_VALUE **pvaltmp = offset2ptr(*pval, tt->offset);
 
-/* Handle ANY DEFINED BY template, find the selector, look up
- * the relevant ASN1_TEMPLATE in the table and return it.
+    /*
+     * NOTE for BOOLEAN types the field is just a plain int so we can't
+     * return int **, so settle for (int *).
+     */
+    return pvaltmp;
+}
+
+/* Given an ASN1_TEMPLATE get a const pointer to a field */
+const ASN1_VALUE **ossl_asn1_get_const_field_ptr(const ASN1_VALUE **pval,
+                                                 const ASN1_TEMPLATE *tt)
+{
+    return offset2ptr(*pval, tt->offset);
+}
+
+/*
+ * Handle ANY DEFINED BY template, find the selector, look up the relevant
+ * ASN1_TEMPLATE in the table and return it.
  */
 
-const ASN1_TEMPLATE *asn1_do_adb(ASN1_VALUE **pval, const ASN1_TEMPLATE *tt,
-								int nullerr)
-	{
-	const ASN1_ADB *adb;
-	const ASN1_ADB_TABLE *atbl;
-	long selector;
-	ASN1_VALUE **sfld;
-	int i;
-	if (!(tt->flags & ASN1_TFLG_ADB_MASK))
-		return tt;
+const ASN1_TEMPLATE *ossl_asn1_do_adb(const ASN1_VALUE *val,
+                                      const ASN1_TEMPLATE *tt,
+                                      int nullerr)
+{
+    const ASN1_ADB *adb;
+    const ASN1_ADB_TABLE *atbl;
+    long selector;
+    const ASN1_VALUE **sfld;
+    int i;
 
-	/* Else ANY DEFINED BY ... get the table */
-	adb = ASN1_ADB_ptr(tt->item);
+    if ((tt->flags & ASN1_TFLG_ADB_MASK) == 0)
+        return tt;
 
-	/* Get the selector field */
-	sfld = offset2ptr(*pval, adb->offset);
+    /* Else ANY DEFINED BY ... get the table */
+    adb = ASN1_ADB_ptr(tt->item);
 
-	/* Check if NULL */
-	if (!sfld)
-		{
-		if (!adb->null_tt)
-			goto err;
-		return adb->null_tt;
-		}
+    /* Get the selector field */
+    sfld = offset2ptr(val, adb->offset);
 
-	/* Convert type to a long:
-	 * NB: don't check for NID_undef here because it
-	 * might be a legitimate value in the table
-	 */
-	if (tt->flags & ASN1_TFLG_ADB_OID) 
-		selector = OBJ_obj2nid((ASN1_OBJECT *)*sfld);
-	else 
-		selector = ASN1_INTEGER_get((ASN1_INTEGER *)*sfld);
+    /* Check if NULL */
+    if (*sfld == NULL) {
+        if (adb->null_tt == NULL)
+            goto err;
+        return adb->null_tt;
+    }
 
-	/* Try to find matching entry in table
-	 * Maybe should check application types first to
-	 * allow application override? Might also be useful
-	 * to have a flag which indicates table is sorted and
-	 * we can do a binary search. For now stick to a
-	 * linear search.
-	 */
+    /*
+     * Convert type to a long: NB: don't check for NID_undef here because it
+     * might be a legitimate value in the table
+     */
+    if ((tt->flags & ASN1_TFLG_ADB_OID) != 0)
+        selector = OBJ_obj2nid((ASN1_OBJECT *)*sfld);
+    else
+        selector = ASN1_INTEGER_get((ASN1_INTEGER *)*sfld);
 
-	for (atbl = adb->tbl, i = 0; i < adb->tblcount; i++, atbl++)
-		if (atbl->value == selector)
-			return &atbl->tt;
+    /* Let application callback translate value */
+    if (adb->adb_cb != NULL && adb->adb_cb(&selector) == 0) {
+        ERR_raise(ERR_LIB_ASN1, ASN1_R_UNSUPPORTED_ANY_DEFINED_BY_TYPE);
+        return NULL;
+    }
 
-	/* FIXME: need to search application table too */
+    /*
+     * Try to find matching entry in table Maybe should check application
+     * types first to allow application override? Might also be useful to
+     * have a flag which indicates table is sorted and we can do a binary
+     * search. For now stick to a linear search.
+     */
 
-	/* No match, return default type */
-	if (!adb->default_tt)
-		goto err;		
-	return adb->default_tt;
-	
-	err:
-	/* FIXME: should log the value or OID of unsupported type */
-	if (nullerr)
-		ASN1err(ASN1_F_ASN1_DO_ADB,
-			ASN1_R_UNSUPPORTED_ANY_DEFINED_BY_TYPE);
-	return NULL;
-	}
+    for (atbl = adb->tbl, i = 0; i < adb->tblcount; i++, atbl++)
+        if (atbl->value == selector)
+            return &atbl->tt;
+
+    /* FIXME: need to search application table too */
+
+    /* No match, return default type */
+    if (!adb->default_tt)
+        goto err;
+    return adb->default_tt;
+
+ err:
+    /* FIXME: should log the value or OID of unsupported type */
+    if (nullerr)
+        ERR_raise(ERR_LIB_ASN1, ASN1_R_UNSUPPORTED_ANY_DEFINED_BY_TYPE);
+    return NULL;
+}

@@ -97,3 +97,30 @@ msgid ""
 msgstr ""
 "Du m�ste starta om dessa tj�nster manuellt genom att k�ra '/etc/init.d/"
 "<service> start'"
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid "Restart services during package upgrades without asking?"
+msgstr ""
+"Ska tjänster startas om vid paketuppgraderingar utan att först fråga?"
+
+#. Type: boolean
+#. Description
+#: ../libssl1.1.templates:3001
+msgid ""
+"There are services installed on your system which need to be restarted when "
+"certain libraries, such as libpam, libc, and libssl, are upgraded. Since "
+"these restarts may cause interruptions of service for the system, you will "
+"normally be prompted on each upgrade for the list of services you wish to "
+"restart.  You can choose this option to avoid being prompted; instead, all "
+"necessary restarts will be done for you automatically so you can avoid being "
+"asked questions on each library upgrade."
+msgstr ""
+"Det finns tjänster installerade på systemet som behöver startas om när "
+"vissa bibliotek, exempelvis libpam, libc och libssl, uppgraderas. Eftersom "
+"dessa omstarter kan orsaka avbrott i tjänsten ställs normalt en fråga vid "
+"varje uppgradering där en lista med tjänster som ska startas om "
+"presenteras. Du kan välja att aktivera detta alternativ för att undvika "
+"att frågan ställs. Istället kommer alla nödvändiga omstarter att göras "
+"automatiskt."

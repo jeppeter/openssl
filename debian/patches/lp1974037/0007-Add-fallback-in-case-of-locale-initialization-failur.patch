@@ -1,0 +1,84 @@
+From 0428728769536825a38a38fb689cb20522641d1b Mon Sep 17 00:00:00 2001
+From: Tomas Mraz <tomas@openssl.org>
+Date: Tue, 10 May 2022 17:00:26 +0200
+Subject: [PATCH 07/11] Add fallback in case of locale initialization failure
+
+Reviewed-by: Dmitry Belyavskiy <beldmit@gmail.com>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18293)
+
+Origin: upstream, https://github.com/openssl/openssl/pull/18293
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1974037
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010958
+Applied-Upstream: 3.0 branch (probably upcoming 3.0.4)
+---
+ crypto/o_str.c | 21 ++++++++++++++++-----
+ e_os.h         |  1 +
+ 2 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/crypto/o_str.c b/crypto/o_str.c
+index 9309a7bad4..f59e324cfa 100644
+--- a/crypto/o_str.c
++++ b/crypto/o_str.c
+@@ -349,8 +349,8 @@ int openssl_strerror_r(int errnum, char *buf, size_t buflen)
+ #ifndef OPENSSL_NO_LOCALE
+ static locale_t loc;
+ 
+-static void *ossl_c_locale(void) {
+-    return (void *)loc;
++static locale_t ossl_c_locale(void) {
++    return loc;
+ }
+ 
+ int ossl_init_casecmp_int(void) {
+@@ -359,21 +359,32 @@ int ossl_init_casecmp_int(void) {
+ # else
+     loc = newlocale(LC_COLLATE_MASK, "C", (locale_t) 0);
+ # endif
+-    return (loc == (locale_t) 0) ? 0 : 1;
++    return (loc == (locale_t)0) ? 0 : 1;
+ }
+ 
+ void ossl_deinit_casecmp(void) {
+     freelocale(loc);
++    loc = (locale_t)0;
+ }
+ 
+ int OPENSSL_strcasecmp(const char *s1, const char *s2)
+ {
+-    return strcasecmp_l(s1, s2, (locale_t)ossl_c_locale());
++    locale_t l = ossl_c_locale();
++
++    /* Fallback in case of locale initialization failure */
++    if (l == (locale_t)0)
++        return strcasecmp(s1, s2);
++    return strcasecmp_l(s1, s2, l);
+ }
+ 
+ int OPENSSL_strncasecmp(const char *s1, const char *s2, size_t n)
+ {
+-    return strncasecmp_l(s1, s2, n, (locale_t)ossl_c_locale());
++    locale_t l = ossl_c_locale();
++
++    /* Fallback in case of locale initialization failure */
++    if (l == (locale_t)0)
++        return strncasecmp(s1, s2, n);
++    return strncasecmp_l(s1, s2, n, l);
+ }
+ #else
+ int ossl_init_casecmp_int(void) {
+diff --git a/e_os.h b/e_os.h
+index 00b104864d..b5462b9dbc 100644
+--- a/e_os.h
++++ b/e_os.h
+@@ -421,6 +421,7 @@ inline int nssgetpid();
+ #  define strcasecmp_l _stricmp_l
+ #  define strncasecmp_l _strnicmp_l
+ #  define strcasecmp _stricmp
++#  define strncasecmp _strnicmp
+ # elif !defined(_POSIX_C_SOURCE) || _POSIX_C_SOURCE < 200809L \
+      || defined(OPENSSL_SYS_TANDEM)
+ #  ifndef OPENSSL_NO_LOCALE
+-- 
+2.34.1
+

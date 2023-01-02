@@ -1,0 +1,66 @@
+From 94c4ca1d096f96335464ca700587a35001dd7583 Mon Sep 17 00:00:00 2001
+From: Tomas Mraz <tomas@openssl.org>
+Date: Thu, 5 May 2022 12:35:11 +0200
+Subject: [PATCH 03/11] Include the e_os.h before string.h
+
+Fixes #18244
+
+Reviewed-by: Dmitry Belyavskiy <beldmit@gmail.com>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18293)
+
+Origin: upstream, https://github.com/openssl/openssl/pull/18293
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1974037
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010958
+Applied-Upstream: 3.0 branch (probably upcoming 3.0.4)
+---
+ crypto/ctype.c    | 3 +--
+ test/localetest.c | 5 ++---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/crypto/ctype.c b/crypto/ctype.c
+index e55ed17ffa..bf99bc8eb7 100644
+--- a/crypto/ctype.c
++++ b/crypto/ctype.c
+@@ -7,15 +7,14 @@
+  * https://www.openssl.org/source/license.html
+  */
+ 
++#include "e_os.h"
+ #include <string.h>
+ #include <stdio.h>
+ #include "crypto/ctype.h"
+ #include <openssl/ebcdic.h>
+-
+ #include <openssl/crypto.h>
+ #include "internal/core.h"
+ #include "internal/thread_once.h"
+-#include "e_os.h"
+ #ifndef OPENSSL_NO_LOCALE
+ # include <locale.h>
+ # ifdef OPENSSL_SYS_MACOSX
+diff --git a/test/localetest.c b/test/localetest.c
+index 7e0a37af4e..62edf8f849 100644
+--- a/test/localetest.c
++++ b/test/localetest.c
+@@ -7,15 +7,14 @@
+  * https://www.openssl.org/source/license.html
+  */
+ 
++#include "../e_os.h"
+ #include <stdio.h>
+ #include <string.h>
++#include <stdlib.h>
+ #include <openssl/x509.h>
+ #include "testutil.h"
+ #include "testutil/output.h"
+ 
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include "../e_os.h"
+ #ifndef OPENSSL_NO_LOCALE
+ # include <locale.h>
+ # ifdef OPENSSL_SYS_MACOSX
+-- 
+2.34.1
+

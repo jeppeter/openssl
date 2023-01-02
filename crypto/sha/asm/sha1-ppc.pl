@@ -1,7 +1,14 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License 2.0 (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 # ====================================================================
-# Written by Andy Polyakov <appro@fy.chalmers.se> for the OpenSSL
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
 # project. The module is, however, dual licensed under OpenSSL and
 # CRYPTOGAMS licenses depending on where you obtain it. For further
 # details see http://www.openssl.org/~appro/cryptogams/.
@@ -9,8 +16,7 @@
 
 # I let hardware handle unaligned input(*), except on page boundaries
 # (see below for details). Otherwise straightforward implementation
-# with X vector in register bank. The module is big-endian [which is
-# not big deal as there're no little-endian targets left around].
+# with X vector in register bank.
 #
 # (*) this means that this module is inappropriate for PPC403? Does
 #     anybody know if pre-POWER3 can sustain unaligned load?
@@ -20,7 +26,10 @@
 # PPC970,gcc-4.0.0	+76%	+59%
 # Power6,xlc-7		+68%	+33%
 
-$flavour = shift;
+# $output is the last argument if it looks like a file (it has an extension)
+# $flavour is the first argument if it doesn't look like a file
+$output = $#ARGV >= 0 && $ARGV[$#ARGV] =~ m|\.\w+$| ? pop : undef;
+$flavour = $#ARGV >= 0 && $ARGV[0] !~ m|\.| ? shift : undef;
 
 if ($flavour =~ /64/) {
 	$SIZE_T	=8;
@@ -38,20 +47,17 @@ if ($flavour =~ /64/) {
 	$PUSH	="stw";
 } else { die "nonsense $flavour"; }
 
-# Define endianess based on flavour
+# Define endianness based on flavour
 # i.e.: linux64le
-$LITTLE_ENDIAN=0;
-if ($flavour =~ /le$/) {
-	die "little-endian is 64-bit only: $flavour" if ($SIZE_T == 4);
-	$LITTLE_ENDIAN=1;
-}
+$LITTLE_ENDIAN = ($flavour=~/le$/) ? $SIZE_T : 0;
 
 $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
 ( $xlate="${dir}ppc-xlate.pl" and -f $xlate ) or
 ( $xlate="${dir}../../perlasm/ppc-xlate.pl" and -f $xlate) or
 die "can't locate ppc-xlate.pl";
 
-open STDOUT,"| $^X $xlate $flavour ".shift || die "can't call $xlate: $!";
+open STDOUT,"| $^X $xlate $flavour \"$output\""
+    or die "can't call $xlate: $!";
 
 $FRAME=24*$SIZE_T+64;
 $LOCALS=6*$SIZE_T;
@@ -130,31 +136,31 @@ my ($i,$a,$b,$c,$d,$e,$f)=@_;
 my $j=$i+1;
 $code.=<<___ if ($i<79);
 	add	$f,$K,$e
+	xor	$t0,$b,$d
 	rotlwi	$e,$a,5
 	xor	@X[$j%16],@X[$j%16],@X[($j+2)%16]
 	add	$f,$f,@X[$i%16]
-	xor	$t0,$b,$c
+	xor	$t0,$t0,$c
 	xor	@X[$j%16],@X[$j%16],@X[($j+8)%16]
-	add	$f,$f,$e
-	rotlwi	$b,$b,30
-	xor	$t0,$t0,$d
-	xor	@X[$j%16],@X[$j%16],@X[($j+13)%16]
 	add	$f,$f,$t0
+	rotlwi	$b,$b,30
+	xor	@X[$j%16],@X[$j%16],@X[($j+13)%16]
+	add	$f,$f,$e
 	rotlwi	@X[$j%16],@X[$j%16],1
 ___
 $code.=<<___ if ($i==79);
 	add	$f,$K,$e
+	xor	$t0,$b,$d
 	rotlwi	$e,$a,5
 	lwz	r16,0($ctx)
 	add	$f,$f,@X[$i%16]
-	xor	$t0,$b,$c
+	xor	$t0,$t0,$c
 	lwz	r17,4($ctx)
-	add	$f,$f,$e
+	add	$f,$f,$t0
 	rotlwi	$b,$b,30
 	lwz	r18,8($ctx)
-	xor	$t0,$t0,$d
 	lwz	r19,12($ctx)
-	add	$f,$f,$t0
+	add	$f,$f,$e
 	lwz	r20,16($ctx)
 ___
 }
@@ -232,7 +238,7 @@ Lunaligned:
 	srwi.	$t1,$t1,6	; t1/=64
 	beq	Lcross_page
 	$UCMP	$num,$t1
-	ble-	Laligned	; didn't cross the page boundary
+	ble	Laligned	; didn't cross the page boundary
 	mtctr	$t1
 	subfc	$num,$t1,$num
 	bl	Lsha1_block_private
@@ -260,7 +266,7 @@ Lmemcpy:
 	bl	Lsha1_block_private
 	$POP	$inp,`$FRAME-$SIZE_T*18`($sp)
 	addic.	$num,$num,-1
-	bne-	Lunaligned
+	bne	Lunaligned
 
 Ldone:
 	$POP	r0,`$FRAME+$LRSAVE`($sp)
@@ -334,10 +340,11 @@ $code.=<<___;
 	stw	r20,16($ctx)
 	mr	$E,r20
 	addi	$inp,$inp,`16*4`
-	bdnz-	Lsha1_block_private
+	bdnz	Lsha1_block_private
 	blr
 	.long	0
 	.byte	0,12,0x14,0,0,0,0,0
+.size	.sha1_block_data_order,.-.sha1_block_data_order
 ___
 $code.=<<___;
 .asciz	"SHA1 block transform for PPC, CRYPTOGAMS by <appro\@fy.chalmers.se>"
@@ -345,4 +352,4 @@ ___
 
 $code =~ s/\`([^\`]*)\`/eval $1/gem;
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT: $!";

@@ -1,43 +1,78 @@
-From 83f318d68bbdab1ca898c94576a838cc97df4700 Mon Sep 17 00:00:00 2001
 From: Ludwig Nussel <ludwig.nussel@suse.de>
 Date: Wed, 21 Apr 2010 15:52:10 +0200
 Subject: [PATCH] also create old hash for compatibility
 
----
- tools/c_rehash.in |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+Updated: 2022-06-15
 
-Index: openssl-1.0.0d/tools/c_rehash.in
-===================================================================
---- openssl-1.0.0d.orig/tools/c_rehash.in	2011-04-13 20:41:28.000000000 +0000
-+++ openssl-1.0.0d/tools/c_rehash.in	2011-04-13 20:41:28.000000000 +0000
-@@ -86,6 +86,7 @@
- 			}
- 		}
- 		link_hash_cert($fname) if($cert);
-+		link_hash_cert_old($fname) if($cert);
- 		link_hash_crl($fname) if($crl);
- 	}
- }
-@@ -119,8 +120,9 @@
+---
+ tools/c_rehash.in | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
+
+--- a/tools/c_rehash.in
++++ b/tools/c_rehash.in
+@@ -17,8 +17,6 @@ my $prefix = {- quotify1($config{prefix}
+ my $errorcount = 0;
+ my $openssl = $ENV{OPENSSL} || "openssl";
+ my $pwd;
+-my $x509hash = "-subject_hash";
+-my $crlhash = "-hash";
+ my $verbose = 0;
+ my $symlink_exists=eval {symlink("",""); 1};
+ my $removelinks = 1;
+@@ -27,10 +25,7 @@ my $removelinks = 1;
+ while ( $ARGV[0] =~ /^-/ ) {
+     my $flag = shift @ARGV;
+     last if ( $flag eq '--');
+-    if ( $flag eq '-old') {
+-        $x509hash = "-subject_hash_old";
+-        $crlhash = "-hash_old";
+-    } elsif ( $flag eq '-h' || $flag eq '-help' ) {
++    if ( $flag eq '-h' || $flag eq '-help' ) {
+         help();
+     } elsif ( $flag eq '-n' ) {
+         $removelinks = 0;
+@@ -151,7 +146,9 @@ sub hash_dir {
+             next;
+         }
+         link_hash_cert($fname) if ($cert);
++        link_hash_cert_old($fname) if ($cert);
+         link_hash_crl($fname) if ($crl);
++        link_hash_crl_old($fname) if ($crl);
+     }
+ 
+     chdir $pwd;
+@@ -203,22 +200,30 @@ sub compute_hash {
+ # certificate fingerprints
  
  sub link_hash_cert {
- 		my $fname = $_[0];
-+		my $hashopt = $_[1] || '-subject_hash';
- 		$fname =~ s/'/'\\''/g;
--		my ($hash, $fprint) = `"$openssl" x509 -hash -fingerprint -noout -in "$fname"`;
-+		my ($hash, $fprint) = `"$openssl" x509 $hashopt -fingerprint -noout -in "$fname"`;
- 		chomp $hash;
- 		chomp $fprint;
- 		$fprint =~ s/^.*=//;
-@@ -150,6 +152,10 @@
- 		$hashlist{$hash} = $fprint;
+-    link_hash($_[0], 'cert');
++    link_hash($_[0], 'cert', '-subject_hash');
  }
  
-+sub link_hash_cert_old {
-+		link_hash_cert($_[0], '-subject_hash_old');
-+}
-+
  # Same as above except for a CRL. CRL links are of the form <hash>.r<n>
  
  sub link_hash_crl {
+-    link_hash($_[0], 'crl');
++    link_hash($_[0], 'crl', '-hash');
++}
++
++sub link_hash_cert_old {
++    link_hash($_[0], 'cert', '-subject_hash_old');
++}
++
++sub link_hash_crl_old {
++    link_hash($_[0], 'crl', '-hash_old');
+ }
+ 
+ sub link_hash {
+-    my ($fname, $type) = @_;
++    my ($fname, $type, $hash_cmd) = @_;
+     my $is_cert = $type eq 'cert';
+ 
+     my ($hash, $fprint) = compute_hash($openssl,
+                                        $is_cert ? "x509" : "crl",
+-                                       $is_cert ? $x509hash : $crlhash,
++                                       $hash_cmd,
+                                        "-fingerprint", "-noout",
+                                        "-in", $fname);
+     chomp $hash;

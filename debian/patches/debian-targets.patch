@@ -1,69 +1,227 @@
-Index: openssl-1.0.1e/Configure
-===================================================================
---- openssl-1.0.1e.orig/Configure	2013-08-24 07:46:42.292313320 +0000
-+++ openssl-1.0.1e/Configure	2013-08-24 07:49:19.252316478 +0000
-@@ -105,6 +105,10 @@
- 
- my $gcc_devteam_warn = "-Wall -pedantic -DPEDANTIC -Wno-long-long -Wsign-compare -Wmissing-prototypes -Wshadow -Wformat -Werror -DCRYPTO_MDEBUG_ALL -DCRYPTO_MDEBUG_ABORT -DREF_CHECK -DOPENSSL_NO_DEPRECATED";
- 
-+# There are no separate CFLAGS/CPPFLAGS/LDFLAGS, set everything in CFLAGS
-+my $debian_cflags = `dpkg-buildflags --get CFLAGS` . `dpkg-buildflags --get CPPFLAGS` . `dpkg-buildflags --get LDFLAGS` . "-Wa,--noexecstack -Wall";
-+$debian_cflags =~ s/\n/ /g;
+From: Debian OpenSSL Team <pkg-openssl-devel@lists.alioth.debian.org>
+Date: Sun, 5 Nov 2017 15:09:09 +0100
+Subject: debian-targets
+
+---
+ Configurations/20-debian.conf | 215 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 215 insertions(+)
+ create mode 100644 Configurations/20-debian.conf
+
+--- /dev/null
++++ b/Configurations/20-debian.conf
+@@ -0,0 +1,215 @@
++my %targets = (
++	"debian" => {
++		cflags => add("-Wa,--noexecstack -Wall"),
++	},
++	"debian-alpha" => {
++		inherit_from => [ "linux-alpha-gcc", "debian" ],
++	},
++	"debian-alpha-ev4" => {
++		inherit_from => [ "debian-alpha" ],
++		cflags => add("-mcpu=ev4"),
++	},
++	"debian-alpha-ev5" => {
++		inherit_from => [ "debian-alpha" ],
++		cflags => add("-mcpu=ev5"),
++	},
++	"debian-arm64" => {
++		inherit_from => [ "linux-aarch64", "debian" ],
++	},
++	"debian-arm64ilp32" => {
++		inherit_from => [ "linux-arm64ilp32", "debian" ],
++	},
++	"debian-armel" => {
++		inherit_from => [ "linux-armv4", "debian" ],
++	},
++	"debian-armhf" => {
++		inherit_from => [ "linux-armv4", "debian" ],
++	},
++	"debian-amd64" => {
++		inherit_from => [ "linux-x86_64", "debian" ],
++	},
++	"debian-i386" => {
++		inherit_from => [ "linux-elf", "debian" ],
++	},
++	"debian-avr32" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++	},
++	"debian-kfreebsd-amd64" => {
++		inherit_from => [ "debian-amd64" ],
++		enable		=> [ ],
++	},
++	"debian-kfreebsd-i386" => {
++		inherit_from => [ "debian-i386" ],
++		enable		=> [ ],
++	},
++	"debian-hppa" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-hurd-i386" => {
++		inherit_from => [ "hurd-x86", "debian" ],
++	},
++	"debian-ia64" => {
++		inherit_from => [ "linux-ia64", "debian" ],
++	},
++	"debian-m68k" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-mips" => {
++		inherit_from => [ "linux-mips32", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-mipsel" => {
++		inherit_from => [ "linux-mips32", "debian" ],
++		cflags => add("-DL_ENDIAN"),
++	},
++	"debian-mipsn32" => {
++		inherit_from => [ "linux-mips64", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-mipsn32el" => {
++		inherit_from => [ "linux-mips64", "debian" ],
++		cflags => add("-DL_ENDIAN"),
++	},
++	"debian-mips64" => {
++		inherit_from => [ "linux64-mips64", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-mips64el" => {
++		inherit_from => [ "linux64-mips64", "debian" ],
++		cflags => add("-DL_ENDIAN"),
++	},
 +
- my $strict_warnings = 0;
- 
- my $x86_gcc_des="DES_PTR DES_RISC1 DES_UNROLL";
-@@ -340,6 +344,53 @@
- "osf1-alpha-cc",  "cc:-std1 -tune host -O4 -readonly_strings::(unknown):::SIXTY_FOUR_BIT_LONG RC4_CHUNK:${alpha_asm}:dlfcn:alpha-osf1-shared:::.so",
- "tru64-alpha-cc", "cc:-std1 -tune host -fast -readonly_strings::-pthread:::SIXTY_FOUR_BIT_LONG RC4_CHUNK:${alpha_asm}:dlfcn:alpha-osf1-shared::-msym:.so",
- 
-+# Debian GNU/* (various architectures)
-+"debian-alpha","gcc:-DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_RISC1 DES_UNROLL:${alpha_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-alpha-ev4","gcc:-DTERMIO ${debian_cflags} -mcpu=ev4::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_RISC1 DES_UNROLL:${alpha_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-alpha-ev5","gcc:-DTERMIO ${debian_cflags} -mcpu=ev5::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_RISC1 DES_UNROLL:${alpha_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-arm64","gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-armel","gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${armv4_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-armhf","gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${armv4_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-amd64", "gcc:-m64 -DL_ENDIAN -DTERMIO ${debian_cflags} -DMD32_REG_T=int::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_INT DES_UNROLL:${x86_64_asm}:elf:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::",
-+"debian-avr32", "gcc:-DB_ENDIAN -DTERMIO ${debian_cflags} -fomit-frame-pointer::-D_REENTRANT::-ldl:BN_LLONG_BF_PTR:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-kfreebsd-amd64","gcc:-m64 -DL_ENDIAN -DTERMIOS ${debian_cflags} -DMD32_REG_T=int::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_INT DES_UNROLL:${x86_64_asm}:elf:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-kfreebsd-i386","gcc:-DL_ENDIAN -DTERMIOS ${debian_cflags} -march=i486::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-hppa","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG MD2_CHAR RC4_INDEX:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-hurd-i386","gcc:-DL_ENDIAN -DTERMIOS -O3 -Wa,--noexecstack -g -mtune=i486 -Wall::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-ia64","gcc:-DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_UNROLL DES_INT:${ia64_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-i386","gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-i386-i486","gcc:-DL_ENDIAN -DTERMIO ${debian_cflags} -march=i486::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-i386-i586","gcc:-DL_ENDIAN -DTERMIO ${debian_cflags} -march=i586::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-i386-i686/cmov","gcc:-DL_ENDIAN -DTERMIO ${debian_cflags} -march=i686::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_elf_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-m68k","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG MD2_CHAR RC4_INDEX:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-mips",   "gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC2_CHAR RC4_INDEX DES_INT DES_UNROLL DES_RISC2:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-mipsel",   "gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC2_CHAR RC4_INDEX DES_INT DES_UNROLL DES_RISC2:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-mipsn32",   "mips64-linux-gnuabin32-gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC2_CHAR RC4_INDEX DES_INT DES_UNROLL DES_RISC2:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-mipsn32el",   "mips64el-linux-gnuabin32-gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC2_CHAR RC4_INDEX DES_INT DES_UNROLL DES_RISC2:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-mips64",   "mips64-linux-gnuabi64-gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC2_CHAR RC4_INDEX DES_INT DES_UNROLL DES_RISC2:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-mips64el",   "mips64el-linux-gnuabi64-gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC2_CHAR RC4_INDEX DES_INT DES_UNROLL DES_RISC2:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-netbsd-i386",	"gcc:-DL_ENDIAN -DTERMIOS ${debian_cflags} -m486::(unknown):::BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${no_asm}:dlfcn:bsd-gcc-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-netbsd-m68k",	"gcc:-DB_ENDIAN -DTERMIOS ${debian_cflags}::(unknown):::BN_LLONG MD2_CHAR RC4_INDEX DES_UNROLL:${no_asm}:dlfcn:bsd-gcc-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-netbsd-sparc",	"gcc:-DB_ENDIAN -DTERMIOS ${debian_cflags} -mv8::(unknown):::BN_LLONG MD2_CHAR RC4_INDEX DES_UNROLL:${no_asm}:dlfcn:bsd-gcc-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-openbsd-alpha","gcc:-DTERMIOS ${debian_cflags}::(unknown):::SIXTY_FOUR_BIT_LONG DES_INT DES_PTR DES_RISC2:${no_asm}:dlfcn:bsd-gcc-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-openbsd-i386",  "gcc:-DL_ENDIAN -DTERMIOS ${debian_cflags} -m486::(unknown):::BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:${x86_asm}:a.out:dlfcn:bsd-gcc-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-openbsd-mips","gcc:-DL_ENDIAN ${debian_cflags}::(unknown)::BN_LLONG MD2_CHAR RC4_INDEX RC4_CHAR DES_UNROLL DES_RISC2 DES_PTR BF_PTR:${no_asm}:dlfcn:bsd-gcc-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-powerpc","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_RISC1 DES_UNROLL:${ppc32_asm}:linux32:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-powerpcspe","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_RISC1 DES_UNROLL:${ppc32_asm}:linux32:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-ppc64","gcc:-m64 -DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHAR RC4_CHUNK DES_RISC1 DES_UNROLL:${ppc64_asm}:linux64:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-s390","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)", 
-+"debian-s390x","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-sh3",   "gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-sh4",   "gcc:-DL_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-sh3eb",   "gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-sh4eb",   "gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-m32r","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-sparc","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags}::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_UNROLL BF_PTR:${sparcv9_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-sparc-v8","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags} -mcpu=v8 -DBN_DIV2W::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_UNROLL BF_PTR:${sparcv8_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-sparc-v9","gcc:-DB_ENDIAN -DTERMIO ${debian_cflags} -mcpu=v9 -Wa,-Av8plus -DULTRASPARC -DBN_DIV2W::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_UNROLL BF_PTR:${sparcv9_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-sparc64","gcc:-m64 -DB_ENDIAN -DTERMIO ${debian_cflags} -DULTRASPARC -DBN_DIV2W::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_PTR DES_RISC1 DES_UNROLL BF_PTR:${sparcv9_asm}:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"debian-x32","gcc:-mx32 -DL_ENDIAN -DTERMIO ${debian_cflags} -DMD32_REG_T=int::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT RC4_CHUNK DES_INT DES_UNROLL:${x86_64_asm}:elf:dlfcn:linux-shared:-fPIC:-mx32:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR):::x32",
++	# Temporary MIPS R6 targets. Those will vanish approx in 1.1.1 because
++	# aes-mips.pl creates proper R6 ASM code. After that, we can inherit from
++	# the linux*-mips* targets.
++	"linux-mips32r6" => {
++	# Configure script adds minimally required -march for assembly
++	# support, if no -march was specified at command line.
++		inherit_from     => [ "linux-generic32"],
++		cflags           => add("-mabi=32"),
++		perlasm_scheme   => "o32",
++		shared_ldflag    => add("-mabi=32"),
++	},
++	# mips32 and mips64 below refer to contemporary MIPS Architecture
++	# specifications, MIPS32 and MIPS64, rather than to kernel bitness.
++	"linux-mips64r6" => {
++		inherit_from     => [ "linux-generic32"],
++		cflags           => add("-mabi=n32"),
++		bn_ops           => "SIXTY_FOUR_BIT RC4_CHAR",
++		perlasm_scheme   => "n32",
++		shared_ldflag    => add("-mabi=n32"),
++		multilib         => "32",
++	},
++	"linux64-mips64r6" => {
++		inherit_from     => [ "linux-generic64"],
++		cflags           => add("-mabi=64"),
++		perlasm_scheme   => "64",
++		shared_ldflag    => add("-mabi=64"),
++		multilib         => "64",
++	},
++	"debian-mipsr6" => {
++		inherit_from => [ "linux-mips32r6", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-mipsr6el" => {
++		inherit_from => [ "linux-mips32r6", "debian" ],
++		cflags => add("-DL_ENDIAN"),
++	},
++	"debian-mipsn32r6" => {
++		inherit_from => [ "linux-mips64r6", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-mipsn32r6el" => {
++		inherit_from => [ "linux-mips64r6", "debian" ],
++		cflags => add("-DL_ENDIAN"),
++	},
++	"debian-mips64r6" => {
++		inherit_from => [ "linux64-mips64r6", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-mips64r6el" => {
++		inherit_from => [ "linux64-mips64r6", "debian" ],
++		cflags => add("-DL_ENDIAN"),
++	},
 +
- ####
- #### Variety of LINUX:-)
- ####
++	"debian-musl-linux-arm64" => {
++		inherit_from => [ "linux-aarch64", "debian" ],
++	},
++	"debian-musl-linux-armhf" => {
++		inherit_from => [ "linux-armv4", "debian" ],
++	},
++	"debian-musl-linux-i386" => {
++		inherit_from => [ "linux-elf", "debian" ],
++	},
++	"debian-musl-linux-mips" => {
++		inherit_from => [ "linux-mips32", "debian" ],
++		cflags => add("-DB_ENDIAN"),
++	},
++	"debian-musl-linux-mipsel" => {
++		inherit_from => [ "linux-mips32", "debian" ],
++		cflags => add("-DL_ENDIAN"),
++	},
++
++	"debian-nios2" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++	},
++	"debian-powerpc" => {
++		inherit_from => [ "linux-ppc", "debian" ],
++	},
++	"debian-powerpcspe" => {
++		inherit_from => [ "linux-ppc", "debian" ],
++	},
++	"debian-ppc64" => {
++		inherit_from => [ "linux-generic64", "debian", ],
++ 		asm_arch         => 'ppc64',
++		cflags => add("-DB_ENDIAN"),
++ 		perlasm_scheme => "linux64",
++	},
++	"debian-ppc64el" => {
++		inherit_from => [ "linux-ppc64le", "debian" ],
++	},
++	"debian-riscv64" => {
++		inherit_from => [ "linux-generic64", "debian" ],
++	},
++	"debian-s390" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++	},
++	"debian-s390x" => {
++		inherit_from => [ "linux64-s390x", "debian" ],
++	},
++	"debian-sh3" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++	},
++	"debian-sh3eb" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++	},
++	"debian-sh4" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++	},
++	"debian-sh4eb" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++	},
++	"debian-m32r" => {
++		inherit_from => [ "linux-generic32", "debian" ],
++	},
++	"debian-sparc" => {
++		inherit_from => [ "linux-generic32", "debian", ],
++		asm_arch         => 'sparcv9',
++		cflags => add("-DB_ENDIAN -DBN_DIV2W"),
++	},
++	"debian-sparc64" => {
++	        inherit_from => [ "linux-generic64", "debian" ],
++		asm_arch         => 'sparcv9',
++	        cflags => add("-m64 -mcpu=ultrasparc -DB_ENDIAN"),
++		bn_ops => "BN_LLONG RC4_CHAR",
++		ex_libs => add("-latomic"),
++	},
++	"debian-tilegx" => {
++		inherit_from => [ "linux-generic64", "debian" ],
++	},
++	"debian-x32" => {
++		inherit_from => [ "linux-x32", "debian" ],
++	},
++);
