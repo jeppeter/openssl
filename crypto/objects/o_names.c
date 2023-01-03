@@ -20,6 +20,7 @@
 #include "crypto/lhash.h"
 #include "obj_local.h"
 #include "e_os.h"
+#include "internal/intern_log.h"
 
 /*
  * I use the ex_data stuff to manage the identifiers for the obj_name_types
@@ -211,6 +212,7 @@ int OBJ_NAME_add(const char *name, int type, const char *data)
         return 0;
     }
 
+    BACKTRACE_DEBUG("add [%s]", name);
     ret = lh_OBJ_NAME_insert(names_lh, onp);
     if (ret != NULL) {
         /* free things */
@@ -298,6 +300,7 @@ void OBJ_NAME_do_all(int type, void (*fn) (const OBJ_NAME *, void *arg),
     d.fn = fn;
     d.arg = arg;
 
+    OSSL_DEBUG(" ");
     lh_OBJ_NAME_doall_OBJ_DOALL(names_lh, do_all_fn, &d);
 }
 

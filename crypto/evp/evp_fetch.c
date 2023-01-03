@@ -12,6 +12,7 @@
 #include <openssl/evp.h>
 #include <openssl/core.h>
 #include "internal/cryptlib.h"
+#include "internal/intern_log.h"
 #include "internal/thread_once.h"
 #include "internal/property.h"
 #include "internal/core.h"
@@ -137,19 +138,26 @@ static void *get_evp_method_from_store(void *store, const OSSL_PROVIDER **prov,
         if (namemap == 0)
             return NULL;
         name_id = ossl_namemap_name2num_n(namemap, names, l);
+        OSSL_DEBUG("name_id [0x%x] [%s]", name_id,names);
     }
 
     if (name_id == 0
-        || (meth_id = evp_method_id(name_id, methdata->operation_id)) == 0)
+        || (meth_id = evp_method_id(name_id, methdata->operation_id)) == 0){
+        OSSL_DEBUG(" ");
         return NULL;
+    }
 
     if (store == NULL
-        && (store = get_evp_method_store(methdata->libctx)) == NULL)
+        && (store = get_evp_method_store(methdata->libctx)) == NULL) {
+        OSSL_DEBUG(" ");
         return NULL;
+    }
 
     if (!ossl_method_store_fetch(store, meth_id, methdata->propquery, prov,
-                                 &method))
+                                 &method)) {
+        OSSL_DEBUG("names [%s]", methdata->names);
         return NULL;
+    }
     return method;
 }
 
@@ -252,6 +260,7 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
     void *method = NULL;
     int unsupported = 0;
 
+    OSSL_DEBUG("name_id [0x%x] name [%s]", name_id, name ? name : "NULL");
     if (store == NULL || namemap == NULL) {
         ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_INVALID_ARGUMENT);
         return NULL;
@@ -276,8 +285,11 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
     }
 
     /* If we haven't received a name id yet, try to get one for the name */
-    if (name_id == 0 && name != NULL)
+    if (name_id == 0 && name != NULL){
         name_id = ossl_namemap_name2num(namemap, name);
+    }
+    OSSL_DEBUG("name_id [0x%x]",name_id);
+
 
     /*
      * If we have a name id, calculate a method id with evp_method_id().
@@ -341,6 +353,9 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
         unsupported = !methdata->flag_construct_error_occurred;
     }
 
+    OSSL_DEBUG("name_id [0x%x]", name_id);
+    OSSL_DEBUG("name [%s]", name ? name : "NULL");
+    OSSL_DEBUG("method [%p]", method);
     if ((name_id != 0 || name != NULL) && method == NULL) {
         int code = unsupported ? ERR_R_UNSUPPORTED : ERR_R_FETCH_FAILED;
 

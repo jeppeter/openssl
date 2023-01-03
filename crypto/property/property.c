@@ -22,6 +22,7 @@
 #include "crypto/lhash.h"
 #include "crypto/sparse_array.h"
 #include "property_local.h"
+#include "internal/intern_log.h"
 
 /*
  * The number of elements in the query cache before we initiate a flush.
@@ -602,14 +603,18 @@ int ossl_method_store_cache_get(OSSL_METHOD_STORE *store, OSSL_PROVIDER *prov,
     if (!ossl_property_read_lock(store))
         return 0;
     alg = ossl_method_store_retrieve(store, nid);
-    if (alg == NULL)
+    if (alg == NULL){
+        OSSL_DEBUG("nid [0x%x] return NULL", nid);
         goto err;
+    }
 
     elem.query = prop_query;
     elem.provider = prov;
     r = lh_QUERY_retrieve(alg->cache, &elem);
-    if (r == NULL)
+    if (r == NULL){
+        OSSL_DEBUG("nid [0x%x] retrieve QUERY NULL", nid);
         goto err;
+    }
     if (ossl_method_up_ref(&r->method)) {
         *method = r->method.method;
         res = 1;
