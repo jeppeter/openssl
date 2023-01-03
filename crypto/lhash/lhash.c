@@ -227,11 +227,10 @@ static void doall_util_fn(OPENSSL_LHASH *lh, int use_arg,
         while (a != NULL) {
             n = a->next;
             if (use_arg){
-                OSSL_DEBUG("[%d]",i);
+                //OSSL_DEBUG("[%d]",i);
                 func_arg(a->data, arg);
             }
             else{
-                OSSL_DEBUG("[%d]",i);
                 func(a->data);
             }
             a = n;
@@ -246,7 +245,7 @@ void OPENSSL_LH_doall(OPENSSL_LHASH *lh, OPENSSL_LH_DOALL_FUNC func)
 
 void OPENSSL_LH_doall_arg(OPENSSL_LHASH *lh, OPENSSL_LH_DOALL_FUNCARG func, void *arg)
 {
-    OSSL_DEBUG(" ");
+    //OSSL_DEBUG(" ");
     doall_util_fn(lh, 1, (OPENSSL_LH_DOALL_FUNC)0, func, arg);
 }
 

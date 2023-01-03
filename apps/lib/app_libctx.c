@@ -8,6 +8,7 @@
  */
 #include "app_libctx.h"
 #include "apps.h"
+#include "internal/intern_log.h"
 
 static OSSL_LIB_CTX *app_libctx = NULL;
 static const char *app_propq = NULL;
@@ -25,6 +26,7 @@ const char *app_get0_propq(void)
 
 OSSL_LIB_CTX *app_get0_libctx(void)
 {
+    OSSL_DEBUG("app_libctx [%p]",app_libctx);
     return app_libctx;
 }
 
@@ -39,10 +41,12 @@ OSSL_LIB_CTX *app_create_libctx(void)
             opt_printf_stderr( "Failed to create null provider\n");
             return NULL;
         }
+        OSSL_DEBUG(" ");
         app_libctx = OSSL_LIB_CTX_new();
     }
     if (app_libctx == NULL)
         opt_printf_stderr("Failed to create library context\n");
+    OSSL_DEBUG("app_libctx [%p]",app_libctx);
     return app_libctx;
 }
 

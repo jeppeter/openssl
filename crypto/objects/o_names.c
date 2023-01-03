@@ -212,7 +212,7 @@ int OBJ_NAME_add(const char *name, int type, const char *data)
         return 0;
     }
 
-    BACKTRACE_DEBUG("add [%s]", name);
+    //OSSL_DEBUG("add [%s]", name);
     ret = lh_OBJ_NAME_insert(names_lh, onp);
     if (ret != NULL) {
         /* free things */

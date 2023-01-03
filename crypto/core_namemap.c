@@ -285,7 +285,7 @@ int ossl_namemap_add_name_n(OSSL_NAMEMAP *namemap, int number,
 
     if (!CRYPTO_THREAD_write_lock(namemap->lock))
         return 0;
-    OSSL_DEBUG("add [0x%x] [%s]", number,name);
+    //OSSL_DEBUG("add [0x%x] [%s]", number,name);
     tmp_number = namemap_add_name_n(namemap, number, name, name_len);
     CRYPTO_THREAD_unlock(namemap->lock);
     return tmp_number;
@@ -391,14 +391,14 @@ static void get_legacy_evp_names(int base_nid, int nid, const char *pem_name,
     }
 
     if (nid != NID_undef) {
-        OSSL_DEBUG(" ");
+        //OSSL_DEBUG(" ");
         num = ossl_namemap_add_name(arg, num, OBJ_nid2sn(nid));
         num = ossl_namemap_add_name(arg, num, OBJ_nid2ln(nid));
         if ((obj = OBJ_nid2obj(nid)) != NULL) {
             char txtoid[OSSL_MAX_NAME_SIZE];
 
             if (OBJ_obj2txt(txtoid, sizeof(txtoid), obj, 1) > 0){
-                OSSL_DEBUG(" ");
+                //OSSL_DEBUG(" ");
                 num = ossl_namemap_add_name(arg, num, txtoid);
             }
         }
@@ -414,7 +414,7 @@ static void get_legacy_cipher_names(const OBJ_NAME *on, void *arg)
     const EVP_CIPHER *cipher = (void *)OBJ_NAME_get(on->name, on->type);
 
     if (cipher != NULL){
-        OSSL_DEBUG(" ");
+        //OSSL_DEBUG(" ");
         get_legacy_evp_names(NID_undef, EVP_CIPHER_get_type(cipher), NULL, arg);
     }
 }
@@ -481,7 +481,7 @@ OSSL_NAMEMAP *ossl_namemap_stored(OSSL_LIB_CTX *libctx)
         ossl_lib_ctx_get_data(libctx, OSSL_LIB_CTX_NAMEMAP_INDEX,
                               &stored_namemap_method);
 
-    OSSL_DEBUG(" ");
+    //OSSL_DEBUG(" ");
     if (namemap == NULL)
         return NULL;
 

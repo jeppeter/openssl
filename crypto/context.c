@@ -15,6 +15,7 @@
 #include "internal/bio.h"
 #include "internal/provider.h"
 #include "crypto/ctype.h"
+#include "internal/intern_log.h"
 
 struct ossl_lib_ctx_onfree_list_st {
     ossl_lib_ctx_onfree_fn *fn;
@@ -172,6 +173,7 @@ static OSSL_LIB_CTX *get_default_context(void)
 {
     OSSL_LIB_CTX *current_defctx = get_thread_default_context();
 
+    OSSL_DEBUG("current_defctx [%p]",current_defctx);
     if (current_defctx == NULL)
         current_defctx = &default_context_int;
     return current_defctx;
@@ -355,9 +357,12 @@ void *ossl_lib_ctx_get_data(OSSL_LIB_CTX *ctx, int index,
     void *data = NULL;
     int dynidx;
 
+    OSSL_DEBUG("ctx [%p]",ctx);
     ctx = ossl_lib_ctx_get_concrete(ctx);
-    if (ctx == NULL)
+    if (ctx == NULL){
+        OSSL_DEBUG(" ");
         return NULL;
+    }
 
     if (!CRYPTO_THREAD_read_lock(ctx->lock))
         return NULL;

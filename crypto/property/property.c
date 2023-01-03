@@ -422,14 +422,19 @@ int ossl_method_store_fetch(OSSL_METHOD_STORE *store,
         return 0;
 #endif
 
-    if (nid <= 0 || method == NULL || store == NULL)
+    if (nid <= 0 || method == NULL || store == NULL){
+        OSSL_DEBUG(" ");
         return 0;
+    }
 
     /* This only needs to be a read lock, because the query won't create anything */
-    if (!ossl_property_read_lock(store))
+    if (!ossl_property_read_lock(store)){
+        OSSL_DEBUG(" ");
         return 0;
+    }
     alg = ossl_method_store_retrieve(store, nid);
     if (alg == NULL) {
+        OSSL_DEBUG("nid [0x%x:%d]",nid,nid);
         ossl_property_unlock(store);
         return 0;
     }
@@ -443,8 +448,10 @@ int ossl_method_store_fetch(OSSL_METHOD_STORE *store,
         } else {
             p2 = ossl_property_merge(pq, *plp);
             ossl_property_free(pq);
-            if (p2 == NULL)
+            if (p2 == NULL) {
+                OSSL_DEBUG(" ");
                 goto fin;
+            }
             pq = p2;
         }
     }
@@ -458,6 +465,7 @@ int ossl_method_store_fetch(OSSL_METHOD_STORE *store,
                 break;
             }
         }
+        OSSL_DEBUG(" ");
         goto fin;
     }
     optional = ossl_property_has_optional(pq);
@@ -469,8 +477,10 @@ int ossl_method_store_fetch(OSSL_METHOD_STORE *store,
                 best_impl = impl;
                 best = score;
                 ret = 1;
-                if (!optional)
+                if (!optional) {
+                    OSSL_DEBUG(" ");
                     goto fin;
+                }
             }
         }
     }
@@ -480,10 +490,12 @@ fin:
         if (prov_rw != NULL)
             *prov_rw = best_impl->provider;
     } else {
+        OSSL_DEBUG(" ");
         ret = 0;
     }
     ossl_property_unlock(store);
     ossl_property_free(p2);
+    OSSL_DEBUG("ossl_method_store_fetch [%d]", ret);
     return ret;
 }
 
