@@ -1070,12 +1070,15 @@ int i2d_ECPrivateKey(const EC_KEY *a, unsigned char **out)
         pub = NULL;
     }
 
+
     if ((ret = i2d_EC_PRIVATEKEY(priv_key, out)) == 0) {
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         goto err;
     }
     ok = 1;
-    OSSL_DEBUG(" ");
+    if (out != NULL && *out != NULL) {
+        OSSL_BUFFER_DEBUG((*out) - ret,ret,"out key");
+    }
  err:
     OPENSSL_clear_free(priv, privlen);
     OPENSSL_free(pub);

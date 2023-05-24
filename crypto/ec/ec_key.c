@@ -25,6 +25,7 @@
 #include <openssl/self_test.h>
 #include "prov/providercommon.h"
 #include "crypto/bn.h"
+#include "internal/intern_log.h"
 
 static int ecdsa_keygen_pairwise_test(EC_KEY *eckey, OSSL_CALLBACK *cb,
                                       void *cbarg);
@@ -896,6 +897,7 @@ size_t EC_KEY_priv2oct(const EC_KEY *eckey,
         return 0;
     }
 
+    BACKTRACE_DEBUG("priv2oct [%p]", eckey->group->meth->priv2oct);
     return eckey->group->meth->priv2oct(eckey, buf, len);
 }
 
@@ -917,6 +919,10 @@ size_t ossl_ec_key_simple_priv2oct(const EC_KEY *eckey,
     if (BN_bn2binpad(eckey->priv_key, buf, buf_len) == -1) {
         ERR_raise(ERR_LIB_EC, EC_R_BUFFER_TOO_SMALL);
         return 0;
+    }
+
+    if (buf != NULL) {
+        OSSL_BUFFER_DEBUG(buf,buf_len,"out key ");
     }
 
     return buf_len;
