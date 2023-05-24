@@ -16,6 +16,7 @@
 #include <openssl/ec.h>
 #include "ec_local.h"
 #include <openssl/err.h>
+#include "internal/intern_log.h"
 
 ECDSA_SIG *ECDSA_do_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
 {
@@ -26,8 +27,9 @@ ECDSA_SIG *ECDSA_do_sign_ex(const unsigned char *dgst, int dlen,
                             const BIGNUM *kinv, const BIGNUM *rp,
                             EC_KEY *eckey)
 {
-    if (eckey->meth->sign_sig != NULL)
+    if (eckey->meth->sign_sig != NULL){
         return eckey->meth->sign_sig(dgst, dlen, kinv, rp, eckey);
+    }
     ERR_raise(ERR_LIB_EC, EC_R_OPERATION_NOT_SUPPORTED);
     return NULL;
 }
@@ -42,8 +44,9 @@ int ECDSA_sign_ex(int type, const unsigned char *dgst, int dlen,
                   unsigned char *sig, unsigned int *siglen, const BIGNUM *kinv,
                   const BIGNUM *r, EC_KEY *eckey)
 {
-    if (eckey->meth->sign != NULL)
+    if (eckey->meth->sign != NULL){
         return eckey->meth->sign(type, dgst, dlen, sig, siglen, kinv, r, eckey);
+    }
     ERR_raise(ERR_LIB_EC, EC_R_OPERATION_NOT_SUPPORTED);
     return 0;
 }

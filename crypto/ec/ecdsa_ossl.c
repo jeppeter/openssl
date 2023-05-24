@@ -19,6 +19,7 @@
 #include <openssl/rand.h>
 #include "crypto/bn.h"
 #include "ec_local.h"
+#include "internal/intern_log.h"
 
 int ossl_ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in, BIGNUM **kinvp,
                           BIGNUM **rp)
@@ -202,6 +203,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
     ECDSA_SIG *ret;
     const BIGNUM *priv_key;
 
+    OSSL_DEBUG("begin sign");
     group = EC_KEY_get0_group(eckey);
     priv_key = EC_KEY_get0_private_key(eckey);
 

@@ -17,6 +17,7 @@
 #include "internal/core.h"
 #include "crypto/evp.h"
 #include "evp_local.h"
+#include "internal/intern_log.h"
 
 static EVP_SIGNATURE *evp_signature_new(OSSL_PROVIDER *prov)
 {
