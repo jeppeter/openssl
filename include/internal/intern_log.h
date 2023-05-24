@@ -123,4 +123,23 @@ do {                                                                            
 	fprintf(stderr,"\n");                                                                         \
 } while(0)
 
+
+#define OSSL_DEBUG_BN(bnval,cptr,...)                                                             \
+do{                                                                                               \
+	if (cptr != NULL) {                                                                           \
+		free((cptr));                                                                             \
+	}                                                                                             \
+	cptr = NULL;                                                                                  \
+	cptr = BN_bn2hex(bnval);                                                                      \
+	if (cptr != NULL) {                                                                           \
+		OSSL_DEBUG(__VA_ARGS__);                                                                  \
+	} else {                                                                                      \
+		OSSL_DEBUG("can not alloc bn");                                                           \
+	}                                                                                             \
+	if (cptr != NULL) {                                                                           \
+		free(cptr);                                                                               \
+		cptr = NULL;                                                                              \
+	}                                                                                             \
+} while(0)
+
 #endif /* __INTERN_LOG_H_47D822EB5F5DDD396D70E3833E294350__ */

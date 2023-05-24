@@ -202,6 +202,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
     const EC_GROUP *group;
     ECDSA_SIG *ret;
     const BIGNUM *priv_key;
+    char* bnptr=NULL;
 
     OSSL_DEBUG("begin sign");
     group = EC_KEY_get0_group(eckey);
@@ -228,6 +229,8 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
     }
     ret->r = BN_new();
     ret->s = BN_new();
+    OSSL_DEBUG_BN(ret->r,bnptr,"r %s",bnptr);
+    OSSL_DEBUG_BN(ret->s,bnptr,"s %s",bnptr);
     if (ret->r == NULL || ret->s == NULL) {
         ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         goto err;
