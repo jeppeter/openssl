@@ -12,7 +12,6 @@
 #include <openssl/evp.h>
 #include <openssl/core.h>
 #include "internal/cryptlib.h"
-#include "internal/intern_log.h"
 #include "internal/thread_once.h"
 #include "internal/property.h"
 #include "internal/core.h"
@@ -80,7 +79,6 @@ static void *get_tmp_evp_method_store(void *data)
 
 static OSSL_METHOD_STORE *get_evp_method_store(OSSL_LIB_CTX *libctx)
 {
-    OSSL_DEBUG("libctx [%p]",libctx);
     return ossl_lib_ctx_get_data(libctx, OSSL_LIB_CTX_EVP_METHOD_STORE_INDEX,
                                  &evp_method_store_method);
 }
@@ -125,7 +123,6 @@ static void *get_evp_method_from_store(void *store, const OSSL_PROVIDER **prov,
     int name_id = 0;
     uint32_t meth_id;
 
-    OSSL_DEBUG(" ");
     /*
      * get_evp_method_from_store() is only called to try and get the method
      * that evp_generic_fetch() is asking for, and the operation id as well
@@ -140,26 +137,19 @@ static void *get_evp_method_from_store(void *store, const OSSL_PROVIDER **prov,
         if (namemap == 0)
             return NULL;
         name_id = ossl_namemap_name2num_n(namemap, names, l);
-        OSSL_DEBUG("name_id [0x%x] [%s]", name_id,names);
     }
 
     if (name_id == 0
-        || (meth_id = evp_method_id(name_id, methdata->operation_id)) == 0){
-        OSSL_DEBUG(" ");
+        || (meth_id = evp_method_id(name_id, methdata->operation_id)) == 0)
         return NULL;
-    }
 
     if (store == NULL
-        && (store = get_evp_method_store(methdata->libctx)) == NULL) {
-        OSSL_DEBUG(" ");
+        && (store = get_evp_method_store(methdata->libctx)) == NULL)
         return NULL;
-    }
 
     if (!ossl_method_store_fetch(store, meth_id, methdata->propquery, prov,
-                                 &method)) {
-        OSSL_DEBUG("names [%s]", methdata->names);
+                                 &method))
         return NULL;
-    }
     return method;
 }
 
@@ -262,7 +252,6 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
     void *method = NULL;
     int unsupported = 0;
 
-    OSSL_DEBUG("name_id [0x%x] name [%s]", name_id, name ? name : "NULL");
     if (store == NULL || namemap == NULL) {
         ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_INVALID_ARGUMENT);
         return NULL;
@@ -287,11 +276,8 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
     }
 
     /* If we haven't received a name id yet, try to get one for the name */
-    if (name_id == 0 && name != NULL){
+    if (name_id == 0 && name != NULL)
         name_id = ossl_namemap_name2num(namemap, name);
-    }
-    OSSL_DEBUG("name_id [0x%x]",name_id);
-
 
     /*
      * If we have a name id, calculate a method id with evp_method_id().
@@ -313,7 +299,6 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
     if (name_id == 0)
         unsupported = 1;
 
-    OSSL_DEBUG(" ");
     if (meth_id == 0
         || !ossl_method_store_cache_get(store, prov, meth_id, propq, &method)) {
         OSSL_METHOD_CONSTRUCT_METHOD mcm = {
@@ -332,11 +317,9 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
         methdata->refcnt_up_method = up_ref_method;
         methdata->destruct_method = free_method;
         methdata->flag_construct_error_occurred = 0;
-        OSSL_DEBUG(" ");
         if ((method = ossl_method_construct(methdata->libctx, operation_id,
                                             &prov, 0 /* !force_cache */,
                                             &mcm, methdata)) != NULL) {
-            OSSL_DEBUG(" ");
             /*
              * If construction did create a method for us, we know that
              * there is a correct name_id and meth_id, since those have
@@ -346,11 +329,9 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
             if (name_id == 0)
                 name_id = ossl_namemap_name2num(namemap, name);
             meth_id = evp_method_id(name_id, operation_id);
-            if (name_id != 0){
-                OSSL_DEBUG(" ");
+            if (name_id != 0)
                 ossl_method_store_cache_set(store, prov, meth_id, propq,
                                             method, up_ref_method, free_method);
-            }
         }
 
         /*
@@ -360,9 +341,6 @@ inner_evp_generic_fetch(struct evp_method_data_st *methdata,
         unsupported = !methdata->flag_construct_error_occurred;
     }
 
-    OSSL_DEBUG("name_id [0x%x]", name_id);
-    OSSL_DEBUG("name [%s]", name ? name : "NULL");
-    OSSL_DEBUG("method [%p]", method);
     if ((name_id != 0 || name != NULL) && method == NULL) {
         int code = unsupported ? ERR_R_UNSUPPORTED : ERR_R_FETCH_FAILED;
 
@@ -391,7 +369,6 @@ void *evp_generic_fetch(OSSL_LIB_CTX *libctx, int operation_id,
 
     methdata.libctx = libctx;
     methdata.tmp_store = NULL;
-    OSSL_DEBUG("libctx [%p]",libctx);
     method = inner_evp_generic_fetch(&methdata, NULL, operation_id,
                                      0, name, properties,
                                      new_method, up_ref_method, free_method);

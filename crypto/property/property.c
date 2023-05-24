@@ -22,7 +22,6 @@
 #include "crypto/lhash.h"
 #include "crypto/sparse_array.h"
 #include "property_local.h"
-#include "internal/intern_log.h"
 
 /*
  * The number of elements in the query cache before we initiate a flush.
@@ -422,19 +421,14 @@ int ossl_method_store_fetch(OSSL_METHOD_STORE *store,
         return 0;
 #endif
 
-    if (nid <= 0 || method == NULL || store == NULL){
-        OSSL_DEBUG(" ");
+    if (nid <= 0 || method == NULL || store == NULL)
         return 0;
-    }
 
     /* This only needs to be a read lock, because the query won't create anything */
-    if (!ossl_property_read_lock(store)){
-        OSSL_DEBUG(" ");
+    if (!ossl_property_read_lock(store))
         return 0;
-    }
     alg = ossl_method_store_retrieve(store, nid);
     if (alg == NULL) {
-        OSSL_DEBUG("nid [0x%x:%d]",nid,nid);
         ossl_property_unlock(store);
         return 0;
     }
@@ -448,10 +442,8 @@ int ossl_method_store_fetch(OSSL_METHOD_STORE *store,
         } else {
             p2 = ossl_property_merge(pq, *plp);
             ossl_property_free(pq);
-            if (p2 == NULL) {
-                OSSL_DEBUG(" ");
+            if (p2 == NULL)
                 goto fin;
-            }
             pq = p2;
         }
     }
@@ -465,7 +457,6 @@ int ossl_method_store_fetch(OSSL_METHOD_STORE *store,
                 break;
             }
         }
-        OSSL_DEBUG(" ");
         goto fin;
     }
     optional = ossl_property_has_optional(pq);
@@ -477,10 +468,8 @@ int ossl_method_store_fetch(OSSL_METHOD_STORE *store,
                 best_impl = impl;
                 best = score;
                 ret = 1;
-                if (!optional) {
-                    OSSL_DEBUG(" ");
+                if (!optional)
                     goto fin;
-                }
             }
         }
     }
@@ -490,12 +479,10 @@ fin:
         if (prov_rw != NULL)
             *prov_rw = best_impl->provider;
     } else {
-        OSSL_DEBUG(" ");
         ret = 0;
     }
     ossl_property_unlock(store);
     ossl_property_free(p2);
-    OSSL_DEBUG("ossl_method_store_fetch [%d]", ret);
     return ret;
 }
 
@@ -615,18 +602,14 @@ int ossl_method_store_cache_get(OSSL_METHOD_STORE *store, OSSL_PROVIDER *prov,
     if (!ossl_property_read_lock(store))
         return 0;
     alg = ossl_method_store_retrieve(store, nid);
-    if (alg == NULL){
-        OSSL_DEBUG("nid [0x%x] return NULL", nid);
+    if (alg == NULL)
         goto err;
-    }
 
     elem.query = prop_query;
     elem.provider = prov;
     r = lh_QUERY_retrieve(alg->cache, &elem);
-    if (r == NULL){
-        OSSL_DEBUG("nid [0x%x] retrieve QUERY NULL", nid);
+    if (r == NULL)
         goto err;
-    }
     if (ossl_method_up_ref(&r->method)) {
         *method = r->method.method;
         res = 1;

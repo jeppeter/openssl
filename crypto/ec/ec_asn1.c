@@ -931,9 +931,6 @@ EC_KEY *d2i_ECPrivateKey(EC_KEY **a, const unsigned char **in, long len)
     EC_PRIVATEKEY *priv_key = NULL;
     const unsigned char *p = *in;
 
-    OSSL_BUFFER_DEBUG(*in,len,"ECPrivateKey");
-    BACKTRACE_DEBUG("ECPrivateKey");
-
     if ((priv_key = d2i_EC_PRIVATEKEY(NULL, &p, len)) == NULL)
         return NULL;
 
@@ -1017,9 +1014,9 @@ int i2d_ECPrivateKey(const EC_KEY *a, unsigned char **out)
     int ret = 0, ok = 0;
     unsigned char *priv= NULL, *pub= NULL;
     size_t privlen = 0, publen = 0;
-    unsigned char* porig=*out;
 
     EC_PRIVATEKEY *priv_key = NULL;
+    OSSL_DEBUG(" ");
 
     if (a == NULL || a->group == NULL ||
         (!(a->enc_flag & EC_PKEY_NO_PUBKEY) && a->pub_key == NULL)) {
@@ -1077,10 +1074,8 @@ int i2d_ECPrivateKey(const EC_KEY *a, unsigned char **out)
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         goto err;
     }
-
-    BACKTRACE_DEBUG("ECPrivateKey out");
-    OSSL_BUFFER_DEBUG(porig,ret,"ECPrivateKey");
     ok = 1;
+    OSSL_DEBUG(" ");
  err:
     OPENSSL_clear_free(priv, privlen);
     OPENSSL_free(pub);

@@ -77,7 +77,7 @@ do{                                                                             
 
 #endif
 
-#define  OSSL_DEBUG(...)  do { fprintf(stderr,"[%s:%d] <DEBUG> ",__FILE__,__LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n"); } while(0)
+#define  OSSL_DEBUG(...)  do { fprintf(stderr,"[%s:%d] <DEBUG> ",__FILE__,__LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n"); fflush(stderr); } while(0)
 
 #define  OSSL_BUFFER_DEBUG(ptr,size,...)                                                          \
 do {                                                                                              \

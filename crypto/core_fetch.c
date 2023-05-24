@@ -14,7 +14,6 @@
 #include "internal/core.h"
 #include "internal/property.h"
 #include "internal/provider.h"
-#include "internal/intern_log.h"
 
 struct construct_data_st {
     OSSL_LIB_CTX *libctx;
@@ -111,7 +110,6 @@ void *ossl_method_construct(OSSL_LIB_CTX *libctx, int operation_id,
 {
     void *method = NULL;
 
-    OSSL_DEBUG(" ");
     if ((method = mcm->get(NULL, (const OSSL_PROVIDER **)provider_rw,
                            mcm_data)) == NULL) {
         OSSL_PROVIDER *provider = provider_rw != NULL ? *provider_rw : NULL;
@@ -121,7 +119,6 @@ void *ossl_method_construct(OSSL_LIB_CTX *libctx, int operation_id,
         cbdata.force_store = force_store;
         cbdata.mcm = mcm;
         cbdata.mcm_data = mcm_data;
-        OSSL_DEBUG(" ");
         ossl_algorithm_do_all(libctx, operation_id, provider,
                               ossl_method_construct_precondition,
                               ossl_method_construct_this,
@@ -129,17 +126,13 @@ void *ossl_method_construct(OSSL_LIB_CTX *libctx, int operation_id,
                               &cbdata);
 
         /* If there is a temporary store, try there first */
-        if (cbdata.store != NULL) {
-            OSSL_DEBUG(" ");
+        if (cbdata.store != NULL)
             method = mcm->get(cbdata.store, (const OSSL_PROVIDER **)provider_rw,
                               mcm_data);
-        }
 
         /* If no method was found yet, try the global store */
-        if (method == NULL) {
-            OSSL_DEBUG(" ");
+        if (method == NULL)
             method = mcm->get(NULL, (const OSSL_PROVIDER **)provider_rw, mcm_data);
-        }
     }
 
     return method;

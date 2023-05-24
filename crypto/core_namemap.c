@@ -12,7 +12,6 @@
 #include "crypto/lhash.h"      /* ossl_lh_strcasehash */
 #include "internal/tsan_assist.h"
 #include "internal/sizes.h"
-#include "internal/intern_log.h"
 
 /*-
  * The namenum entry
@@ -285,7 +284,6 @@ int ossl_namemap_add_name_n(OSSL_NAMEMAP *namemap, int number,
 
     if (!CRYPTO_THREAD_write_lock(namemap->lock))
         return 0;
-    //OSSL_DEBUG("add [0x%x] [%s]", number,name);
     tmp_number = namemap_add_name_n(namemap, number, name, name_len);
     CRYPTO_THREAD_unlock(namemap->lock);
     return tmp_number;
@@ -385,38 +383,30 @@ static void get_legacy_evp_names(int base_nid, int nid, const char *pem_name,
     ASN1_OBJECT *obj;
 
     if (base_nid != NID_undef) {
-        OSSL_DEBUG(" ");
         num = ossl_namemap_add_name(arg, num, OBJ_nid2sn(base_nid));
         num = ossl_namemap_add_name(arg, num, OBJ_nid2ln(base_nid));
     }
 
     if (nid != NID_undef) {
-        //OSSL_DEBUG(" ");
         num = ossl_namemap_add_name(arg, num, OBJ_nid2sn(nid));
         num = ossl_namemap_add_name(arg, num, OBJ_nid2ln(nid));
         if ((obj = OBJ_nid2obj(nid)) != NULL) {
             char txtoid[OSSL_MAX_NAME_SIZE];
 
-            if (OBJ_obj2txt(txtoid, sizeof(txtoid), obj, 1) > 0){
-                //OSSL_DEBUG(" ");
+            if (OBJ_obj2txt(txtoid, sizeof(txtoid), obj, 1) > 0)
                 num = ossl_namemap_add_name(arg, num, txtoid);
-            }
         }
     }
-    if (pem_name != NULL) {
-        OSSL_DEBUG(" ");
+    if (pem_name != NULL)
         num = ossl_namemap_add_name(arg, num, pem_name);
-    }
 }
 
 static void get_legacy_cipher_names(const OBJ_NAME *on, void *arg)
 {
     const EVP_CIPHER *cipher = (void *)OBJ_NAME_get(on->name, on->type);
 
-    if (cipher != NULL){
-        //OSSL_DEBUG(" ");
+    if (cipher != NULL)
         get_legacy_evp_names(NID_undef, EVP_CIPHER_get_type(cipher), NULL, arg);
-    }
 }
 
 static void get_legacy_md_names(const OBJ_NAME *on, void *arg)
@@ -481,7 +471,6 @@ OSSL_NAMEMAP *ossl_namemap_stored(OSSL_LIB_CTX *libctx)
         ossl_lib_ctx_get_data(libctx, OSSL_LIB_CTX_NAMEMAP_INDEX,
                               &stored_namemap_method);
 
-    //OSSL_DEBUG(" ");
     if (namemap == NULL)
         return NULL;
 
@@ -501,18 +490,14 @@ OSSL_NAMEMAP *ossl_namemap_stored(OSSL_LIB_CTX *libctx)
         OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS
                             | OPENSSL_INIT_ADD_ALL_DIGESTS, NULL);
 
-        OSSL_DEBUG(" ");
         OBJ_NAME_do_all(OBJ_NAME_TYPE_CIPHER_METH,
                         get_legacy_cipher_names, namemap);
-        OSSL_DEBUG(" ");
         OBJ_NAME_do_all(OBJ_NAME_TYPE_MD_METH,
                         get_legacy_md_names, namemap);
 
         /* We also pilfer data from the legacy EVP_PKEY_ASN1_METHODs */
-        for (i = 0, end = EVP_PKEY_asn1_get_count(); i < end; i++) {
-            OSSL_DEBUG(" ");
+        for (i = 0, end = EVP_PKEY_asn1_get_count(); i < end; i++)
             get_legacy_pkey_meth_names(EVP_PKEY_asn1_get0(i), namemap);
-        }
     }
 #endif
 

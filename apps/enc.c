@@ -25,8 +25,6 @@
 #endif
 #include <ctype.h>
 
-#include "internal/intern_log.h"
-
 #undef SIZE
 #undef BSIZE
 #define SIZE    (512)
@@ -302,8 +300,6 @@ int enc_main(int argc, char **argv)
         if (!opt_cipher(ciphername, &cipher))
             goto opthelp;
     }
-
-    OSSL_DEBUG("ciphername [%s]", ciphername != NULL ? ciphername : "NULL");
     if (digestname != NULL) {
         if (!opt_md(digestname, &dgst))
             goto opthelp;
