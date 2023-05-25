@@ -289,3 +289,13 @@ int BN_asc2bn(BIGNUM **bn, const char *a)
         (*bn)->neg = 1;
     return 1;
 }
+
+int BN_format_safe(int base, const BIGNUM*a, char** ppbnptr,...)
+{
+    return 0;
+}
+
+void BN_free_safe(int base, const BIGNUM*a, char** ppbnptr,...)
+{
+    return;
+}
