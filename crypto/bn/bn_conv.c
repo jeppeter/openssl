@@ -290,12 +290,131 @@ int BN_asc2bn(BIGNUM **bn, const char *a)
     return 1;
 }
 
-int BN_format_safe(int base, const BIGNUM*a, char** ppbnptr,...)
+int BN_format_safe(int base, ...)
 {
-    return 0;
+    va_list oldap,ap;
+    const BIGNUM* curbn=NULL;
+    char** ppcur=NULL;
+    int retlen = 0;
+    int i;
+    int ret;
+    char*** ppptmp = NULL;    
+    va_start(ap,base);
+    va_copy(oldap,ap);
+
+    while(1) {
+        curbn = va_arg(ap,const BIGNUM*);
+        if (curbn == NULL) {
+            break;
+        }
+        ppcur = va_arg(ap,char**);
+        if (ppcur == NULL) {
+            ret = -EINVAL;
+            goto fail;
+        }
+        retlen += 1;
+    }
+
+    if (retlen == 0) {
+        ret = -EINVAL;
+        goto fail;
+    }
+
+    ppptmp = malloc(sizeof(ppptmp[0]) * retlen);
+    if (ppptmp == NULL) {
+        ret = -errno;
+        goto fail;
+    }
+
+    va_copy(ap,oldap);
+
+    memset(ppptmp,0,sizeof(ppptmp[0]) * retlen);
+    for(i=0;i<retlen;i++) {
+        curbn = va_arg(ap,const BIGNUM*);
+        if (curbn == NULL) {
+            ret = -EINVAL;
+            goto fail;
+        }
+        ppcur = va_arg(ap,char**);
+        if (ppcur == NULL) {
+            ret = -EINVAL;
+            goto fail;
+        }
+        if (*ppcur != NULL) {
+            free(*ppcur);
+            *ppcur = NULL;
+        }
+        ppptmp[i] = ppcur;
+    }
+
+    va_copy(ap,oldap);
+    for(i=0;i<retlen;i++) {
+        curbn = va_arg(ap,const BIGNUM*);
+        if (curbn == NULL) {
+            ret = -EINVAL;
+            goto fail;
+        }
+        va_arg(ap,char**);
+        ppcur = ppptmp[i];
+        if (base == 16) {
+            *ppcur = BN_bn2hex(curbn);
+        } else {
+            *ppcur = BN_bn2dec(curbn);
+        }
+
+        if (*ppcur == NULL) {
+            ret = -ENOMEM;
+            goto fail;
+        }        
+    }
+
+    if (ppptmp) {
+        free(ppptmp);
+    }
+    ppptmp = NULL;
+
+
+
+    return retlen;
+fail:
+    if (ppptmp != NULL) {
+        for (i=0;i<retlen;i++) {
+            if (ppptmp[i] != NULL) {
+                ppcur = ppptmp[i];
+                if (*ppcur) {
+                    free(*ppcur);
+                }
+                *ppcur = NULL;
+                ppptmp[i] = NULL;
+            }
+        }
+        free(ppptmp);
+    }
+    ppptmp = NULL;
+    if (ret < 0) {
+        errno = -ret;    
+    }    
+    return ret;
 }
 
-void BN_free_safe(int base, const BIGNUM*a, char** ppbnptr,...)
+void BN_free_safe(int base, ...)
 {
+    va_list oldap,ap;
+    const BIGNUM* curbn = NULL;
+    char** ppcur = NULL;
+    va_start(ap,base);
+    va_copy(oldap,ap);
+
+    while(1) {
+        curbn = va_arg(ap,const BIGNUM*);
+        if (curbn == NULL) {
+            break;
+        }
+        ppcur = va_arg(ap,char**);
+        if (ppcur != NULL && *ppcur != NULL) {
+            free(*ppcur);
+            *ppcur = NULL;
+        }
+    }
     return;
 }
