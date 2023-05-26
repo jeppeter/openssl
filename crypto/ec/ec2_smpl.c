@@ -18,6 +18,7 @@
 
 #include "crypto/bn.h"
 #include "ec_local.h"
+#include "internal/intern_log.h"
 
 #ifndef OPENSSL_NO_EC2M
 
@@ -888,16 +889,22 @@ int ec_GF2m_simple_points_mul(const EC_GROUP *group, EC_POINT *r,
      * We also let the default implementation handle degenerate cases like group
      * order or cofactor set to 0.
      */
-    if (num > 1 || BN_is_zero(group->order) || BN_is_zero(group->cofactor))
+    if (num > 1 || BN_is_zero(group->order) || BN_is_zero(group->cofactor)){
+        OSSL_DEBUG(" ");
         return ossl_ec_wNAF_mul(group, r, scalar, num, points, scalars, ctx);
+    }
 
-    if (scalar != NULL && num == 0)
+    if (scalar != NULL && num == 0){
+        OSSL_DEBUG(" ");
         /* Fixed point multiplication */
         return ossl_ec_scalar_mul_ladder(group, r, scalar, NULL, ctx);
+    }
 
-    if (scalar == NULL && num == 1)
+    if (scalar == NULL && num == 1) {
+        OSSL_DEBUG(" ");
         /* Variable point multiplication */
         return ossl_ec_scalar_mul_ladder(group, r, scalars[0], points[0], ctx);
+    }
 
     /*-
      * Double point multiplication:
@@ -915,6 +922,7 @@ int ec_GF2m_simple_points_mul(const EC_GROUP *group, EC_POINT *r,
         goto err;
 
     ret = 1;
+    OSSL_DEBUG(" ");
 
  err:
     EC_POINT_free(t);

@@ -22,6 +22,7 @@
 #include "crypto/ec.h"
 #include "internal/nelem.h"
 #include "ec_local.h"
+#include "internal/intern_log.h"
 
 /* functions for EC_GROUP objects */
 
@@ -1139,6 +1140,7 @@ int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
     }
 
     num = (point != NULL && p_scalar != NULL) ? 1 : 0;
+    BACKTRACE_DEBUG("group->meth->mul %p",group->meth->mul);
     if (group->meth->mul != NULL)
         ret = group->meth->mul(group, r, g_scalar, num, &point, &p_scalar, ctx);
     else

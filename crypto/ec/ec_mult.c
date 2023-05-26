@@ -16,11 +16,12 @@
 
 #include <string.h>
 #include <openssl/err.h>
-
+#include "openssl/bn.h"
 #include "internal/cryptlib.h"
 #include "crypto/bn.h"
 #include "ec_local.h"
 #include "internal/refcount.h"
+#include "internal/intern_log.h"
 
 /*
  * This file implements the wNAF-based interleaving multi-exponentiation method
@@ -153,6 +154,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
     BIGNUM *lambda = NULL;
     BIGNUM *cardinality = NULL;
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     /* early exit if the input point is the point at infinity */
     if (point != NULL && EC_POINT_is_at_infinity(group, point))
@@ -203,6 +205,9 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
+
+    OSSL_DEBUG_BN((16,cardinality,&xptr,group->order,&yptr,group->cofactor,&zptr,NULL),"cardinality %s order %s cofactor %s",xptr,yptr,zptr);
+
 
     /*
      * Group cardinalities are often on a word boundary.
