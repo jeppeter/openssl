@@ -156,20 +156,20 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x %s tmp.y %s, tmp.z %s",xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s, tmp.z 0x%s",xptr,yptr,zptr);
 
         if (!EC_POINT_get_affine_coordinates(group, tmp_point, X, NULL, ctx)) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x %s tmp.y %s, tmp.z %s",xptr,yptr,zptr);
-        OSSL_DEBUG_BN((16,X,&xptr,NULL),"X %s",xptr);
+        OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s, tmp.z 0x%s",xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,X,&xptr,NULL),"X 0x%s",xptr);
 
         if (!BN_nnmod(r, X, order, ctx)) {
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,X,&xptr,r,&yptr,NULL),"X %s r %s",xptr,yptr);
+        OSSL_DEBUG_BN((16,X,&xptr,r,&yptr,NULL),"X 0x%s r 0x%s",xptr,yptr);
     } while (BN_is_zero(r));
 
     /* compute the inverse of k */
@@ -177,7 +177,7 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,k,&xptr,r,&yptr,NULL),"k %s r %s",xptr,yptr);
+    OSSL_DEBUG_BN((16,k,&xptr,r,&yptr,NULL),"k 0x%s r 0x%s",xptr,yptr);
 
 
     /* clear old values if necessary */
@@ -282,14 +282,14 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
                 goto err;
             }
             ckinv = kinv;
-            OSSL_DEBUG_BN((16,ckinv,&sptr,ret->r,&rptr,NULL),"ckinv %s r %s",sptr,rptr);
+            OSSL_DEBUG_BN((16,ckinv,&sptr,ret->r,&rptr,NULL),"ckinv 0x%s r 0x%s",sptr,rptr);
         } else {
             ckinv = in_kinv;
             if (BN_copy(ret->r, in_r) == NULL) {
                 ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
                 goto err;
             }
-            OSSL_DEBUG_BN((16,ckinv,&sptr,ret->r,&rptr,NULL),"ckinv %s r %s",sptr,rptr);
+            OSSL_DEBUG_BN((16,ckinv,&sptr,ret->r,&rptr,NULL),"ckinv 0x%s r 0x%s",sptr,rptr);
         }
 
         /*
@@ -304,12 +304,12 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,s,&sptr,ret->r,&rptr,NULL),"s %s r %s",sptr,rptr);
+        OSSL_DEBUG_BN((16,s,&sptr,ret->r,&rptr,NULL),"s 0x%s r 0x%s",sptr,rptr);
         if (!bn_mod_add_fixed_top(s, s, m, order)) {
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,s,&sptr,NULL),"s %s",sptr);
+        OSSL_DEBUG_BN((16,s,&sptr,NULL),"s 0x%s",sptr);
         /*
          * |s| can still be larger than modulus, because |m| can be. In
          * such case we count on Montgomery reduction to tie it up.
@@ -319,7 +319,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,s,&sptr,NULL),"s %s",sptr);
+        OSSL_DEBUG_BN((16,s,&sptr,NULL),"s 0x%s",sptr);
 
         if (BN_is_zero(s)) {
             /*
@@ -336,7 +336,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
         }
     } while (1);
 
-    OSSL_DEBUG_BN((16,ret->r,&rptr,ret->s,&sptr,NULL),"r %s s %s",rptr,sptr);
+    OSSL_DEBUG_BN((16,ret->r,&rptr,ret->s,&sptr,NULL),"r 0x%s s 0x%s",rptr,sptr);
     ok = 1;
  err:
     if (!ok) {
