@@ -118,10 +118,10 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x %s tmp.y %s, tmp.z %s",xptr,yptr,zptr);
+    OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s, tmp.z 0x%s",xptr,yptr,zptr);
 
     order = EC_GROUP_get0_order(group);
-    OSSL_DEBUG_BN((16,order,&xptr,NULL),"order %s",xptr);
+    OSSL_DEBUG_BN((16,order,&xptr,NULL),"order 0x%s",xptr);
 
     /* Preallocate space */
     order_bits = BN_num_bits(order);
@@ -130,7 +130,7 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
         || !BN_set_bit(X, order_bits))
         goto err;
 
-    OSSL_DEBUG_BN((16,k,&xptr,NULL),"k %s",xptr);
+    OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s",xptr);
     do {
         /* get random k */
         do {
@@ -140,18 +140,18 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
                     ERR_raise(ERR_LIB_EC, EC_R_RANDOM_NUMBER_GENERATION_FAILED);
                     goto err;
                 }
-                OSSL_DEBUG_BN((16,k,&xptr,NULL),"k %s",xptr);
+                OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s dlen 0x%x",xptr,dlen);
             } else {
                 if (!BN_priv_rand_range_ex(k, order, 0, ctx)) {
                     ERR_raise(ERR_LIB_EC, EC_R_RANDOM_NUMBER_GENERATION_FAILED);
                     goto err;
                 }
-                OSSL_DEBUG_BN((16,k,&xptr,NULL),"k %s",xptr);
+                OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s",xptr);
             }
         } while (BN_is_zero(k));
 
         /* compute r the x-coordinate of generator * k */
-        OSSL_DEBUG_BN((16,group->generator->X,&xptr,group->generator->Y, &yptr,group->generator->Z,&zptr,NULL),"group.x %s group.y %s group.z %s",xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,group->generator->X,&xptr,group->generator->Y, &yptr,group->generator->Z,&zptr,NULL),"group.x 0x%s group.y 0x%s group.z 0x%s",xptr,yptr,zptr);
         if (!EC_POINT_mul(group, tmp_point, k, NULL, NULL, ctx)) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
@@ -243,7 +243,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
     }
     ret->r = BN_new();
     ret->s = BN_new();
-    OSSL_DEBUG_BN((16,ret->r,&rptr,ret->s,&sptr,NULL),"r %s s %s",rptr,sptr);
+    OSSL_DEBUG_BN((16,ret->r,&rptr,ret->s,&sptr,NULL),"r 0x%s s 0x%s",rptr,sptr);
     if (ret->r == NULL || ret->s == NULL) {
         ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         goto err;
@@ -257,7 +257,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
     }
 
     order = EC_GROUP_get0_order(group);
-    OSSL_DEBUG_BN((16,order,&sptr,NULL),"order %s", sptr);
+    OSSL_DEBUG_BN((16,order,&sptr,NULL),"ord4er 0x%s", sptr);
     i = BN_num_bits(order);
     /*
      * Need to truncate digest if it is too long: first truncate whole bytes.
@@ -268,13 +268,13 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,m,&sptr,NULL),"dgst %s", sptr);
+    OSSL_DEBUG_BN((16,m,&sptr,NULL),"dgst 0x%s", sptr);
     /* If still too long, truncate remaining bits with a shift */
     if ((8 * dgst_len > i) && !BN_rshift(m, m, 8 - (i & 0x7))) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,m,&sptr,NULL),"dgst rshift %s", sptr);
+    OSSL_DEBUG_BN((16,m,&sptr,NULL),"dgst rshift 0x%s", sptr);
     do {
         if (in_kinv == NULL || in_r == NULL) {
             if (!ecdsa_sign_setup(eckey, ctx, &kinv, &ret->r, dgst, dgst_len)) {

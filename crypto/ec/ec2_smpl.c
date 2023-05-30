@@ -635,6 +635,7 @@ int ossl_ec_GF2m_simple_make_affine(const EC_GROUP *group, EC_POINT *point,
 {
     BIGNUM *x, *y;
     int ret = 0;
+    char* xptr=NULL,*yptr=NULL;
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
@@ -658,6 +659,7 @@ int ossl_ec_GF2m_simple_make_affine(const EC_GROUP *group, EC_POINT *point,
 
     if (!EC_POINT_get_affine_coordinates(group, point, x, y, ctx))
         goto err;
+    OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
     if (!BN_copy(point->X, x))
         goto err;
     if (!BN_copy(point->Y, y))

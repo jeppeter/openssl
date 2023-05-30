@@ -914,6 +914,7 @@ int EC_POINT_get_affine_coordinates(const EC_GROUP *group,
         ERR_raise(ERR_LIB_EC, EC_R_POINT_AT_INFINITY);
         return 0;
     }
+    BACKTRACE_DEBUG("group->meth->point_get_affine_coordinates %p",group->meth->point_get_affine_coordinates);
     return group->meth->point_get_affine_coordinates(group, point, x, y, ctx);
 }
 
