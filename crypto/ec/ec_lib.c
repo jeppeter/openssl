@@ -560,6 +560,7 @@ int EC_GROUP_set_curve(EC_GROUP *group, const BIGNUM *p, const BIGNUM *a,
         ERR_raise(ERR_LIB_EC, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
         return 0;
     }
+    BACKTRACE_DEBUG("group->meth->group_set_curve %p",group->meth->group_set_curve);
     return group->meth->group_set_curve(group, p, a, b, ctx);
 }
 
