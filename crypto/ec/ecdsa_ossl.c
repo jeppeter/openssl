@@ -119,6 +119,7 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
         goto err;
     }
     OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s, tmp.z 0x%s",xptr,yptr,zptr);
+    OSSL_DEBUG_BN((16,group->generator->X,&xptr,group->generator->Y, &yptr,group->generator->Z,&zptr,NULL),"group.x 0x%s group.y 0x%s group.z 0x%s",xptr,yptr,zptr);
 
     order = EC_GROUP_get0_order(group);
     OSSL_DEBUG_BN((16,order,&xptr,NULL),"order 0x%s",xptr);
@@ -257,7 +258,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
     }
 
     order = EC_GROUP_get0_order(group);
-    OSSL_DEBUG_BN((16,order,&sptr,NULL),"ord4er 0x%s", sptr);
+    OSSL_DEBUG_BN((16,order,&sptr,NULL),"order 0x%s", sptr);
     i = BN_num_bits(order);
     /*
      * Need to truncate digest if it is too long: first truncate whole bytes.
