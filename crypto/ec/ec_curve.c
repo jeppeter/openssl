@@ -3145,6 +3145,7 @@ static EC_GROUP *ec_group_new_from_data(OSSL_LIB_CTX *libctx,
     const EC_METHOD *meth;
     const EC_CURVE_DATA *data;
     const unsigned char *params;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     /* If no curve data curve method must handle everything */
     if (curve.data == NULL)
@@ -3179,6 +3180,7 @@ static EC_GROUP *ec_group_new_from_data(OSSL_LIB_CTX *libctx,
             goto err;
         }
     } else if (data->field_type == NID_X9_62_prime_field) {
+        OSSL_DEBUG(" ");
         if ((group = EC_GROUP_new_curve_GFp(p, a, b, ctx)) == NULL) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
@@ -3188,6 +3190,7 @@ static EC_GROUP *ec_group_new_from_data(OSSL_LIB_CTX *libctx,
     else {                      /* field_type ==
                                  * NID_X9_62_characteristic_two_field */
 
+        OSSL_DEBUG(" ");
         if ((group = EC_GROUP_new_curve_GF2m(p, a, b, ctx)) == NULL) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
@@ -3211,6 +3214,8 @@ static EC_GROUP *ec_group_new_from_data(OSSL_LIB_CTX *libctx,
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         goto err;
     }
+    OSSL_DEBUG_BN((16,P->X,&xptr,P->Y,&yptr,P->Z,&zptr,NULL),"P.x 0x%s P.y 0x%s P.z 0x%s",xptr,yptr,zptr);
+
     if ((order = BN_bin2bn(params + 5 * param_len, param_len, NULL)) == NULL
         || !BN_set_word(x, (BN_ULONG)data->cofactor)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
@@ -3220,6 +3225,7 @@ static EC_GROUP *ec_group_new_from_data(OSSL_LIB_CTX *libctx,
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         goto err;
     }
+    OSSL_DEBUG_BN((16,group->generator->X,&xptr,group->generator->Y,&yptr,group->generator->Z,&zptr,NULL),"generator.x 0x%s generator.y 0x%s generator.z 0x%s",xptr,yptr,zptr);    
     if (seed_len) {
         if (!EC_GROUP_set_seed(group, params - seed_len, seed_len)) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);

@@ -16,6 +16,7 @@
 
 #include <openssl/err.h>
 #include <openssl/symhacks.h>
+#include "internal/intern_log.h"
 
 #include "ec_local.h"
 
@@ -381,12 +382,17 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
 {
     BN_CTX *new_ctx = NULL;
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     if (ctx == NULL) {
         ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return 0;
     }
+
+    OSSL_DEBUG_BN((16,group->field,&xptr,NULL),"field 0x%s", xptr);
+    OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,z,&zptr,NULL),"x 0x%s y 0x%s z 0x%s",xptr,yptr,zptr);
+    BACKTRACE_DEBUG("group->meth->field_encode %p", group->meth->field_encode);
 
     if (x != NULL) {
         if (!BN_nnmod(point->X, x, group->field, ctx))
@@ -414,9 +420,11 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
         Z_is_one = BN_is_one(point->Z);
         if (group->meth->field_encode) {
             if (Z_is_one && (group->meth->field_set_to_one != 0)) {
+                BACKTRACE_DEBUG("group->meth->field_set_to_one %p",group->meth->field_set_to_one);
                 if (!group->meth->field_set_to_one(group, point->Z, ctx))
                     goto err;
             } else {
+                BACKTRACE_DEBUG("group->meth->field_encode %p",group->meth->field_encode);
                 if (!group->
                     meth->field_encode(group, point->Z, point->Z, ctx))
                     goto err;

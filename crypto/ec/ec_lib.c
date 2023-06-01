@@ -736,6 +736,7 @@ EC_POINT *EC_POINT_new(const EC_GROUP *group)
     ret->meth = group->meth;
     ret->curve_name = group->curve_name;
 
+    BACKTRACE_DEBUG("ret->meth->point_init %p",ret->meth->point_init);
     if (!ret->meth->point_init(ret)) {
         OPENSSL_free(ret);
         return NULL;
@@ -871,6 +872,7 @@ int EC_POINT_set_affine_coordinates(const EC_GROUP *group, EC_POINT *point,
         ERR_raise(ERR_LIB_EC, EC_R_INCOMPATIBLE_OBJECTS);
         return 0;
     }
+    BACKTRACE_DEBUG("group->meth->point_set_affine_coordinates %p",group->meth->point_set_affine_coordinates);
     if (!group->meth->point_set_affine_coordinates(group, point, x, y, ctx))
         return 0;
 
