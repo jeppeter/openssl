@@ -17,6 +17,7 @@
 #include "internal/bio.h"
 #include "internal/provider.h"
 #include "encoder_local.h"
+#include "internal/intern_log.h"
 
 struct encoder_process_data_st {
     OSSL_ENCODER_CTX *ctx;
@@ -52,6 +53,7 @@ int OSSL_ENCODER_to_bio(OSSL_ENCODER_CTX *ctx, BIO *out)
     data.current_encoder_inst_index = OSSL_ENCODER_CTX_get_num_encoders(ctx);
 
     if (data.current_encoder_inst_index == 0) {
+        OSSL_DEBUG(" ");
         ERR_raise_data(ERR_LIB_OSSL_ENCODER, OSSL_ENCODER_R_ENCODER_NOT_FOUND,
                        "No encoders were found. For standard encoders you need "
                        "at least one of the default or base providers "
@@ -59,6 +61,7 @@ int OSSL_ENCODER_to_bio(OSSL_ENCODER_CTX *ctx, BIO *out)
         return 0;
     }
 
+    OSSL_DEBUG(" ");
     return encoder_process(&data) > 0;
 }
 
@@ -436,6 +439,7 @@ static int encoder_process(struct encoder_process_data_st *data)
         new_data.count_output_structure = data->count_output_structure;
         new_data.level = data->level + 1;
 
+        OSSL_DEBUG(" ");
         OSSL_TRACE_BEGIN(ENCODER) {
             BIO_printf(trc_out,
                        "[%d] (ctx %p) Considering encoder instance %p (encoder %p)\n",
@@ -451,6 +455,7 @@ static int encoder_process(struct encoder_process_data_st *data)
          * the name of the next encoder (the one found by the parent call).
          */
         if (top) {
+            OSSL_DEBUG(" ");
             if (data->ctx->output_type != NULL
                 && OPENSSL_strcasecmp(current_output_type,
                                       data->ctx->output_type) != 0) {
@@ -460,6 +465,7 @@ static int encoder_process(struct encoder_process_data_st *data)
                                data->level,
                                current_output_type, data->ctx->output_type);
                 } OSSL_TRACE_END(ENCODER);
+                OSSL_DEBUG(" ");
                 continue;
             }
         } else {
@@ -470,6 +476,7 @@ static int encoder_process(struct encoder_process_data_st *data)
                                data->level,
                                current_output_type, (void *)next_encoder);
                 } OSSL_TRACE_END(ENCODER);
+                OSSL_DEBUG(" ");
                 continue;
             }
         }
@@ -490,6 +497,7 @@ static int encoder_process(struct encoder_process_data_st *data)
                                current_output_structure,
                                data->ctx->output_structure);
                 } OSSL_TRACE_END(ENCODER);
+                OSSL_DEBUG(" ");
                 continue;
             }
 
@@ -517,8 +525,10 @@ static int encoder_process(struct encoder_process_data_st *data)
          * ok == 1      means that the recursion call was successful, and we
          *              try to use the result at this recursion level.
          */
-        if (ok != 0)
+        if (ok != 0){
+            OSSL_DEBUG(" ");
             break;
+        }
 
         OSSL_TRACE_BEGIN(ENCODER) {
             BIO_printf(trc_out,
@@ -561,8 +571,10 @@ static int encoder_process(struct encoder_process_data_st *data)
              * >0       There is a desired output structure, and at least one
              *          of the encoder instances matched it
              */
-            if (data->count_output_structure == 0)
+            if (data->count_output_structure == 0){
+                OSSL_DEBUG(" ");
                 return 0;
+            }
 
             original_data =
                 data->ctx->construct(current_encoder_inst,
@@ -581,6 +593,7 @@ static int encoder_process(struct encoder_process_data_st *data)
             if (!ossl_assert(data->running_output != NULL)) {
                 ERR_raise(ERR_LIB_OSSL_ENCODER, ERR_R_INTERNAL_ERROR);
                 ok = 0;
+                OSSL_DEBUG(" ");
                 break;
             }
 
@@ -668,7 +681,9 @@ static int encoder_process(struct encoder_process_data_st *data)
     }
 
     BIO_free(allocated_out);
-    if (original_data != NULL)
+    if (original_data != NULL){
         data->ctx->cleanup(data->ctx->construct_data);
+    }
+    OSSL_DEBUG(" ");
     return ok;
 }

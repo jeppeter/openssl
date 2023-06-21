@@ -19,6 +19,7 @@
 #include "internal/property.h"
 #include "crypto/evp.h"
 #include "encoder_local.h"
+#include "internal/intern_log.h"
 
 DEFINE_STACK_OF(OSSL_ENCODER)
 
@@ -322,6 +323,8 @@ OSSL_ENCODER_CTX *OSSL_ENCODER_CTX_new_for_pkey(const EVP_PKEY *pkey,
 {
     OSSL_ENCODER_CTX *ctx = NULL;
     OSSL_LIB_CTX *libctx = NULL;
+
+    OSSL_DEBUG("selection [0x%x] output_type [%s] output_struct [%s] propquery [%s]", selection,output_type, output_struct,propquery);
 
     if (pkey == NULL) {
         ERR_raise(ERR_LIB_OSSL_ENCODER, ERR_R_PASSED_NULL_PARAMETER);
