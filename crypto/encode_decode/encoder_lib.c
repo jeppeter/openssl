@@ -287,6 +287,12 @@ int OSSL_ENCODER_CTX_add_encoder(OSSL_ENCODER_CTX *ctx, OSSL_ENCODER *encoder)
     void *encoderctx = NULL;
     void *provctx = NULL;
 
+    if (encoder != NULL) {
+        OSSL_DEBUG("add encoder [%s]", encoder->base.name);
+    } else {
+        OSSL_DEBUG("no encoder add");
+    }
+
     if (!ossl_assert(ctx != NULL) || !ossl_assert(encoder != NULL)) {
         ERR_raise(ERR_LIB_OSSL_ENCODER, ERR_R_PASSED_NULL_PARAMETER);
         return 0;

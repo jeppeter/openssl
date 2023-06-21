@@ -240,6 +240,7 @@ static int ossl_encoder_ctx_setup_for_pkey(OSSL_ENCODER_CTX *ctx,
         libctx = ossl_provider_libctx(prov);
     }
 
+    OSSL_DEBUG("keymgmt [%p]", pkey->keymgmt);
     if (pkey->keymgmt != NULL) {
         struct collected_encoder_st encoder_data;
         struct collected_names_st keymgmt_data;
