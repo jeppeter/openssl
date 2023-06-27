@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include "internal/cryptlib.h"
 #include "bn_local.h"
+#include "internal/intern_log.h"
 
 #ifndef OPENSSL_NO_EC2M
 
@@ -1147,14 +1148,17 @@ int BN_GF2m_poly2arr(const BIGNUM *a, int p[], int max)
         return 0;
 
     for (i = a->top - 1; i >= 0; i--) {
+        OSSL_DEBUG("[%d]d [0x%lx] sizeof (%ld)", i, a->d[i],sizeof(a->d[i]));
         if (!a->d[i])
             /* skip word if a->d[i] == 0 */
             continue;
         mask = BN_TBIT;
         for (j = BN_BITS2 - 1; j >= 0; j--) {
             if (a->d[i] & mask) {
-                if (k < max)
+                if (k < max){
                     p[k] = BN_BITS2 * i + j;
+                    OSSL_DEBUG("p[%d] = 0x%lx * %d + %d (0x%x) mask [0x%lx]",k,BN_BITS2,i, j , p[k],mask);
+                }
                 k++;
             }
             mask >>= 1;

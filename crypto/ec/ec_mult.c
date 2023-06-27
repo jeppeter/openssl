@@ -265,7 +265,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
      */
     kbit = BN_is_bit_set(lambda, cardinality_bits);
     BN_consttime_swap(kbit, k, lambda, group_top + 2);
-    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s", xptr,yptr);
+    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s cardinality_bits 0x%lx", xptr,yptr,cardinality_bits);
 
     group_top = bn_get_top(group->field);
     if ((bn_wexpand(s->X, group_top) == NULL)
@@ -292,7 +292,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
     }
-    OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);    
+    OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
 
     /* Initialize the Montgomery ladder */
     if (!ec_point_ladder_pre(group, r, s, p, ctx)) {
