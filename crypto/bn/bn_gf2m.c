@@ -308,7 +308,7 @@ static void bn_GF2m_mul_1x1(BN_ULONG *r1, BN_ULONG *r0, const BN_ULONG a,
     tab[15] = a1 ^ a2 ^ a4 ^ a8;
 
     for(i=0;i<16;i++) {
-        OSSL_DEBUG("tab[%d]=[0x%lx]",i,tab[i]);
+        //OSSL_DEBUG("tab[%d]=[0x%lx]",i,tab[i]);
     }
 
     OSSL_DEBUG("a 0x%lx b 0x%lx", a,b);
@@ -635,8 +635,10 @@ int BN_GF2m_mod_mul_arr(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
             x0 = a->d[i];
             x1 = ((i + 1) == a->top) ? 0 : a->d[i + 1];
             bn_GF2m_mul_2x2(zz, x1, x0, y1, y0);
-            for (k = 0; k < 4; k++)
+            for (k = 0; k < 4; k++){
+                OSSL_DEBUG("[%d+%d+%d] 0x%lx ^ [%d] 0x%lx => 0x%lx",i,j,k,s->d[i+j+k],k ,zz[k], s->d[i+j+k] ^ zz[k]);
                 s->d[i + j + k] ^= zz[k];
+            }
         }
     }
 
