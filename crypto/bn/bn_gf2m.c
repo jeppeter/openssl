@@ -158,51 +158,83 @@ static void bn_GF2m_mul_1x1(BN_ULONG *r1, BN_ULONG *r0, const BN_ULONG a,
 
     s = tab[b & 0xF];
     l = s;
+    OSSL_DEBUG("l 0x%x", l);
+
     s = tab[b >> 4 & 0xF];
     l ^= s << 4;
     h = s >> 60;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",4,l,h);
+
     s = tab[b >> 8 & 0xF];
     l ^= s << 8;
     h ^= s >> 56;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",8,l,h);
+
     s = tab[b >> 12 & 0xF];
     l ^= s << 12;
     h ^= s >> 52;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",12,l,h);
+
     s = tab[b >> 16 & 0xF];
     l ^= s << 16;
     h ^= s >> 48;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",16,l,h);
+
     s = tab[b >> 20 & 0xF];
     l ^= s << 20;
     h ^= s >> 44;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",20,l,h);
+    
     s = tab[b >> 24 & 0xF];
     l ^= s << 24;
     h ^= s >> 40;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",24,l,h);
+    
     s = tab[b >> 28 & 0xF];
     l ^= s << 28;
     h ^= s >> 36;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",28,l,h);
+    
     s = tab[b >> 32 & 0xF];
     l ^= s << 32;
     h ^= s >> 32;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",32,l,h);
+    
     s = tab[b >> 36 & 0xF];
     l ^= s << 36;
     h ^= s >> 28;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",36,l,h);
+    
     s = tab[b >> 40 & 0xF];
     l ^= s << 40;
     h ^= s >> 24;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",40,l,h);
+    
     s = tab[b >> 44 & 0xF];
     l ^= s << 44;
     h ^= s >> 20;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",44,l,h);
+    
     s = tab[b >> 48 & 0xF];
     l ^= s << 48;
     h ^= s >> 16;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",48,l,h);
+    
     s = tab[b >> 52 & 0xF];
     l ^= s << 52;
     h ^= s >> 12;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",52,l,h);
+    
     s = tab[b >> 56 & 0xF];
     l ^= s << 56;
     h ^= s >> 8;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",56,l,h);
+    
     s = tab[b >> 60];
     l ^= s << 60;
     h ^= s >> 4;
+    OSSL_DEBUG("%d l 0x%x h 0x%x",60,l,h);
+    
 
     /* compensate for the top three bits of a */
 
@@ -242,8 +274,169 @@ static void bn_GF2m_mul_2x2(BN_ULONG *r, const BN_ULONG a1, const BN_ULONG a0,
     r[1] = r[3] ^ r[2] ^ r[0] ^ m1 ^ m0; /* l1 ^= l0 ^ h0 ^ m0; */
 }
 # else
-void bn_GF2m_mul_2x2(BN_ULONG *r, BN_ULONG a1, BN_ULONG a0, BN_ULONG b1,
-                     BN_ULONG b0);
+//void bn_GF2m_mul_2x2(BN_ULONG *r, BN_ULONG a1, BN_ULONG a0, BN_ULONG b1,
+//                     BN_ULONG b0);
+
+static void bn_GF2m_mul_1x1(BN_ULONG *r1, BN_ULONG *r0, const BN_ULONG a,
+                            const BN_ULONG b)
+{
+    register BN_ULONG h, l, s;
+    BN_ULONG tab[16], top3b = a >> 61;
+    register BN_ULONG a1, a2, a4, a8;
+    int i;
+
+    a1 = a & (0x1FFFFFFFFFFFFFFFULL);
+    a2 = a1 << 1;
+    a4 = a2 << 1;
+    a8 = a4 << 1;
+
+    tab[0] = 0;
+    tab[1] = a1;
+    tab[2] = a2;
+    tab[3] = a1 ^ a2;
+    tab[4] = a4;
+    tab[5] = a1 ^ a4;
+    tab[6] = a2 ^ a4;
+    tab[7] = a1 ^ a2 ^ a4;
+    tab[8] = a8;
+    tab[9] = a1 ^ a8;
+    tab[10] = a2 ^ a8;
+    tab[11] = a1 ^ a2 ^ a8;
+    tab[12] = a4 ^ a8;
+    tab[13] = a1 ^ a4 ^ a8;
+    tab[14] = a2 ^ a4 ^ a8;
+    tab[15] = a1 ^ a2 ^ a4 ^ a8;
+
+    for(i=0;i<16;i++) {
+        OSSL_DEBUG("tab[%d]=[0x%lx]",i,tab[i]);
+    }
+
+    OSSL_DEBUG("a 0x%lx b 0x%lx", a,b);
+
+    s = tab[b & 0xF];
+    l = s;
+    //OSSL_DEBUG("l 0x%lx", l);
+
+    s = tab[b >> 4 & 0xF];
+    l ^= s << 4;
+    h = s >> 60;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",4,l,h);
+
+    s = tab[b >> 8 & 0xF];
+    l ^= s << 8;
+    h ^= s >> 56;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",8,l,h);
+
+    s = tab[b >> 12 & 0xF];
+    l ^= s << 12;
+    h ^= s >> 52;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",12,l,h);
+
+    s = tab[b >> 16 & 0xF];
+    l ^= s << 16;
+    h ^= s >> 48;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",16,l,h);
+
+    s = tab[b >> 20 & 0xF];
+    l ^= s << 20;
+    h ^= s >> 44;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",20,l,h);
+    
+    s = tab[b >> 24 & 0xF];
+    l ^= s << 24;
+    h ^= s >> 40;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",24,l,h);
+    
+    s = tab[b >> 28 & 0xF];
+    l ^= s << 28;
+    h ^= s >> 36;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",28,l,h);
+    
+    s = tab[b >> 32 & 0xF];
+    l ^= s << 32;
+    h ^= s >> 32;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",32,l,h);
+    
+    s = tab[b >> 36 & 0xF];
+    l ^= s << 36;
+    h ^= s >> 28;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",36,l,h);
+    
+    s = tab[b >> 40 & 0xF];
+    l ^= s << 40;
+    h ^= s >> 24;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",40,l,h);
+    
+    s = tab[b >> 44 & 0xF];
+    l ^= s << 44;
+    h ^= s >> 20;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",44,l,h);
+    
+    s = tab[b >> 48 & 0xF];
+    l ^= s << 48;
+    h ^= s >> 16;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",48,l,h);
+    
+    s = tab[b >> 52 & 0xF];
+    l ^= s << 52;
+    h ^= s >> 12;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",52,l,h);
+    
+    s = tab[b >> 56 & 0xF];
+    l ^= s << 56;
+    h ^= s >> 8;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",56,l,h);
+    
+    s = tab[b >> 60];
+    l ^= s << 60;
+    h ^= s >> 4;
+    //OSSL_DEBUG("%d l 0x%lx h 0x%lx",60,l,h);
+    
+
+    /* compensate for the top three bits of a */
+
+    if (top3b & 01) {
+        l ^= b << 61;
+        h ^= b >> 3;
+    }
+    if (top3b & 02) {
+        l ^= b << 62;
+        h ^= b >> 2;
+    }
+    if (top3b & 04) {
+        l ^= b << 63;
+        h ^= b >> 1;
+    }
+
+    *r1 = h;
+    *r0 = l;
+    OSSL_DEBUG("h 0x%lx l 0x%lx",h,l);
+}
+
+
+/*
+ * Product of two polynomials a, b each with degree < 2 * BN_BITS2 - 1,
+ * result is a polynomial r with degree < 4 * BN_BITS2 - 1 The caller MUST
+ * ensure that the variables have the right amount of space allocated.
+ */
+static void bn_GF2m_mul_2x2(BN_ULONG *r, const BN_ULONG a1, const BN_ULONG a0,
+                            const BN_ULONG b1, const BN_ULONG b0)
+{
+    BN_ULONG m1, m0;
+    OSSL_DEBUG("x0 0x%lx x1 0x%lx y0 0x%lx y1 0x%lx",a0,a1,b0,b1);
+    /* r[3] = h1, r[2] = h0; r[1] = l1; r[0] = l0 */
+    bn_GF2m_mul_1x1(r + 3, r + 2, a1, b1);
+    OSSL_DEBUG("r[3] 0x%lx r[2] 0x%lx", r[3],r[2]);
+    bn_GF2m_mul_1x1(r + 1, r, a0, b0);
+    OSSL_DEBUG("r[1] 0x%lx r[0] 0x%lx", r[1],r[0]);
+    bn_GF2m_mul_1x1(&m1, &m0, a0 ^ a1, b0 ^ b1);
+    OSSL_DEBUG("m1 0x%lx m0 0x%lx", m1,m0);
+    /* Correction on m1 ^= l1 ^ h1; m0 ^= l0 ^ h0; */
+    r[2] ^= m1 ^ r[1] ^ r[3];   /* h0 ^= m1 ^ l1 ^ h1; */
+    r[1] = r[3] ^ r[2] ^ r[0] ^ m1 ^ m0; /* l1 ^= l0 ^ h0 ^ m0; */
+    OSSL_DEBUG("retv 0x%lx 0x%lx 0x%lx 0x%lx",r[3],r[2],r[1],r[0]);
+}
+
 # endif
 
 /*
