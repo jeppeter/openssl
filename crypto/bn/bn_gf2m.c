@@ -414,6 +414,7 @@ int BN_GF2m_mod_mul_arr(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     int zlen, i, j, k, ret = 0;
     BIGNUM *s;
     BN_ULONG x1, x0, y1, y0, zz[4];
+    char* xptr= NULL;
 
     bn_check_top(a);
     bn_check_top(b);
@@ -447,6 +448,7 @@ int BN_GF2m_mod_mul_arr(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     }
 
     bn_correct_top(s);
+    OSSL_DEBUG_BN((16,s,&xptr,NULL),"s = 0x%s",xptr);
     if (BN_GF2m_mod_arr(r, s, p))
         ret = 1;
     bn_check_top(r);
@@ -1148,7 +1150,6 @@ int BN_GF2m_poly2arr(const BIGNUM *a, int p[], int max)
         return 0;
 
     for (i = a->top - 1; i >= 0; i--) {
-        OSSL_DEBUG("[%d]d [0x%lx] sizeof (%ld)", i, a->d[i],sizeof(a->d[i]));
         if (!a->d[i])
             /* skip word if a->d[i] == 0 */
             continue;
@@ -1157,7 +1158,6 @@ int BN_GF2m_poly2arr(const BIGNUM *a, int p[], int max)
             if (a->d[i] & mask) {
                 if (k < max){
                     p[k] = BN_BITS2 * i + j;
-                    OSSL_DEBUG("p[%d] = 0x%lx * %d + %d (0x%x) mask [0x%lx]",k,BN_BITS2,i, j , p[k],mask);
                 }
                 k++;
             }
