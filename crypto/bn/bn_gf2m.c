@@ -1411,6 +1411,9 @@ int BN_GF2m_poly2arr(const BIGNUM *a, int p[], int max)
         p[k] = -1;
         k++;
     }
+    if (k < max) {
+        p[k] = 0;
+    }
 
     return k;
 }
