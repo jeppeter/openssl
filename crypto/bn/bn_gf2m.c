@@ -274,9 +274,12 @@ static void bn_GF2m_mul_2x2(BN_ULONG *r, const BN_ULONG a1, const BN_ULONG a0,
     r[1] = r[3] ^ r[2] ^ r[0] ^ m1 ^ m0; /* l1 ^= l0 ^ h0 ^ m0; */
 }
 # else
-//void bn_GF2m_mul_2x2(BN_ULONG *r, BN_ULONG a1, BN_ULONG a0, BN_ULONG b1,
-//                     BN_ULONG b0);
 
+/*bn_GF2m_mul_2x2 SET */
+#if 1
+void bn_GF2m_mul_2x2(BN_ULONG *r, BN_ULONG a1, BN_ULONG a0, BN_ULONG b1,
+                     BN_ULONG b0);
+#else
 static void bn_GF2m_mul_1x1(BN_ULONG *r1, BN_ULONG *r0, const BN_ULONG a,
                             const BN_ULONG b)
 {
@@ -437,6 +440,8 @@ static void bn_GF2m_mul_2x2(BN_ULONG *r, const BN_ULONG a1, const BN_ULONG a0,
     OSSL_DEBUG("retv 0x%lx 0x%lx 0x%lx 0x%lx",r[3],r[2],r[1],r[0]);
 }
 
+#endif
+
 # endif
 
 /*
@@ -516,6 +521,7 @@ int BN_GF2m_mod_arr(BIGNUM *r, const BIGNUM *a, const int p[])
     for (j = r->top - 1; j > dN;) {
         zz = z[j];
         if (z[j] == 0) {
+            OSSL_DEBUG("[%d] 0",j);
             j--;
             continue;
         }
@@ -524,21 +530,28 @@ int BN_GF2m_mod_arr(BIGNUM *r, const BIGNUM *a, const int p[])
         for (k = 1; p[k] != 0; k++) {
             /* reducing component t^p[k] */
             n = p[0] - p[k];
+            OSSL_DEBUG("p[0] %d - p[%d] %d = %d",p[0],k,p[k],n);
             d0 = n % BN_BITS2;
             d1 = BN_BITS2 - d0;
             n /= BN_BITS2;
+            OSSL_DEBUG("z[%d] (0x%lx) ^ (0x%lx >> %d) = 0x%lx", j-n,z[j-n],zz,d0,z[j-n] ^ (zz >> d0));
             z[j - n] ^= (zz >> d0);
-            if (d0)
+            if (d0){
+                OSSL_DEBUG("z[%d] (0x%lx) ^ (0x%lx << %d) = 0x%lx", j-n-1,z[j-n-1],zz,d1,z[j-n - 1] ^ (zz << d1));
                 z[j - n - 1] ^= (zz << d1);
+            }
         }
 
         /* reducing component t^0 */
         n = dN;
         d0 = p[0] % BN_BITS2;
         d1 = BN_BITS2 - d0;
+        OSSL_DEBUG("z[%d] (0x%lx) ^ (0x%lx >> %d) = 0x%lx", j-n,z[j-n],zz,d0,z[j-n] ^ (zz >> d0));
         z[j - n] ^= (zz >> d0);
-        if (d0)
+        if (d0){
+            OSSL_DEBUG("z[%d] (0x%lx) ^ (0x%lx << %d) = 0x%lx", j-n-1,z[j-n-1],zz,d1,z[j-n - 1] ^ (zz << d1));
             z[j - n - 1] ^= (zz << d1);
+        }
     }
 
     /* final round of reduction */
@@ -546,15 +559,23 @@ int BN_GF2m_mod_arr(BIGNUM *r, const BIGNUM *a, const int p[])
 
         d0 = p[0] % BN_BITS2;
         zz = z[dN] >> d0;
-        if (zz == 0)
+        OSSL_DEBUG("z[%d] 0x%lx d0 %d zz 0x%lx",dN, z[dN],d0,zz);
+        if (zz == 0){
+            OSSL_DEBUG(" ");
             break;
+        }
         d1 = BN_BITS2 - d0;
 
         /* clear up the top d1 bits */
-        if (d0)
+        if (d0){
+            OSSL_DEBUG("z[%d]  (0x%lx << %d) >> %d = 0x%lx", dN, z[dN] ,d1,d1, (z[dN] << d1) >> d1);
             z[dN] = (z[dN] << d1) >> d1;
-        else
+        }
+        else{
+            OSSL_DEBUG("z[%d] = 0", dN);
             z[dN] = 0;
+        }
+        OSSL_DEBUG("z[0] 0x%lx ^ 0x%lx = 0x%lx", z[0],zz,z[0] ^ zz);
         z[0] ^= zz;             /* reduction t^0 component */
 
         for (k = 1; p[k] != 0; k++) {
@@ -564,9 +585,13 @@ int BN_GF2m_mod_arr(BIGNUM *r, const BIGNUM *a, const int p[])
             n = p[k] / BN_BITS2;
             d0 = p[k] % BN_BITS2;
             d1 = BN_BITS2 - d0;
+            OSSL_DEBUG("p[%d] 0x%x n %d d0 %d d1 %d",k,p[k],n,d0,d1);
+            OSSL_DEBUG("z[%d] 0x%lx ^ (0x%lx << %d) = 0x%lx", n,z[n],zz,d0,z[n] ^ (zz << d0));
             z[n] ^= (zz << d0);
-            if (d0 && (tmp_ulong = zz >> d1))
+            if (d0 && (tmp_ulong = zz >> d1)){
+                OSSL_DEBUG("z[%d] 0x%lx ^ 0x%lx = 0x%lx", n+1,z[n+1],tmp_ulong,z[n+1]^tmp_ulong);
                 z[n + 1] ^= tmp_ulong;
+            }
         }
 
     }
@@ -584,15 +609,36 @@ int BN_GF2m_mod_arr(BIGNUM *r, const BIGNUM *a, const int p[])
 int BN_GF2m_mod(BIGNUM *r, const BIGNUM *a, const BIGNUM *p)
 {
     int ret = 0;
-    int arr[6];
     bn_check_top(a);
     bn_check_top(p);
+#if 0    
+    int arr[6];
     ret = BN_GF2m_poly2arr(p, arr, OSSL_NELEM(arr));
     if (!ret || ret > (int)OSSL_NELEM(arr)) {
         ERR_raise(ERR_LIB_BN, BN_R_INVALID_LENGTH);
         return 0;
     }
     ret = BN_GF2m_mod_arr(r, a, arr);
+#else
+    int *carr = NULL;
+    int cnum = 16;
+try_again:
+    if (carr != NULL) {
+        OPENSSL_free(carr);
+    }
+    carr = NULL;
+    carr = OPENSSL_malloc(sizeof(carr[0]) * cnum);
+    memset(carr,0,sizeof(carr[0]) * cnum);
+    ret = BN_GF2m_poly2arr(p,carr,cnum);
+    if (ret == 0 || ret >= cnum) {
+        cnum <<= 1;
+        goto try_again;
+    }
+    OSSL_BUFFER_DEBUG(carr,sizeof(carr[0]) * cnum, "carr [%d]",ret);
+    ret = BN_GF2m_mod_arr(r,a,carr);
+    OPENSSL_free(carr);
+    carr = NULL;
+#endif    
     bn_check_top(r);
     return ret;
 }
@@ -607,7 +653,6 @@ int BN_GF2m_mod_mul_arr(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     int zlen, i, j, k, ret = 0;
     BIGNUM *s;
     BN_ULONG x1, x0, y1, y0, zz[4];
-    char* xptr= NULL;
 
     bn_check_top(a);
     bn_check_top(b);
@@ -636,14 +681,14 @@ int BN_GF2m_mod_mul_arr(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
             x1 = ((i + 1) == a->top) ? 0 : a->d[i + 1];
             bn_GF2m_mul_2x2(zz, x1, x0, y1, y0);
             for (k = 0; k < 4; k++){
-                OSSL_DEBUG("[%d+%d+%d] 0x%lx ^ [%d] 0x%lx => 0x%lx",i,j,k,s->d[i+j+k],k ,zz[k], s->d[i+j+k] ^ zz[k]);
+                //OSSL_DEBUG("[%d+%d+%d] 0x%lx ^ [%d] 0x%lx => 0x%lx",i,j,k,s->d[i+j+k],k ,zz[k], s->d[i+j+k] ^ zz[k]);
                 s->d[i + j + k] ^= zz[k];
             }
         }
     }
 
     bn_correct_top(s);
-    OSSL_DEBUG_BN((16,s,&xptr,NULL),"s = 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,s,&xptr,NULL),"s = 0x%s",xptr);
     if (BN_GF2m_mod_arr(r, s, p))
         ret = 1;
     bn_check_top(r);
