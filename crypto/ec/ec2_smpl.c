@@ -648,8 +648,11 @@ int ossl_ec_GF2m_simple_make_affine(const EC_GROUP *group, EC_POINT *point,
     BN_CTX *new_ctx = NULL;
 #endif
 
-    if (point->Z_is_one || EC_POINT_is_at_infinity(group, point))
+    OSSL_DEBUG(" ");
+    if (point->Z_is_one || EC_POINT_is_at_infinity(group, point)) {
+        OSSL_DEBUG(" ");
         return 1;
+    }
 
 #ifndef FIPS_MODULE
     if (ctx == NULL) {
@@ -665,8 +668,10 @@ int ossl_ec_GF2m_simple_make_affine(const EC_GROUP *group, EC_POINT *point,
     if (y == NULL)
         goto err;
 
-    if (!EC_POINT_get_affine_coordinates(group, point, x, y, ctx))
+    if (!EC_POINT_get_affine_coordinates(group, point, x, y, ctx)) {
+        OSSL_DEBUG(" ");
         goto err;
+    }
     OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
     if (!BN_copy(point->X, x))
         goto err;
@@ -734,6 +739,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
                               EC_POINT *r, EC_POINT *s,
                               EC_POINT *p, BN_CTX *ctx)
 {
+    char* xptr=NULL,*yptr=NULL,*zptr =NULL;
     /* if p is not affine, something is wrong */
     if (p->Z_is_one == 0)
         return 0;
@@ -747,11 +753,15 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
         }
     } while (BN_is_zero(s->Z));
 
+    OSSL_DEBUG_BN((16,s->Z,&xptr,NULL),"s->Z 0x%s",xptr);
+
     /* if field_encode defined convert between representations */
     if ((group->meth->field_encode != NULL
          && !group->meth->field_encode(group, s->Z, s->Z, ctx))
         || !group->meth->field_mul(group, s->X, p->X, s->Z, ctx))
         return 0;
+
+    OSSL_DEBUG_BN((16,s->X,&xptr,NULL),"s->X 0x%s", xptr);
 
     /* r blinding: make sure lambda (r->Y here for storage) is not zero */
     do {
@@ -761,6 +771,10 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
             return 0;
         }
     } while (BN_is_zero(r->Y));
+    OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"r->Y 0x%s",xptr);
+
+    BACKTRACE_DEBUG("group->meth->field_encode %p group->meth->field_sqr %p group->meth->field_mul %p", 
+        group->meth->field_encode,group->meth->field_sqr,group->meth->field_mul);
 
     if ((group->meth->field_encode != NULL
          && !group->meth->field_encode(group, r->Y, r->Y, ctx))
@@ -771,6 +785,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
         || !group->meth->field_mul(group, r->X, r->X, r->Y, ctx))
         return 0;
 
+    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r->X 0x%s r->Y 0x%s r->Z 0x%s", xptr,yptr,zptr);
     s->Z_is_one = 0;
     r->Z_is_one = 0;
 
