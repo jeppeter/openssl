@@ -265,7 +265,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
      */
     kbit = BN_is_bit_set(lambda, cardinality_bits);
     BN_consttime_swap(kbit, k, lambda, group_top + 2);
-    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s cardinality_bits 0x%lx", xptr,yptr,cardinality_bits);
+    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s cardinality_bits 0x%x", xptr,yptr,cardinality_bits);
 
     group_top = bn_get_top(group->field);
     if ((bn_wexpand(s->X, group_top) == NULL)
@@ -374,7 +374,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         kbit = BN_is_bit_set(k, i) ^ pbit;
         OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
         OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
-        OSSL_DEBUG("kbit 0x%x pbit 0x%x [0x%x] bitset [0x%x]",kbit,pbit,i,BN_is_bit_set(k,i));
+        OSSL_DEBUG("[%d]kbit 0x%x pbit 0x%x [0x%x] bitset [0x%x]",i,kbit,pbit,i,BN_is_bit_set(k,i));
         EC_POINT_CSWAP(kbit, r, s, group_top, Z_is_one);
         OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
         OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
