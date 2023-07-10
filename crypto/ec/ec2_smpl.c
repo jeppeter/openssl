@@ -120,22 +120,20 @@ int ossl_ec_GF2m_simple_group_set_curve(EC_GROUP *group,
     /* group->a */
     if (!BN_GF2m_mod_arr(group->a, a, group->poly))
         goto err;
-    OSSL_DEBUG_BN((16,group->a, &xptr,a,&yptr,NULL), "group->a 0x%s a 0x%s",xptr,yptr);
     if (bn_wexpand(group->a, (int)(group->poly[0] + BN_BITS2 - 1) / BN_BITS2)
         == NULL)
         goto err;
-    OSSL_DEBUG_BN((16,group->a, &xptr,NULL),"group->a 0x%s",xptr);
+    OSSL_DEBUG_BN((16,group->a, &xptr,a,&yptr,NULL), "group->a 0x%s a 0x%s",xptr,yptr);
     bn_set_all_zero(group->a);
 
 
     /* group->b */
     if (!BN_GF2m_mod_arr(group->b, b, group->poly))
         goto err;
-    OSSL_DEBUG_BN((16,group->b, &xptr,b,&yptr,NULL), "group->b 0x%s b 0x%s",xptr,yptr);
     if (bn_wexpand(group->b, (int)(group->poly[0] + BN_BITS2 - 1) / BN_BITS2)
         == NULL)
         goto err;
-    OSSL_DEBUG_BN((16,group->b, &xptr,NULL),"group->b 0x%s",xptr);
+    OSSL_DEBUG_BN((16,group->b, &xptr,b,&yptr,NULL), "group->b 0x%s b 0x%s",xptr,yptr);
     bn_set_all_zero(group->b);
 
     ret = 1;
