@@ -134,7 +134,7 @@ EC_KEY *ossl_ec_key_new_method_int(OSSL_LIB_CTX *libctx, const char *propq,
     }
 #endif
 
-    BACKTRACE_DEBUG("ret->meth->init %p", ret->meth->init);
+    //BACKTRACE_DEBUG("ret->meth->init %p", ret->meth->init);
     if (ret->meth->init != NULL && ret->meth->init(ret) == 0) {
         ERR_raise(ERR_LIB_EC, ERR_R_INIT_FAIL);
         goto err;

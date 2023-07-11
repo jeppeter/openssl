@@ -114,7 +114,7 @@ int ossl_ec_GF2m_simple_group_set_curve(EC_GROUP *group,
         ERR_raise(ERR_LIB_EC, EC_R_UNSUPPORTED_FIELD);
         goto err;
     }
-    OSSL_BUFFER_DEBUG(group->poly,6 * sizeof(group->poly[0]), "poly i %d",i);
+    //OSSL_BUFFER_DEBUG(group->poly,6 * sizeof(group->poly[0]), "poly i %d",i);
     OSSL_DEBUG_BN((16,group->field,&xptr,p,&yptr,NULL),"field 0x%s p 0x%s",xptr,yptr);
 
     /* group->a */
@@ -709,14 +709,52 @@ int ossl_ec_GF2m_simple_points_make_affine(const EC_GROUP *group, size_t num,
 int ossl_ec_GF2m_simple_field_mul(const EC_GROUP *group, BIGNUM *r,
                                   const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 {
-    return BN_GF2m_mod_mul_arr(r, a, b, group->poly, ctx);
+    char* xptr=NULL,*yptr = NULL ,*zptr=NULL,*aptr=NULL;
+    int ret;
+    BIGNUM* res=NULL;
+    res = BN_new();
+    if (res == NULL) {
+        return 0;
+    }
+    //ret =  BN_GF2m_mod_mul_arr(r, a, b, group->poly, ctx);
+    ret =  BN_GF2m_mod_mul_arr(res, a, b, group->poly, ctx);
+    if (ret > 0) {
+        OSSL_DEBUG_BN((16,a,&xptr,b,&yptr,group->field,&zptr,res,&aptr,NULL),"a 0x%s * b 0x%s %% ord 0x%s = 0x%s",xptr,yptr,zptr,aptr);
+        if (!BN_copy(r,res)) {
+            ret = 0;
+        }
+    }
+    if (res != NULL) {
+        BN_free(res);
+    }
+    res = NULL;
+    return ret;
 }
 
 /* Wrapper to simple binary polynomial field squaring implementation. */
 int ossl_ec_GF2m_simple_field_sqr(const EC_GROUP *group, BIGNUM *r,
                                   const BIGNUM *a, BN_CTX *ctx)
 {
-    return BN_GF2m_mod_sqr_arr(r, a, group->poly, ctx);
+    char *xptr=NULL,*yptr=NULL,*zptr = NULL;
+    int ret;
+    BIGNUM* res = NULL;
+
+    res =BN_new();
+    if (res == NULL) {
+        return 0;
+    }
+    ret = BN_GF2m_mod_sqr_arr(res, a, group->poly, ctx);
+    if (ret > 0) {
+        OSSL_DEBUG_BN((16,a,&xptr,group->field,&yptr,res,&zptr,NULL),"a 0x%s * a 0x%s %% ord 0x%s = 0x%s",xptr,xptr,yptr,zptr);
+        if (!BN_copy(r,res)) {
+            ret = 0;
+        }
+    }
+    if (res) {
+        BN_free(res);
+    }
+    res= NULL;
+    return ret;
 }
 
 /* Wrapper to simple binary polynomial field division implementation. */
@@ -753,6 +791,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
 
     OSSL_DEBUG_BN((16,s->Z,&xptr,NULL),"s->Z 0x%s",xptr);
 
+    OSSL_DEBUG("field_encode %p", group->meth->field_encode);
     /* if field_encode defined convert between representations */
     if ((group->meth->field_encode != NULL
          && !group->meth->field_encode(group, s->Z, s->Z, ctx))
@@ -771,8 +810,8 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
     } while (BN_is_zero(r->Y));
     OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"r->Y 0x%s",xptr);
 
-    BACKTRACE_DEBUG("group->meth->field_encode %p group->meth->field_sqr %p group->meth->field_mul %p", 
-        group->meth->field_encode,group->meth->field_sqr,group->meth->field_mul);
+    //BACKTRACE_DEBUG("group->meth->field_encode %p group->meth->field_sqr %p group->meth->field_mul %p", 
+    //    group->meth->field_encode,group->meth->field_sqr,group->meth->field_mul);
 
     if ((group->meth->field_encode != NULL
          && !group->meth->field_encode(group, r->Y, r->Y, ctx))
@@ -918,7 +957,7 @@ int ec_GF2m_simple_points_mul(const EC_GROUP *group, EC_POINT *r,
     }
 
     if (scalar != NULL && num == 0){
-        OSSL_DEBUG(" ");
+        //OSSL_DEBUG(" ");
         /* Fixed point multiplication */
         return ossl_ec_scalar_mul_ladder(group, r, scalar, NULL, ctx);
     }

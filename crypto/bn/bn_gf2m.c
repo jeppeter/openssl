@@ -636,7 +636,7 @@ try_again:
         cnum <<= 1;
         goto try_again;
     }
-    OSSL_BUFFER_DEBUG(carr,sizeof(carr[0]) * cnum, "carr [%d]",ret);
+    //OSSL_BUFFER_DEBUG(carr,sizeof(carr[0]) * cnum, "carr [%d]",ret);
     ret = BN_GF2m_mod_arr(r,a,carr);
     OPENSSL_free(carr);
     carr = NULL;

@@ -560,7 +560,7 @@ int EC_GROUP_set_curve(EC_GROUP *group, const BIGNUM *p, const BIGNUM *a,
         ERR_raise(ERR_LIB_EC, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
         return 0;
     }
-    BACKTRACE_DEBUG("group->meth->group_set_curve %p",group->meth->group_set_curve);
+    //BACKTRACE_DEBUG("group->meth->group_set_curve %p",group->meth->group_set_curve);
     return group->meth->group_set_curve(group, p, a, b, ctx);
 }
 
@@ -736,7 +736,7 @@ EC_POINT *EC_POINT_new(const EC_GROUP *group)
     ret->meth = group->meth;
     ret->curve_name = group->curve_name;
 
-    BACKTRACE_DEBUG("ret->meth->point_init %p",ret->meth->point_init);
+    //BACKTRACE_DEBUG("ret->meth->point_init %p",ret->meth->point_init);
     if (!ret->meth->point_init(ret)) {
         OPENSSL_free(ret);
         return NULL;
@@ -872,7 +872,7 @@ int EC_POINT_set_affine_coordinates(const EC_GROUP *group, EC_POINT *point,
         ERR_raise(ERR_LIB_EC, EC_R_INCOMPATIBLE_OBJECTS);
         return 0;
     }
-    BACKTRACE_DEBUG("group->meth->point_set_affine_coordinates %p",group->meth->point_set_affine_coordinates);
+    //BACKTRACE_DEBUG("group->meth->point_set_affine_coordinates %p",group->meth->point_set_affine_coordinates);
     if (!group->meth->point_set_affine_coordinates(group, point, x, y, ctx))
         return 0;
 
@@ -917,7 +917,7 @@ int EC_POINT_get_affine_coordinates(const EC_GROUP *group,
         ERR_raise(ERR_LIB_EC, EC_R_POINT_AT_INFINITY);
         return 0;
     }
-    BACKTRACE_DEBUG("group->meth->point_get_affine_coordinates %p",group->meth->point_get_affine_coordinates);
+    //BACKTRACE_DEBUG("group->meth->point_get_affine_coordinates %p",group->meth->point_get_affine_coordinates);
     return group->meth->point_get_affine_coordinates(group, point, x, y, ctx);
 }
 
@@ -1144,7 +1144,7 @@ int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
     }
 
     num = (point != NULL && p_scalar != NULL) ? 1 : 0;
-    BACKTRACE_DEBUG("group->meth->mul %p",group->meth->mul);
+    //BACKTRACE_DEBUG("group->meth->mul %p",group->meth->mul);
     if (group->meth->mul != NULL)
         ret = group->meth->mul(group, r, g_scalar, num, &point, &p_scalar, ctx);
     else

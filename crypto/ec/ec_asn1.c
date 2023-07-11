@@ -1016,7 +1016,7 @@ int i2d_ECPrivateKey(const EC_KEY *a, unsigned char **out)
     size_t privlen = 0, publen = 0;
 
     EC_PRIVATEKEY *priv_key = NULL;
-    OSSL_DEBUG(" ");
+    //OSSL_DEBUG(" ");
 
     if (a == NULL || a->group == NULL ||
         (!(a->enc_flag & EC_PKEY_NO_PUBKEY) && a->pub_key == NULL)) {

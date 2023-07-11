@@ -15,6 +15,7 @@
 #include <openssl/bn.h>
 #include "internal/refcount.h"
 #include "crypto/ec.h"
+#include "internal/intern_log.h"
 
 #if defined(__SUNPRO_C)
 # if __SUNPRO_C >= 0x520
@@ -766,8 +767,10 @@ static ossl_inline int ec_point_ladder_post(const EC_GROUP *group,
                                             EC_POINT *r, EC_POINT *s,
                                             EC_POINT *p, BN_CTX *ctx)
 {
-    if (group->meth->ladder_post != NULL)
+    if (group->meth->ladder_post != NULL){
+        BACKTRACE_DEBUG("group->meth->ladder_post %p",group->meth->ladder_post);
         return group->meth->ladder_post(group, r, s, p, ctx);
+    }
 
     return 1;
 }

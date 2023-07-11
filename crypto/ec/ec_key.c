@@ -53,7 +53,7 @@ EC_KEY *EC_KEY_new_by_curve_name_ex(OSSL_LIB_CTX *ctx, const char *propq,
         EC_KEY_free(ret);
         return NULL;
     }
-    BACKTRACE_DEBUG("ret->meth->set_group %p", ret->meth->set_group);
+    //BACKTRACE_DEBUG("ret->meth->set_group %p", ret->meth->set_group);
     if (ret->meth->set_group != NULL
         && ret->meth->set_group(ret, ret->group) == 0) {
         EC_KEY_free(ret);
@@ -898,7 +898,7 @@ size_t EC_KEY_priv2oct(const EC_KEY *eckey,
         return 0;
     }
 
-    BACKTRACE_DEBUG("priv2oct [%p]", eckey->group->meth->priv2oct);
+    //BACKTRACE_DEBUG("priv2oct [%p]", eckey->group->meth->priv2oct);
     return eckey->group->meth->priv2oct(eckey, buf, len);
 }
 

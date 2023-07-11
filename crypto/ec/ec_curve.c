@@ -3170,7 +3170,7 @@ static EC_GROUP *ec_group_new_from_data(OSSL_LIB_CTX *libctx,
         goto err;
     }
 
-    BACKTRACE_DEBUG("curve.meth %p",curve.meth);
+    //BACKTRACE_DEBUG("curve.meth %p",curve.meth);
     if (curve.meth != 0) {
         meth = curve.meth();
         BACKTRACE_DEBUG("meth->group_set_curve %p",meth->group_set_curve);
@@ -3190,7 +3190,7 @@ static EC_GROUP *ec_group_new_from_data(OSSL_LIB_CTX *libctx,
     else {                      /* field_type ==
                                  * NID_X9_62_characteristic_two_field */
 
-        OSSL_DEBUG(" ");
+        //OSSL_DEBUG(" ");
         if ((group = EC_GROUP_new_curve_GF2m(p, a, b, ctx)) == NULL) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;

@@ -217,7 +217,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
      */
     cardinality_bits = BN_num_bits(cardinality);
     group_top = bn_get_top(cardinality);
-    OSSL_DEBUG("group_top 0x%x cardinality_bits 0x%x", group_top,cardinality_bits);
+    //OSSL_DEBUG("group_top 0x%x cardinality_bits 0x%x", group_top,cardinality_bits);
     if ((bn_wexpand(k, group_top + 2) == NULL)
         || (bn_wexpand(lambda, group_top + 2) == NULL)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
@@ -285,7 +285,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
     OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
 
 
-    BACKTRACE_DEBUG("group->meth->make_affine %p",group->meth->make_affine);
+    //BACKTRACE_DEBUG("group->meth->make_affine %p",group->meth->make_affine);
     /* ensure input point is in affine coords for ladder step efficiency */
     if (!p->Z_is_one && (group->meth->make_affine == NULL
                          || !group->meth->make_affine(group, p, ctx))) {

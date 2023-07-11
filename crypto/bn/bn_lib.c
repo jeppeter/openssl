@@ -836,21 +836,21 @@ void BN_consttime_swap(BN_ULONG condition, BIGNUM *a, BIGNUM *b, int nwords)
     bn_wcheck_size(a, nwords);
     bn_wcheck_size(b, nwords);
 
-    OSSL_DEBUG("condition before 0x%lx",condition);
+    //OSSL_DEBUG("condition before 0x%lx",condition);
     condition = ((~condition & ((condition - 1))) >> (BN_BITS2 - 1)) - 1;
-    OSSL_DEBUG("condition 0x%lx",condition);
+    //OSSL_DEBUG("condition 0x%lx",condition);
 
-    OSSL_DEBUG("a->top %d b->top %d", a->top,b->top);
+    //OSSL_DEBUG("a->top %d b->top %d", a->top,b->top);
     t = (a->top ^ b->top) & condition;
     a->top ^= t;
     b->top ^= t;
-    OSSL_DEBUG("after a->top %d b->top %d", a->top,b->top);
+    //OSSL_DEBUG("after a->top %d b->top %d", a->top,b->top);
 
-    OSSL_DEBUG("a->neg %d b->neg %d", a->neg,b->neg);
+    //OSSL_DEBUG("a->neg %d b->neg %d", a->neg,b->neg);
     t = (a->neg ^ b->neg) & condition;
     a->neg ^= t;
     b->neg ^= t;
-    OSSL_DEBUG("after a->neg %d b->neg %d", a->neg,b->neg);
+    //OSSL_DEBUG("after a->neg %d b->neg %d", a->neg,b->neg);
 
     /*-
      * BN_FLG_STATIC_DATA: indicates that data may not be written to. Intention
@@ -876,16 +876,16 @@ void BN_consttime_swap(BN_ULONG condition, BIGNUM *a, BIGNUM *b, int nwords)
 
 #define BN_CONSTTIME_SWAP_FLAGS (BN_FLG_CONSTTIME | BN_FLG_FIXED_TOP)
 
-    OSSL_DEBUG("a->flags 0x%x b->flags 0x%x", a->flags,b->flags);
+    //OSSL_DEBUG("a->flags 0x%x b->flags 0x%x", a->flags,b->flags);
     t = ((a->flags ^ b->flags) & BN_CONSTTIME_SWAP_FLAGS) & condition;
     a->flags ^= t;
     b->flags ^= t;
-    OSSL_DEBUG("after a->flags 0x%x b->flags 0x%x", a->flags,b->flags);
+    //OSSL_DEBUG("after a->flags 0x%x b->flags 0x%x", a->flags,b->flags);
 
     /* conditionally swap the data */
     for (i = 0; i < nwords; i++) {
         t = (a->d[i] ^ b->d[i]) & condition;
-        OSSL_DEBUG("[%d] t 0x%lx",i, t);
+        //OSSL_DEBUG("[%d] t 0x%lx",i, t);
         a->d[i] ^= t;
         b->d[i] ^= t;
     }

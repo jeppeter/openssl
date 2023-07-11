@@ -297,8 +297,12 @@ int BN_format_safe(int base, ...)
     char** ppcur=NULL;
     int retlen = 0;
     int i;
-    int ret;
+    int ret = -1;
     char*** ppptmp = NULL;    
+    char* curalloc=NULL;
+    char* curptr =NULL;
+    int dellen = 0;
+    int slen = 0;
     va_start(ap,base);
     va_copy(oldap,ap);
 
@@ -365,8 +369,45 @@ int BN_format_safe(int base, ...)
         if (*ppcur == NULL) {
             ret = -ENOMEM;
             goto fail;
-        }        
+        }
+        curptr = *ppcur;
+        if (*curptr == '0') {
+            dellen = 0;
+            while (*curptr == '0') {
+                dellen ++;
+                curptr ++;
+            }
+            if (*curptr == 0x0)  {
+                /*make sure the last one*/
+                dellen --;
+                curptr --;
+            }
+
+            if (curalloc != NULL) {
+                free(curalloc);
+            }
+            curalloc = NULL;
+            slen = strlen(*ppcur);
+            slen -= dellen;
+            curalloc = malloc(slen + 1);
+            if (curalloc == NULL) {
+                ret = -ENOMEM;
+                goto fail;
+            }
+            memset(curalloc,0,slen + 1);
+            memcpy(curalloc,curptr,slen);
+            if (*ppcur) {
+                free(*ppcur);
+            }
+            *ppcur = curalloc;
+            curalloc = NULL;
+        }
     }
+
+    if (curalloc) {
+        free(curalloc);
+    }
+    curalloc = NULL;
 
     if (ppptmp) {
         free(ppptmp);
@@ -391,6 +432,12 @@ fail:
         free(ppptmp);
     }
     ppptmp = NULL;
+
+    if (curalloc) {
+        free(curalloc);
+    }
+    curalloc = NULL;
+
     if (ret < 0) {
         errno = -ret;    
     }    
