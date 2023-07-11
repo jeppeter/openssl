@@ -808,6 +808,7 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
 {
     BIGNUM *b, *c = NULL, *u = NULL, *v = NULL, *tmp;
     int ret = 0;
+    char* xptr=NULL,*yptr=NULL;
 
     bn_check_top(a);
     bn_check_top(p);
@@ -823,6 +824,7 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
 
     if (!BN_GF2m_mod(u, a, p))
         goto err;
+    OSSL_DEBUG_BN((16,a,&xptr,u,&yptr,NULL),"a 0x%s u 0x%s",xptr,yptr);
     if (BN_is_zero(u))
         goto err;
 
@@ -874,8 +876,10 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
         if (!bn_wexpand(u, top))
             goto err;
         udp = u->d;
-        for (i = u->top; i < top; i++)
+        for (i = u->top; i < top; i++){
+            OSSL_DEBUG("[%d] set 0",i);
             udp[i] = 0;
+        }
         u->top = top;
         if (!bn_wexpand(b, top))
           goto err;
@@ -895,22 +899,31 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
                                  * aggressive. But we don't have to "cache"
                                  * p->d, because *p is declared 'const'... */
         while (1) {
+            OSSL_DEBUG("ubits [0x%x] udp[0] 0x%lx", ubits,udp[0]);
             while (ubits && !(udp[0] & 1)) {
                 BN_ULONG u0, u1, b0, b1, mask;
 
                 u0 = udp[0];
                 b0 = bdp[0];
                 mask = (BN_ULONG)0 - (b0 & 1);
+                OSSL_DEBUG("b0 0x%lx => b0 0x%lx = p->d[0] 0x%lx & mask 0x%lx", b0,b0 ^ (p->d[0] & mask), p->d[0],mask);
                 b0 ^= p->d[0] & mask;
                 for (i = 0; i < top - 1; i++) {
                     u1 = udp[i + 1];
+                    OSSL_DEBUG("udp[%d] 0x%lx => udp[%d] 0x%lx = ((0x%lx >> 1) | (0x%lx << (BN_BITS2 - 1))) & 0x%lx",i,udp[i],i,((u0 >> 1) | (u1 << (BN_BITS2 - 1))) & BN_MASK2,u0,u1,BN_MASK2);
                     udp[i] = ((u0 >> 1) | (u1 << (BN_BITS2 - 1))) & BN_MASK2;
+                    OSSL_DEBUG("u0 0x%lx => 0x%lx", u0,u1);
                     u0 = u1;
+                    OSSL_DEBUG("b1 0x%lx => 0x%lx = (bdp[%d+1] 0x%lx) ^ (p->d[%d + 1] 0x%lx &  mask 0x%lx)",b1,bdp[i + 1] ^ (p->d[i + 1] & mask),i,bdp[i+1],i,p->d[i+1],mask);
                     b1 = bdp[i + 1] ^ (p->d[i + 1] & mask);
+                    OSSL_DEBUG("bdp[%d] 0x%lx => 0x%lx = ((b0 0x%lx >> 1) | (b1 0x%lx << (BN_BITS2 0x%x - 1))) & BN_MASK2 0x%lx", i,bdp[i],((b0 >> 1) | (b1 << (BN_BITS2 - 1))) & BN_MASK2,b0,b1,BN_BITS2,BN_MASK2);
                     bdp[i] = ((b0 >> 1) | (b1 << (BN_BITS2 - 1))) & BN_MASK2;
+                    OSSL_DEBUG("b0 0x%lx => 0x%lx",b0,b1);
                     b0 = b1;
                 }
+                OSSL_DEBUG("udp[%d] 0x%lx => 0x%lx (u0 0x%lx >> 1)",i,udp[i],(u0 >> 1),u0);
                 udp[i] = u0 >> 1;
+                OSSL_DEBUG("bdp[%d] 0x%lx => 0x%lx (b0 0x%lx >> 1)",i,bdp[i],(b0 >> 1),b0);
                 bdp[i] = b0 >> 1;
                 ubits--;
             }
@@ -938,7 +951,9 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
                 cdp = c->d;
             }
             for (i = 0; i < top; i++) {
+                OSSL_DEBUG("udp[%d] 0x%lx => 0x%lx (0x%lx ^ vdp[%d] 0x%lx)", i,udp[i],udp[i] ^ vdp[i],udp[i],i,vdp[i]);
                 udp[i] ^= vdp[i];
+                OSSL_DEBUG("bdp[%d] 0x%lx => 0x%lx (0x%lx ^ cdp[%d] 0x%lx)", i,bdp[i],bdp[i] ^ cdp[i],bdp[i],i,cdp[i]);
                 bdp[i] ^= cdp[i];
             }
             if (ubits == vbits) {
