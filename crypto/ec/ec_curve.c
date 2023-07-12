@@ -3214,8 +3214,8 @@ static EC_GROUP *ec_group_new_from_data(OSSL_LIB_CTX *libctx,
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,P->X,&xptr,P->Y,&yptr,P->Z,&zptr,NULL),"P.x 0x%s P.y 0x%s P.z 0x%s",xptr,yptr,zptr);
-    OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
+    //OSSL_DEBUG_BN((16,P->X,&xptr,P->Y,&yptr,P->Z,&zptr,NULL),"P.x 0x%s P.y 0x%s P.z 0x%s",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
 
     if ((order = BN_bin2bn(params + 5 * param_len, param_len, NULL)) == NULL
         || !BN_set_word(x, (BN_ULONG)data->cofactor)) {

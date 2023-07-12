@@ -789,9 +789,9 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
         }
     } while (BN_is_zero(s->Z));
 
-    OSSL_DEBUG_BN((16,s->Z,&xptr,NULL),"s->Z 0x%s",xptr);
+    OSSL_DEBUG_BN((16,s->Z,&xptr,NULL),"random s->Z 0x%s",xptr);
 
-    OSSL_DEBUG("field_encode %p", group->meth->field_encode);
+    //OSSL_DEBUG("field_encode %p", group->meth->field_encode);
     /* if field_encode defined convert between representations */
     if ((group->meth->field_encode != NULL
          && !group->meth->field_encode(group, s->Z, s->Z, ctx))
@@ -808,7 +808,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
             return 0;
         }
     } while (BN_is_zero(r->Y));
-    OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"r->Y 0x%s",xptr);
+    OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"random r->Y 0x%s",xptr);
 
     //BACKTRACE_DEBUG("group->meth->field_encode %p group->meth->field_sqr %p group->meth->field_mul %p", 
     //    group->meth->field_encode,group->meth->field_sqr,group->meth->field_mul);
@@ -871,6 +871,7 @@ int ec_GF2m_simple_ladder_post(const EC_GROUP *group,
 {
     int ret = 0;
     BIGNUM *t0, *t1, *t2 = NULL;
+    char *xptr=NULL;
 
     if (BN_is_zero(r->Z))
         return EC_POINT_set_to_infinity(group, r);
@@ -893,6 +894,7 @@ int ec_GF2m_simple_ladder_post(const EC_GROUP *group,
         goto err;
     }
 
+#if 0
     if (!group->meth->field_mul(group, t0, r->Z, s->Z, ctx)
         || !group->meth->field_mul(group, t1, p->X, r->Z, ctx)
         || !BN_GF2m_add(t1, r->X, t1)
@@ -913,7 +915,72 @@ int ec_GF2m_simple_ladder_post(const EC_GROUP *group,
         || !BN_GF2m_add(r->Y, p->Y, t2)
         || !BN_one(r->Z))
         goto err;
-
+#else
+    if (!group->meth->field_mul(group, t0, r->Z, s->Z, ctx)) {
+        goto err;
+    }
+        if ( !group->meth->field_mul(group, t1, p->X, r->Z, ctx) ) {
+            goto err;
+        }
+        if ( !BN_GF2m_add(t1, r->X, t1)) {
+            goto err;
+        }
+        OSSL_DEBUG_BN((16,t1,&xptr,NULL),"t1 0x%s",xptr);
+        if ( !group->meth->field_mul(group, t2, p->X, s->Z, ctx)) {
+            goto err;
+        }
+        if ( !group->meth->field_mul(group, r->Z, r->X, t2, ctx)) {
+            goto err;
+        }
+        if ( !BN_GF2m_add(t2, t2, s->X)) {
+            goto err;
+        }
+        OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
+        if ( !group->meth->field_mul(group, t1, t1, t2, ctx)) {
+            goto err;
+        }
+        if ( !group->meth->field_sqr(group, t2, p->X, ctx)) {
+            goto err;
+        }
+        if ( !BN_GF2m_add(t2, p->Y, t2)) {
+            goto err;
+        }
+        OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
+        if ( !group->meth->field_mul(group, t2, t2, t0, ctx)) {
+            goto err;
+        }
+        if ( !BN_GF2m_add(t1, t2, t1)) {
+            goto err;
+        }
+        OSSL_DEBUG_BN((16,t1,&xptr,NULL),"t1 0x%s",xptr);
+        if ( !group->meth->field_mul(group, t2, p->X, t0, ctx)) {
+            goto err;
+        }
+        if ( !group->meth->field_inv(group, t2, t2, ctx)) {
+            goto err;
+        }
+        if ( !group->meth->field_mul(group, t1, t1, t2, ctx)) {
+            goto err;
+        }
+        if ( !group->meth->field_mul(group, r->X, r->Z, t2, ctx)) {
+            goto err;
+        }
+        if ( !BN_GF2m_add(t2, p->X, r->X)) {
+            goto err;
+        }
+        OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
+        if ( !group->meth->field_mul(group, t2, t2, t1, ctx)) {
+            goto err;
+        }
+        if ( !BN_GF2m_add(r->Y, p->Y, t2)) {
+            goto err;
+        }
+        OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"r->Y 0x%s",xptr);
+        if ( !BN_one(r->Z)){
+            goto err;
+        }
+        OSSL_DEBUG_BN((16,r->Z,&xptr,NULL),"r->Z 0x%s",xptr);
+#endif
     r->Z_is_one = 1;
 
     /* GF(2^m) field elements should always have BIGNUM::neg = 0 */
