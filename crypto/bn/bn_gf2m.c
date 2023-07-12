@@ -808,7 +808,7 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
 {
     BIGNUM *b, *c = NULL, *u = NULL, *v = NULL, *tmp;
     int ret = 0;
-    char* xptr=NULL,*yptr=NULL;
+    char* xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     bn_check_top(a);
     bn_check_top(p);
@@ -824,46 +824,57 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
 
     if (!BN_GF2m_mod(u, a, p))
         goto err;
-    OSSL_DEBUG_BN((16,a,&xptr,u,&yptr,NULL),"a 0x%s u 0x%s",xptr,yptr);
+    //OSSL_DEBUG_BN((16,a,&xptr,u,&yptr,p,&zptr,NULL),"a 0x%s u 0x%s p 0x%s",xptr,yptr,zptr);
     if (BN_is_zero(u))
         goto err;
 
     if (!BN_copy(v, p))
         goto err;
-# if 0
+# if 1
     if (!BN_one(b))
         goto err;
 
     while (1) {
+        //OSSL_DEBUG_BN((16,b,&xptr,c,&yptr,NULL),"b 0x%s c 0x%s",xptr,yptr);
         while (!BN_is_odd(u)) {
+            //OSSL_DEBUG_BN((16,u,&xptr,NULL),"u 0x%s", xptr);
             if (BN_is_zero(u))
                 goto err;
             if (!BN_rshift1(u, u))
                 goto err;
+            //OSSL_DEBUG_BN((16,u,&xptr,b,&yptr,NULL),"u 0x%s b 0x%s", xptr,yptr);
             if (BN_is_odd(b)) {
                 if (!BN_GF2m_add(b, b, p))
                     goto err;
+                //OSSL_DEBUG_BN((16,b,&xptr,NULL),"b 0x%s",xptr);
             }
             if (!BN_rshift1(b, b))
                 goto err;
+            //OSSL_DEBUG_BN((16,b,&xptr,NULL),"b 0x%s",xptr);
         }
 
-        if (BN_abs_is_word(u, 1))
+        if (BN_abs_is_word(u, 1)){
+            //OSSL_DEBUG_BN((16,u,&xptr,NULL),"u 0x%s",xptr);
             break;
+        }
 
+        //OSSL_DEBUG_BN((16,u,&xptr,v,&yptr,NULL),"u 0x%s v 0x%s",xptr,yptr);
         if (BN_num_bits(u) < BN_num_bits(v)) {
+            //OSSL_DEBUG("bits u [0x%x] bits v [0x%x]", BN_num_bits(u),BN_num_bits(v));
             tmp = u;
             u = v;
             v = tmp;
             tmp = b;
             b = c;
             c = tmp;
+            //OSSL_DEBUG("u <=> v");
         }
 
         if (!BN_GF2m_add(u, u, v))
             goto err;
         if (!BN_GF2m_add(b, b, c))
             goto err;
+        //OSSL_DEBUG_BN((16,u,&xptr,b,&yptr,NULL),"u 0x%s b 0x%s",xptr,yptr);
     }
 # else
     {
@@ -929,10 +940,13 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
             }
 
             if (ubits <= BN_BITS2) {
-                if (udp[0] == 0) /* poly was reducible */
+                if (udp[0] == 0) /* poly was reducible */{
+                    OSSL_DEBUG("error in inv");
                     goto err;
-                if (udp[0] == 1)
+                }
+                if (udp[0] == 1){
                     break;
+                }
             }
 
             if (ubits < vbits) {
@@ -949,6 +963,7 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
                 vdp = v->d;
                 bdp = cdp;
                 cdp = c->d;
+                OSSL_DEBUG("ubits <=> vbits");
             }
             for (i = 0; i < top; i++) {
                 OSSL_DEBUG("udp[%d] 0x%lx => 0x%lx (0x%lx ^ vdp[%d] 0x%lx)", i,udp[i],udp[i] ^ vdp[i],udp[i],i,vdp[i]);
@@ -960,8 +975,9 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
                 BN_ULONG ul;
                 int utop = (ubits - 1) / BN_BITS2;
 
-                while ((ul = udp[utop]) == 0 && utop)
+                while ((ul = udp[utop]) == 0 && utop){
                     utop--;
+                }
                 ubits = utop * BN_BITS2 + BN_num_bits_word(ul);
             }
         }
@@ -994,6 +1010,7 @@ int BN_GF2m_mod_inv(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
 {
     BIGNUM *b = NULL;
     int ret = 0;
+    //char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     BN_CTX_start(ctx);
     if ((b = BN_CTX_get(ctx)) == NULL)
@@ -1006,10 +1023,12 @@ int BN_GF2m_mod_inv(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
             goto err;
     } while (BN_is_zero(b));
 
+#if 1
     /* r := a * b */
     if (!BN_GF2m_mod_mul(r, a, b, p, ctx))
         goto err;
 
+    //OSSL_DEBUG_BN((16,a,&xptr,b,&yptr,r,&zptr,NULL),"a 0x%s b 0x%s r 0x%s",xptr,yptr,zptr);
     /* r := 1/(a * b) */
     if (!BN_GF2m_mod_inv_vartime(r, r, p, ctx))
         goto err;
@@ -1017,6 +1036,11 @@ int BN_GF2m_mod_inv(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
     /* r := b/(a * b) = 1/a */
     if (!BN_GF2m_mod_mul(r, r, b, p, ctx))
         goto err;
+#else
+    if (!BN_GF2m_mod_inv_vartime(r,a,p,ctx)) {
+        goto err;
+    }
+#endif
 
     ret = 1;
 
