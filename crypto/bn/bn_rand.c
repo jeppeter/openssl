@@ -15,6 +15,7 @@
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
+#include "internal/intern_log.h"
 
 typedef enum bnrand_flag_e {
     NORMAL, TESTING, PRIVATE
@@ -262,6 +263,7 @@ int BN_generate_dsa_nonce(BIGNUM *out, const BIGNUM *range,
     int ret = 0;
     EVP_MD *md = NULL;
     OSSL_LIB_CTX *libctx = ossl_bn_get_libctx(ctx);
+    char *xptr=NULL;
 
     if (mdctx == NULL)
         goto err;
@@ -308,6 +310,8 @@ int BN_generate_dsa_nonce(BIGNUM *out, const BIGNUM *range,
 
     if (!BN_bin2bn(k_bytes, num_k_bytes, out))
         goto err;
+
+    OSSL_DEBUG_BN((16,out,&xptr,NULL),"random out 0x%s", xptr);
     if (BN_mod(out, out, range, ctx) != 1)
         goto err;
     ret = 1;

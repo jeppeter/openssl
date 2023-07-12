@@ -768,7 +768,7 @@ static ossl_inline int ec_point_ladder_post(const EC_GROUP *group,
                                             EC_POINT *p, BN_CTX *ctx)
 {
     if (group->meth->ladder_post != NULL){
-        BACKTRACE_DEBUG("group->meth->ladder_post %p",group->meth->ladder_post);
+        //BACKTRACE_DEBUG("group->meth->ladder_post %p",group->meth->ladder_post);
         return group->meth->ladder_post(group, r, s, p, ctx);
     }
 

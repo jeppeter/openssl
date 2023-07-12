@@ -154,7 +154,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
     BIGNUM *lambda = NULL;
     BIGNUM *cardinality = NULL;
     int ret = 0;
-    //char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     /* early exit if the input point is the point at infinity */
     if (point != NULL && EC_POINT_is_at_infinity(group, point))
@@ -207,7 +207,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
     }
 
     //OSSL_DEBUG_BN((16,cardinality,&xptr,group->order,&yptr,group->cofactor,&zptr,NULL),"cardinality 0x%s order 0x%s cofactor 0x%s",xptr,yptr,zptr);
-    //OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s",xptr,yptr);
+    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s",xptr,yptr);
 
     /*
      * Group cardinalities are often on a word boundary.
@@ -231,7 +231,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    //OSSL_DEBUG_BN((16,scalar,&xptr,k,&yptr,NULL),"scalar 0x%s k 0x%s",xptr,yptr);
+    OSSL_DEBUG_BN((16,scalar,&xptr,k,&yptr,NULL),"scalar 0x%s k 0x%s",xptr,yptr);
 
 
     BN_set_flags(k, BN_FLG_CONSTTIME);
@@ -252,7 +252,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    //OSSL_DEBUG_BN((16,lambda,&xptr,NULL),"lambda 0x%s",xptr);
+    OSSL_DEBUG_BN((16,lambda,&xptr,NULL),"lambda 0x%s",xptr);
     BN_set_flags(lambda, BN_FLG_CONSTTIME);
     if (!BN_add(k, lambda, cardinality)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
