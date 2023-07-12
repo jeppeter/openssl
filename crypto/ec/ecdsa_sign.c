@@ -45,6 +45,7 @@ int ECDSA_sign_ex(int type, const unsigned char *dgst, int dlen,
                   const BIGNUM *r, EC_KEY *eckey)
 {
     if (eckey->meth->sign != NULL){
+        BACKTRACE_DEBUG("eckey->meth->sign %p",eckey->meth->sign);
         return eckey->meth->sign(type, dgst, dlen, sig, siglen, kinv, r, eckey);
     }
     ERR_raise(ERR_LIB_EC, EC_R_OPERATION_NOT_SUPPORTED);

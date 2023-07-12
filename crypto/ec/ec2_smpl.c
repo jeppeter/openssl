@@ -104,7 +104,7 @@ int ossl_ec_GF2m_simple_group_set_curve(EC_GROUP *group,
                                         const BIGNUM *b, BN_CTX *ctx)
 {
     int ret = 0, i;
-    char* xptr=NULL, *yptr=NULL;
+    //char* xptr=NULL, *yptr=NULL;
 
     /* group->field */
     if (!BN_copy(group->field, p))
@@ -115,7 +115,7 @@ int ossl_ec_GF2m_simple_group_set_curve(EC_GROUP *group,
         goto err;
     }
     //OSSL_BUFFER_DEBUG(group->poly,6 * sizeof(group->poly[0]), "poly i %d",i);
-    OSSL_DEBUG_BN((16,group->field,&xptr,p,&yptr,NULL),"field 0x%s p 0x%s",xptr,yptr);
+    //OSSL_DEBUG_BN((16,group->field,&xptr,p,&yptr,NULL),"field 0x%s p 0x%s",xptr,yptr);
 
     /* group->a */
     if (!BN_GF2m_mod_arr(group->a, a, group->poly))
@@ -123,7 +123,7 @@ int ossl_ec_GF2m_simple_group_set_curve(EC_GROUP *group,
     if (bn_wexpand(group->a, (int)(group->poly[0] + BN_BITS2 - 1) / BN_BITS2)
         == NULL)
         goto err;
-    OSSL_DEBUG_BN((16,group->a, &xptr,a,&yptr,NULL), "group->a 0x%s a 0x%s",xptr,yptr);
+    //OSSL_DEBUG_BN((16,group->a, &xptr,a,&yptr,NULL), "group->a 0x%s a 0x%s",xptr,yptr);
     bn_set_all_zero(group->a);
 
 
@@ -133,7 +133,7 @@ int ossl_ec_GF2m_simple_group_set_curve(EC_GROUP *group,
     if (bn_wexpand(group->b, (int)(group->poly[0] + BN_BITS2 - 1) / BN_BITS2)
         == NULL)
         goto err;
-    OSSL_DEBUG_BN((16,group->b, &xptr,b,&yptr,NULL), "group->b 0x%s b 0x%s",xptr,yptr);
+    //OSSL_DEBUG_BN((16,group->b, &xptr,b,&yptr,NULL), "group->b 0x%s b 0x%s",xptr,yptr);
     bn_set_all_zero(group->b);
 
     ret = 1;
@@ -709,7 +709,7 @@ int ossl_ec_GF2m_simple_points_make_affine(const EC_GROUP *group, size_t num,
 int ossl_ec_GF2m_simple_field_mul(const EC_GROUP *group, BIGNUM *r,
                                   const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 {
-    char* xptr=NULL,*yptr = NULL ,*zptr=NULL,*aptr=NULL;
+    //char* xptr=NULL,*yptr = NULL ,*zptr=NULL,*aptr=NULL;
     int ret;
     BIGNUM* res=NULL;
     res = BN_new();
@@ -719,7 +719,7 @@ int ossl_ec_GF2m_simple_field_mul(const EC_GROUP *group, BIGNUM *r,
     //ret =  BN_GF2m_mod_mul_arr(r, a, b, group->poly, ctx);
     ret =  BN_GF2m_mod_mul_arr(res, a, b, group->poly, ctx);
     if (ret > 0) {
-        OSSL_DEBUG_BN((16,a,&xptr,b,&yptr,group->field,&zptr,res,&aptr,NULL),"a 0x%s * b 0x%s %% ord 0x%s = 0x%s",xptr,yptr,zptr,aptr);
+        //OSSL_DEBUG_BN((16,a,&xptr,b,&yptr,group->field,&zptr,res,&aptr,NULL),"a 0x%s * b 0x%s %% ord 0x%s = 0x%s",xptr,yptr,zptr,aptr);
         if (!BN_copy(r,res)) {
             ret = 0;
         }
@@ -735,7 +735,7 @@ int ossl_ec_GF2m_simple_field_mul(const EC_GROUP *group, BIGNUM *r,
 int ossl_ec_GF2m_simple_field_sqr(const EC_GROUP *group, BIGNUM *r,
                                   const BIGNUM *a, BN_CTX *ctx)
 {
-    char *xptr=NULL,*yptr=NULL,*zptr = NULL;
+    //char *xptr=NULL,*yptr=NULL,*zptr = NULL;
     int ret;
     BIGNUM* res = NULL;
 
@@ -745,7 +745,7 @@ int ossl_ec_GF2m_simple_field_sqr(const EC_GROUP *group, BIGNUM *r,
     }
     ret = BN_GF2m_mod_sqr_arr(res, a, group->poly, ctx);
     if (ret > 0) {
-        OSSL_DEBUG_BN((16,a,&xptr,group->field,&yptr,res,&zptr,NULL),"a 0x%s * a 0x%s %% ord 0x%s = 0x%s",xptr,xptr,yptr,zptr);
+        //OSSL_DEBUG_BN((16,a,&xptr,group->field,&yptr,res,&zptr,NULL),"a 0x%s * a 0x%s %% ord 0x%s = 0x%s",xptr,xptr,yptr,zptr);
         if (!BN_copy(r,res)) {
             ret = 0;
         }
@@ -871,7 +871,7 @@ int ec_GF2m_simple_ladder_post(const EC_GROUP *group,
 {
     int ret = 0;
     BIGNUM *t0, *t1, *t2 = NULL;
-    char *xptr=NULL;
+    //char *xptr=NULL;
 
     if (BN_is_zero(r->Z))
         return EC_POINT_set_to_infinity(group, r);
@@ -925,7 +925,7 @@ int ec_GF2m_simple_ladder_post(const EC_GROUP *group,
         if ( !BN_GF2m_add(t1, r->X, t1)) {
             goto err;
         }
-        OSSL_DEBUG_BN((16,t1,&xptr,NULL),"t1 0x%s",xptr);
+        //OSSL_DEBUG_BN((16,t1,&xptr,NULL),"t1 0x%s",xptr);
         if ( !group->meth->field_mul(group, t2, p->X, s->Z, ctx)) {
             goto err;
         }
@@ -935,7 +935,7 @@ int ec_GF2m_simple_ladder_post(const EC_GROUP *group,
         if ( !BN_GF2m_add(t2, t2, s->X)) {
             goto err;
         }
-        OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
+        //OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
         if ( !group->meth->field_mul(group, t1, t1, t2, ctx)) {
             goto err;
         }
@@ -945,14 +945,14 @@ int ec_GF2m_simple_ladder_post(const EC_GROUP *group,
         if ( !BN_GF2m_add(t2, p->Y, t2)) {
             goto err;
         }
-        OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
+        //OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
         if ( !group->meth->field_mul(group, t2, t2, t0, ctx)) {
             goto err;
         }
         if ( !BN_GF2m_add(t1, t2, t1)) {
             goto err;
         }
-        OSSL_DEBUG_BN((16,t1,&xptr,NULL),"t1 0x%s",xptr);
+        //OSSL_DEBUG_BN((16,t1,&xptr,NULL),"t1 0x%s",xptr);
         if ( !group->meth->field_mul(group, t2, p->X, t0, ctx)) {
             goto err;
         }
@@ -968,18 +968,18 @@ int ec_GF2m_simple_ladder_post(const EC_GROUP *group,
         if ( !BN_GF2m_add(t2, p->X, r->X)) {
             goto err;
         }
-        OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
+        //OSSL_DEBUG_BN((16,t2,&xptr,NULL),"t2 0x%s",xptr);
         if ( !group->meth->field_mul(group, t2, t2, t1, ctx)) {
             goto err;
         }
         if ( !BN_GF2m_add(r->Y, p->Y, t2)) {
             goto err;
         }
-        OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"r->Y 0x%s",xptr);
+        //OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"r->Y 0x%s",xptr);
         if ( !BN_one(r->Z)){
             goto err;
         }
-        OSSL_DEBUG_BN((16,r->Z,&xptr,NULL),"r->Z 0x%s",xptr);
+        //OSSL_DEBUG_BN((16,r->Z,&xptr,NULL),"r->Z 0x%s",xptr);
 #endif
     r->Z_is_one = 1;
 

@@ -140,7 +140,7 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
                     ERR_raise(ERR_LIB_EC, EC_R_RANDOM_NUMBER_GENERATION_FAILED);
                     goto err;
                 }
-                OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s dlen 0x%x",xptr,dlen);
+                OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s dlen 0x%x",xptr,(order_bits + 7) >> 3);
             } else {
                 if (!BN_priv_rand_range_ex(k, order, 0, ctx)) {
                     ERR_raise(ERR_LIB_EC, EC_R_RANDOM_NUMBER_GENERATION_FAILED);

@@ -154,7 +154,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
     BIGNUM *lambda = NULL;
     BIGNUM *cardinality = NULL;
     int ret = 0;
-    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+    //char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     /* early exit if the input point is the point at infinity */
     if (point != NULL && EC_POINT_is_at_infinity(group, point))
@@ -206,8 +206,8 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         goto err;
     }
 
-    OSSL_DEBUG_BN((16,cardinality,&xptr,group->order,&yptr,group->cofactor,&zptr,NULL),"cardinality 0x%s order 0x%s cofactor 0x%s",xptr,yptr,zptr);
-    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s",xptr,yptr);
+    //OSSL_DEBUG_BN((16,cardinality,&xptr,group->order,&yptr,group->cofactor,&zptr,NULL),"cardinality 0x%s order 0x%s cofactor 0x%s",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s",xptr,yptr);
 
     /*
      * Group cardinalities are often on a word boundary.
@@ -224,14 +224,14 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         goto err;
     }
 
-    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s",xptr,yptr);
+    //OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s",xptr,yptr);
 
 
     if (!BN_copy(k, scalar)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,scalar,&xptr,k,&yptr,NULL),"scalar 0x%s k 0x%s",xptr,yptr);
+    //OSSL_DEBUG_BN((16,scalar,&xptr,k,&yptr,NULL),"scalar 0x%s k 0x%s",xptr,yptr);
 
 
     BN_set_flags(k, BN_FLG_CONSTTIME);
@@ -245,27 +245,27 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s",xptr);
+        //OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s",xptr);
     }
 
     if (!BN_add(lambda, k, cardinality)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,lambda,&xptr,NULL),"lambda 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,lambda,&xptr,NULL),"lambda 0x%s",xptr);
     BN_set_flags(lambda, BN_FLG_CONSTTIME);
     if (!BN_add(k, lambda, cardinality)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,k,&xptr,cardinality,&yptr,NULL),"k 0x%s cardinality 0x%s", xptr,yptr);
+    //OSSL_DEBUG_BN((16,k,&xptr,cardinality,&yptr,NULL),"k 0x%s cardinality 0x%s", xptr,yptr);
     /*
      * lambda := scalar + cardinality
      * k := scalar + 2*cardinality
      */
     kbit = BN_is_bit_set(lambda, cardinality_bits);
     BN_consttime_swap(kbit, k, lambda, group_top + 2);
-    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s cardinality_bits 0x%x", xptr,yptr,cardinality_bits);
+    //OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s cardinality_bits 0x%x", xptr,yptr,cardinality_bits);
 
     group_top = bn_get_top(group->field);
     if ((bn_wexpand(s->X, group_top) == NULL)
@@ -280,9 +280,9 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
-    OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
 
 
     //BACKTRACE_DEBUG("group->meth->make_affine %p",group->meth->make_affine);
@@ -292,7 +292,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
     }
-    OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
 
     /* Initialize the Montgomery ladder */
     if (!ec_point_ladder_pre(group, r, s, p, ctx)) {
@@ -372,21 +372,21 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
 
     for (i = cardinality_bits - 1; i >= 0; i--) {
         kbit = BN_is_bit_set(k, i) ^ pbit;
-        OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-        OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
-        OSSL_DEBUG("[%d]kbit 0x%x pbit 0x%x [0x%x] bitset [0x%x]",i,kbit,pbit,i,BN_is_bit_set(k,i));
+        //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+        //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+        //OSSL_DEBUG("[%d]kbit 0x%x pbit 0x%x [0x%x] bitset [0x%x]",i,kbit,pbit,i,BN_is_bit_set(k,i));
         EC_POINT_CSWAP(kbit, r, s, group_top, Z_is_one);
-        OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-        OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+        //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+        //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
 
         /* Perform a single step of the Montgomery ladder */
         if (!ec_point_ladder_step(group, r, s, p, ctx)) {
             ERR_raise(ERR_LIB_EC, EC_R_LADDER_STEP_FAILURE);
             goto err;
         }
-        OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-        OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
-        OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
+        //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+        //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+        //OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
 
         /*
          * pbit logic merges this cswap with that of the
@@ -396,8 +396,8 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
     }
     /* one final cswap to move the right value into r */
     EC_POINT_CSWAP(pbit, r, s, group_top, Z_is_one);
-    OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
 
 
 #undef EC_POINT_CSWAP
@@ -407,9 +407,9 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         ERR_raise(ERR_LIB_EC, EC_R_LADDER_POST_FAILURE);
         goto err;
     }
-    OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
-    OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
 
     ret = 1;
 
