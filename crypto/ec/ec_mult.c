@@ -372,21 +372,21 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
 
     for (i = cardinality_bits - 1; i >= 0; i--) {
         kbit = BN_is_bit_set(k, i) ^ pbit;
-        //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-        //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
-        //OSSL_DEBUG("[%d]kbit 0x%x pbit 0x%x [0x%x] bitset [0x%x]",i,kbit,pbit,i,BN_is_bit_set(k,i));
+        OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+        OSSL_DEBUG("[%d]kbit 0x%x pbit 0x%x [0x%x] bitset [0x%x]",i,kbit,pbit,i,BN_is_bit_set(k,i));
         EC_POINT_CSWAP(kbit, r, s, group_top, Z_is_one);
-        //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-        //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
 
         /* Perform a single step of the Montgomery ladder */
         if (!ec_point_ladder_step(group, r, s, p, ctx)) {
             ERR_raise(ERR_LIB_EC, EC_R_LADDER_STEP_FAILURE);
             goto err;
         }
-        //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-        //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
-        //OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
 
         /*
          * pbit logic merges this cswap with that of the
@@ -395,9 +395,11 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         pbit ^= kbit;
     }
     /* one final cswap to move the right value into r */
+    OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
+    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
     EC_POINT_CSWAP(pbit, r, s, group_top, Z_is_one);
     OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
-    //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
+    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
 
 
 #undef EC_POINT_CSWAP

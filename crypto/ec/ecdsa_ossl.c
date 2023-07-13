@@ -156,13 +156,13 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s, tmp.z 0x%s",xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s tmp.z 0x%s",xptr,yptr,zptr);
 
         if (!EC_POINT_get_affine_coordinates(group, tmp_point, X, NULL, ctx)) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s, tmp.z 0x%s",xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s tmp.z 0x%s",xptr,yptr,zptr);
         OSSL_DEBUG_BN((16,X,&xptr,NULL),"X 0x%s",xptr);
 
         if (!BN_nnmod(r, X, order, ctx)) {

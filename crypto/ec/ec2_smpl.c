@@ -709,7 +709,7 @@ int ossl_ec_GF2m_simple_points_make_affine(const EC_GROUP *group, size_t num,
 int ossl_ec_GF2m_simple_field_mul(const EC_GROUP *group, BIGNUM *r,
                                   const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 {
-    //char* xptr=NULL,*yptr = NULL ,*zptr=NULL,*aptr=NULL;
+    char* xptr=NULL,*yptr = NULL ,*zptr=NULL,*aptr=NULL;
     int ret;
     BIGNUM* res=NULL;
     res = BN_new();
@@ -719,7 +719,7 @@ int ossl_ec_GF2m_simple_field_mul(const EC_GROUP *group, BIGNUM *r,
     //ret =  BN_GF2m_mod_mul_arr(r, a, b, group->poly, ctx);
     ret =  BN_GF2m_mod_mul_arr(res, a, b, group->poly, ctx);
     if (ret > 0) {
-        //OSSL_DEBUG_BN((16,a,&xptr,b,&yptr,group->field,&zptr,res,&aptr,NULL),"a 0x%s * b 0x%s %% ord 0x%s = 0x%s",xptr,yptr,zptr,aptr);
+        OSSL_DEBUG_BN((16,a,&xptr,b,&yptr,group->field,&zptr,res,&aptr,NULL),"a 0x%s * b 0x%s %% ord 0x%s = 0x%s",xptr,yptr,zptr,aptr);
         if (!BN_copy(r,res)) {
             ret = 0;
         }
@@ -735,7 +735,7 @@ int ossl_ec_GF2m_simple_field_mul(const EC_GROUP *group, BIGNUM *r,
 int ossl_ec_GF2m_simple_field_sqr(const EC_GROUP *group, BIGNUM *r,
                                   const BIGNUM *a, BN_CTX *ctx)
 {
-    //char *xptr=NULL,*yptr=NULL,*zptr = NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr = NULL;
     int ret;
     BIGNUM* res = NULL;
 
@@ -745,7 +745,7 @@ int ossl_ec_GF2m_simple_field_sqr(const EC_GROUP *group, BIGNUM *r,
     }
     ret = BN_GF2m_mod_sqr_arr(res, a, group->poly, ctx);
     if (ret > 0) {
-        //OSSL_DEBUG_BN((16,a,&xptr,group->field,&yptr,res,&zptr,NULL),"a 0x%s * a 0x%s %% ord 0x%s = 0x%s",xptr,xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,a,&xptr,group->field,&yptr,res,&zptr,NULL),"a 0x%s * a 0x%s %% ord 0x%s = 0x%s",xptr,xptr,yptr,zptr);
         if (!BN_copy(r,res)) {
             ret = 0;
         }
@@ -822,7 +822,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
         || !group->meth->field_mul(group, r->X, r->X, r->Y, ctx))
         return 0;
 
-    //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r->X 0x%s r->Y 0x%s r->Z 0x%s", xptr,yptr,zptr);
+    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r->X 0x%s r->Y 0x%s r->Z 0x%s", xptr,yptr,zptr);
     s->Z_is_one = 0;
     r->Z_is_one = 0;
 
@@ -1067,9 +1067,25 @@ static int ec_GF2m_simple_field_inv(const EC_GROUP *group, BIGNUM *r,
                                     const BIGNUM *a, BN_CTX *ctx)
 {
     int ret;
+    char* xptr=NULL,*yptr=NULL,*zptr=NULL;
+    BIGNUM* copya = NULL;
+    int copied = 0;
+
+    copya = BN_new();
+    if (copya != NULL) {
+        BN_copy(copya,a);
+        copied = 1;
+    }
 
     if (!(ret = BN_GF2m_mod_inv(r, a, group->field, ctx)))
         ERR_raise(ERR_LIB_EC, EC_R_CANNOT_INVERT);
+    if (ret > 0 && copied > 0) {
+        OSSL_DEBUG_BN((16,r,&xptr,copya,&yptr,group->field,&zptr,NULL),"r 0x%s * a 0x%s = 1 %% 0x%s",xptr,yptr,zptr);
+    }
+    if (copya!= NULL) {
+        BN_free(copya);
+    }
+    copya = NULL;
     return ret;
 }
 

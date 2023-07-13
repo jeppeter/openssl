@@ -808,7 +808,7 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
 {
     BIGNUM *b, *c = NULL, *u = NULL, *v = NULL, *tmp;
     int ret = 0;
-    char* xptr=NULL,*yptr=NULL,*zptr=NULL;
+    //char* xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     bn_check_top(a);
     bn_check_top(p);
@@ -1008,14 +1008,14 @@ static int BN_GF2m_mod_inv_vartime(BIGNUM *r, const BIGNUM *a,
  */
 int BN_GF2m_mod_inv(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
 {
-    BIGNUM *b = NULL;
     int ret = 0;
     //char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     BN_CTX_start(ctx);
+#if 0
+    BIGNUM *b = NULL;
     if ((b = BN_CTX_get(ctx)) == NULL)
         goto err;
-
     /* generate blinding value */
     do {
         if (!BN_priv_rand_ex(b, BN_num_bits(p) - 1,
@@ -1023,7 +1023,6 @@ int BN_GF2m_mod_inv(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
             goto err;
     } while (BN_is_zero(b));
 
-#if 1
     /* r := a * b */
     if (!BN_GF2m_mod_mul(r, a, b, p, ctx))
         goto err;
