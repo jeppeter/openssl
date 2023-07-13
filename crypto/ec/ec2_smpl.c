@@ -789,7 +789,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
         }
     } while (BN_is_zero(s->Z));
 
-    OSSL_DEBUG_BN((16,s->Z,&xptr,NULL),"random s->Z 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,s->Z,&xptr,NULL),"random s->Z 0x%s",xptr);
 
     //OSSL_DEBUG("field_encode %p", group->meth->field_encode);
     /* if field_encode defined convert between representations */
@@ -798,7 +798,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
         || !group->meth->field_mul(group, s->X, p->X, s->Z, ctx))
         return 0;
 
-    OSSL_DEBUG_BN((16,s->X,&xptr,NULL),"s->X 0x%s", xptr);
+    //OSSL_DEBUG_BN((16,s->X,&xptr,NULL),"s->X 0x%s", xptr);
 
     /* r blinding: make sure lambda (r->Y here for storage) is not zero */
     do {
@@ -808,7 +808,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
             return 0;
         }
     } while (BN_is_zero(r->Y));
-    OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"random r->Y 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,r->Y,&xptr,NULL),"random r->Y 0x%s",xptr);
 
     //BACKTRACE_DEBUG("group->meth->field_encode %p group->meth->field_sqr %p group->meth->field_mul %p", 
     //    group->meth->field_encode,group->meth->field_sqr,group->meth->field_mul);
@@ -822,7 +822,7 @@ int ec_GF2m_simple_ladder_pre(const EC_GROUP *group,
         || !group->meth->field_mul(group, r->X, r->X, r->Y, ctx))
         return 0;
 
-    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r->X 0x%s r->Y 0x%s r->Z 0x%s", xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r->X 0x%s r->Y 0x%s r->Z 0x%s", xptr,yptr,zptr);
     s->Z_is_one = 0;
     r->Z_is_one = 0;
 
