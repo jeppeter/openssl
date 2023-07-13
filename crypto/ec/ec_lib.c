@@ -1241,6 +1241,8 @@ static int ec_field_inverse_mod_ord(const EC_GROUP *group, BIGNUM *r,
 {
     BIGNUM *e = NULL;
     int ret = 0;
+    BIGNUM *copyx=NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*sptr= NULL;
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
@@ -1267,6 +1269,10 @@ static int ec_field_inverse_mod_ord(const EC_GROUP *group, BIGNUM *r,
         goto err;
     if (!BN_sub(e, group->order, e))
         goto err;
+    copyx = BN_new();
+    if (copyx != NULL) {
+        BN_copy(copyx,x);
+    }
     /*-
      * Exponent e is public.
      * No need for scatter-gather or BN_FLG_CONSTTIME.
@@ -1274,9 +1280,17 @@ static int ec_field_inverse_mod_ord(const EC_GROUP *group, BIGNUM *r,
     if (!BN_mod_exp_mont(r, x, e, group->order, ctx, group->mont_data))
         goto err;
 
+    if (copyx != NULL) {
+        OSSL_DEBUG_BN((16,copyx,&xptr,group->order,&yptr,e,&zptr,r,&sptr,NULL),
+            "(x 0x%s ^ e 0x%s) = (r 0x%s) = 1 %% order 0x%s",xptr,zptr,sptr,yptr);
+    }
     ret = 1;
 
  err:
+    if (copyx) {
+        BN_free(copyx);
+    }
+    copyx = NULL;
     BN_CTX_end(ctx);
 #ifndef FIPS_MODULE
     BN_CTX_free(new_ctx);

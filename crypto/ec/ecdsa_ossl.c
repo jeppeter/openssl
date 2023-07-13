@@ -216,7 +216,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
     const EC_GROUP *group;
     ECDSA_SIG *ret;
     const BIGNUM *priv_key;
-    char* sptr=NULL, *rptr=NULL;
+    char* sptr=NULL, *rptr=NULL, *xptr=NULL,*yptr=NULL;
 
     OSSL_DEBUG("begin sign");
     group = EC_KEY_get0_group(eckey);
@@ -304,7 +304,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
         }
-        OSSL_DEBUG_BN((16,s,&sptr,ret->r,&rptr,NULL),"s 0x%s r 0x%s",sptr,rptr);
+        OSSL_DEBUG_BN((16,s,&sptr,ret->r,&rptr,m,&xptr,order,&yptr,NULL),"s 0x%s r 0x%s m 0x%s order 0x%s",sptr,rptr,xptr,yptr);
         if (!bn_mod_add_fixed_top(s, s, m, order)) {
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
