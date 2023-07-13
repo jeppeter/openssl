@@ -27,6 +27,7 @@ static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
     unsigned char *buf = NULL;
     int b, ret = 0, bit, bytes, mask;
     OSSL_LIB_CTX *libctx = ossl_bn_get_libctx(ctx);
+    char *xptr=NULL;
 
     if (bits == 0) {
         if (top != BN_RAND_TOP_ANY || bottom != BN_RAND_BOTTOM_ANY)
@@ -52,6 +53,9 @@ static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
                        : RAND_priv_bytes_ex(libctx, buf, bytes, strength);
     if (b <= 0)
         goto err;
+    //OSSL_BUFFER_DEBUG(buf,bytes,"random buffer");
+    BN_bin2bn(buf,bytes,rnd);
+    OSSL_DEBUG_BN((16,rnd,&xptr,NULL),"random number 0x%s", xptr);
 
     if (flag == TESTING) {
         /*
@@ -72,6 +76,7 @@ static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
         }
     }
 
+    OSSL_DEBUG("bit [0x%x] mask [0x%x]", bit,mask);
     if (top >= 0) {
         if (top) {
             if (bit == 0) {
@@ -89,6 +94,7 @@ static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
         buf[bytes - 1] |= 1;
     if (!BN_bin2bn(buf, bytes, rnd))
         goto err;
+    OSSL_DEBUG_BN((16,rnd,&xptr,NULL),"rnd 0x%s",xptr);
     ret = 1;
  err:
     OPENSSL_clear_free(buf, bytes);
@@ -263,7 +269,7 @@ int BN_generate_dsa_nonce(BIGNUM *out, const BIGNUM *range,
     int ret = 0;
     EVP_MD *md = NULL;
     OSSL_LIB_CTX *libctx = ossl_bn_get_libctx(ctx);
-    char *xptr=NULL;
+    char *xptr=NULL,*yptr=NULL;
 
     if (mdctx == NULL)
         goto err;
@@ -311,9 +317,10 @@ int BN_generate_dsa_nonce(BIGNUM *out, const BIGNUM *range,
     if (!BN_bin2bn(k_bytes, num_k_bytes, out))
         goto err;
 
-    OSSL_DEBUG_BN((16,out,&xptr,NULL),"random out 0x%s", xptr);
+    OSSL_DEBUG_BN((16,out,&xptr,NULL),"random number 0x%s", xptr);
     if (BN_mod(out, out, range, ctx) != 1)
         goto err;
+    OSSL_DEBUG_BN((16,out,&xptr,range,&yptr,NULL),"result 0x%s range 0x%s",xptr,yptr);
     ret = 1;
 
  err:
