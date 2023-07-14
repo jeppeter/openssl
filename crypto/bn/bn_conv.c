@@ -389,13 +389,23 @@ int BN_format_safe(int base, ...)
             curalloc = NULL;
             slen = strlen(*ppcur);
             slen -= dellen;
-            curalloc = malloc(slen + 1);
+            if (slen <= 0) {
+                fprintf(stderr,"slen == 0\n");
+                curalloc = malloc(2);
+            } else {
+                curalloc = malloc(slen + 1);    
+            }            
             if (curalloc == NULL) {
                 ret = -ENOMEM;
                 goto fail;
             }
-            memset(curalloc,0,slen + 1);
-            memcpy(curalloc,curptr,slen);
+            if (slen == 0) {
+                memset(curalloc,0,2);
+                curalloc[0] = '0';
+            } else {                
+                memset(curalloc,0,slen + 1);
+                memcpy(curalloc,curptr,slen);
+            }
             if (*ppcur) {
                 free(*ppcur);
             }
