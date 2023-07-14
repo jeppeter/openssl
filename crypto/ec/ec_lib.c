@@ -1192,6 +1192,7 @@ static int ec_precompute_mont_data(EC_GROUP *group)
 {
     BN_CTX *ctx = BN_CTX_new_ex(group->libctx);
     int ret = 0;
+    char *xptr= NULL;
 
     BN_MONT_CTX_free(group->mont_data);
     group->mont_data = NULL;
@@ -1208,6 +1209,7 @@ static int ec_precompute_mont_data(EC_GROUP *group)
         group->mont_data = NULL;
         goto err;
     }
+    OSSL_DEBUG_BN((16,group->order,&xptr,NULL),"set mont_data 0x%s",xptr);
 
     ret = 1;
 

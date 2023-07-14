@@ -41,6 +41,8 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     BIGNUM *tmp;
     int ret = 0;
     int num = mont->N.top;
+    char *rptr=NULL,*aptr=NULL,*bptr=NULL,*nptr=NULL;
+    BIGNUM *copya=NULL, *copyb=NULL;
 
 #if defined(OPENSSL_BN_ASM_MONT) && defined(MONT_WORD)
     if (num > 1 && a->top == num && b->top == num) {
@@ -64,6 +66,14 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
         goto err;
 
     bn_check_top(tmp);
+    copya = BN_new();
+    if (copya) {
+        BN_copy(copya,a);
+    }
+    copyb = BN_new();
+    if (copyb) {
+        BN_copy(copyb,b);
+    }
     if (a == b) {
         if (!bn_sqr_fixed_top(tmp, a, ctx))
             goto err;
@@ -71,6 +81,8 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
         if (!bn_mul_fixed_top(tmp, a, b, ctx))
             goto err;
     }
+
+    OSSL_DEBUG_BN((16,tmp,&rptr,copya,&aptr,copyb,&bptr,NULL),"tmp 0x%s = a 0x%s * b 0x%s",rptr,aptr,bptr);
     /* reduce from aRR to aR */
 #ifdef MONT_WORD
     if (!bn_from_montgomery_word(r, tmp, mont))
@@ -79,8 +91,20 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     if (!BN_from_montgomery(r, tmp, mont, ctx))
         goto err;
 #endif
+
+    if (copya && copyb) {
+        OSSL_DEBUG_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&mont->N,&nptr,NULL),"r 0x%s = a 0x%s b 0x%s mont->N 0x%s",rptr,aptr,bptr,nptr);
+    }
     ret = 1;
  err:
+    if (copyb){
+        BN_free(copyb);
+    }
+    copyb = NULL;
+    if (copya) {
+        BN_free(copya);
+    }
+    copya = NULL;
     BN_CTX_end(ctx);
     return ret;
 }
@@ -123,13 +147,16 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
 
     /* clear the top words of T */
     for (rtop = r->top, i = 0; i < max; i++) {
+        OSSL_DEBUG("i 0x%x - rtop 0x%x = 0x%x ",i,rtop,i-rtop);
         v = (BN_ULONG)0 - ((i - rtop) >> (8 * sizeof(rtop) - 1));
+        OSSL_DEBUG("r->d[%d] 0x%lx ^ v 0x%lx => r->d[%d] 0x%lx",i,rp[i],v,i,rp[i] & v);
         rp[i] &= v;
     }
 
     r->top = max;
     r->flags |= BN_FLG_FIXED_TOP;
     n0 = mont->n0[0];
+    OSSL_DEBUG_BN((16,r,&xptr,NULL),"new r 0x%s",xptr);
 
     /*
      * Add multiples of |n| to |r| until R = 2^(nl * BN_BITS2) divides it. On
@@ -137,12 +164,16 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
      * includes |carry| which is stored separately.
      */
     for (carry = 0, i = 0; i < nl; i++, rp++) {
+        OSSL_DEBUG_BN((16,r,&xptr,n,&yptr,NULL),"[%d] r 0x%s n 0x%s w 0x%lX",i,xptr,yptr,(rp[0] * n0) & BN_MASK2);
         v = bn_mul_add_words(rp, np, nl, (rp[0] * n0) & BN_MASK2);
+        OSSL_DEBUG("v 0x%lX", v);
         v = (v + carry + rp[nl]) & BN_MASK2;
         carry |= (v != rp[nl]);
         carry &= (v <= rp[nl]);
+        OSSL_DEBUG("r->d[%d] = 0x%lx",nl,v);
         rp[nl] = v;
     }
+    OSSL_DEBUG_BN((16,r,&xptr,NULL),"second r 0x%s",xptr);
 
     if (bn_wexpand(ret, nl) == NULL){
         if (copyr) {
@@ -170,7 +201,9 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
      * |nl| words, and we know at most one subtraction is needed.
      */
     for (i = 0; i < nl; i++) {
+        OSSL_DEBUG("r->d[%d] 0x%lx",i,rp[i]);
         rp[i] = (carry & ap[i]) | (~carry & rp[i]);
+        OSSL_DEBUG("r->d[%d] 0x%lx a->[%d] 0x%lx carry 0x%lx",i,rp[i],i,ap[i],carry);
         ap[i] = 0;
     }
     OSSL_DEBUG_BN((16,copyr,&xptr,&(mont->N),&yptr,ret,&zptr,NULL),"r 0x%s * mont->N 0x%s = ret 0x%s",xptr,yptr,zptr);

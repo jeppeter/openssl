@@ -11,6 +11,7 @@
 #include <openssl/crypto.h>
 #include "internal/cryptlib.h"
 #include "bn_local.h"
+#include "internal/intern_log.h"
 
 #if defined(BN_LLONG) || defined(BN_UMULT_HIGH)
 
@@ -18,6 +19,7 @@ BN_ULONG bn_mul_add_words(BN_ULONG *rp, const BN_ULONG *ap, int num,
                           BN_ULONG w)
 {
     BN_ULONG c1 = 0;
+    int i=0;
 
     assert(num >= 0);
     if (num <= 0)
@@ -25,17 +27,32 @@ BN_ULONG bn_mul_add_words(BN_ULONG *rp, const BN_ULONG *ap, int num,
 
 # ifndef OPENSSL_SMALL_FOOTPRINT
     while (num & ~3) {
+        OSSL_DEBUG("rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[0],i,ap[0],w,c1);
         mul_add(rp[0], ap[0], w, c1);
+        OSSL_DEBUG("after rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[0],i,ap[0],w,c1);
+        i ++ ;
+        OSSL_DEBUG("rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[1],i,ap[1],w,c1);
         mul_add(rp[1], ap[1], w, c1);
+        OSSL_DEBUG("after rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[1],i,ap[1],w,c1);
+        i ++;
+        OSSL_DEBUG("rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[2],i,ap[2],w,c1);
         mul_add(rp[2], ap[2], w, c1);
+        OSSL_DEBUG("after rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[2],i,ap[2],w,c1);
+        i ++;
+        OSSL_DEBUG("rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[3],i,ap[3],w,c1);
         mul_add(rp[3], ap[3], w, c1);
+        OSSL_DEBUG("after rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[i],i,ap[i],w,c1);
+        i ++;
         ap += 4;
         rp += 4;
         num -= 4;
     }
 # endif
     while (num) {
+        OSSL_DEBUG("rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[0],i,ap[0],w,c1);
         mul_add(rp[0], ap[0], w, c1);
+        OSSL_DEBUG("after rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[0],i,ap[0],w,c1);
+        i ++;
         ap++;
         rp++;
         num--;

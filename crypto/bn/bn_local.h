@@ -24,6 +24,7 @@
 # include "crypto/bn.h"
 # include "internal/cryptlib.h"
 # include "internal/numbers.h"
+# include "internal/intern_log.h"
 
 /*
  * These preprocessor symbols control various aspects of the bignum headers
@@ -469,6 +470,7 @@ unsigned __int64 _umul128(unsigned __int64 a, unsigned __int64 b,
 # endif
 
 # ifdef BN_LLONG
+# error "BN_LLONG"
 /*******************************************************************
  * Using the long long type, has to be twice as wide as BN_ULONG...
  */
@@ -500,11 +502,15 @@ unsigned __int64 _umul128(unsigned __int64 a, unsigned __int64 b,
 #  define mul_add(r,a,w,c) {              \
         BN_ULONG high,low,ret,tmp=(a);  \
         ret =  (r);                     \
+        OSSL_DEBUG("1 ret 0x%lX",ret);    \
         BN_UMULT_LOHI(low,high,w,tmp);  \
+        OSSL_DEBUG("w 0x%lX tmp 0x%lX = h 0x%lX l 0x%lX",w,tmp,high,low);\
         ret += (c);                     \
+        OSSL_DEBUG("2 ret 0x%lX",ret);\
         (c) =  (ret<(c))?1:0;           \
         (c) += high;                    \
         ret += low;                     \
+        OSSL_DEBUG("3 ret 0x%lX", ret);\
         (c) += (ret<low)?1:0;           \
         (r) =  ret;                     \
         }
@@ -524,6 +530,7 @@ unsigned __int64 _umul128(unsigned __int64 a, unsigned __int64 b,
         }
 
 # elif defined(BN_UMULT_HIGH)
+#error "BN_UMULT_HIGH"
 #  define mul_add(r,a,w,c) {              \
         BN_ULONG high,low,ret,tmp=(a);  \
         ret =  (r);                     \
@@ -557,6 +564,7 @@ unsigned __int64 _umul128(unsigned __int64 a, unsigned __int64 b,
 /*************************************************************
  * No long long type
  */
+#error "long long type"
 
 #  define LBITS(a)        ((a)&BN_MASK2l)
 #  define HBITS(a)        (((a)>>BN_BITS4)&BN_MASK2l)
@@ -569,7 +577,6 @@ unsigned __int64 _umul128(unsigned __int64 a, unsigned __int64 b,
 #  define mul64(l,h,bl,bh) \
         { \
         BN_ULONG m,m1,lt,ht; \
- \
         lt=l; \
         ht=h; \
         m =(bh)*(lt); \
@@ -603,12 +610,10 @@ unsigned __int64 _umul128(unsigned __int64 a, unsigned __int64 b,
 
 #  define mul_add(r,a,bl,bh,c) { \
         BN_ULONG l,h; \
- \
         h= (a); \
         l=LBITS(h); \
         h=HBITS(h); \
         mul64(l,h,(bl),(bh)); \
- \
         /* non-multiply part */ \
         l=(l+(c))&BN_MASK2; if (l < (c)) h++; \
         (c)=(r); \
