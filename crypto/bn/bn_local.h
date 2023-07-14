@@ -502,15 +502,15 @@ unsigned __int64 _umul128(unsigned __int64 a, unsigned __int64 b,
 #  define mul_add(r,a,w,c) {              \
         BN_ULONG high,low,ret,tmp=(a);  \
         ret =  (r);                     \
-        OSSL_DEBUG("1 ret 0x%lX",ret);    \
+        /*OSSL_DEBUG("1 ret 0x%lX",ret);*/    \
         BN_UMULT_LOHI(low,high,w,tmp);  \
-        OSSL_DEBUG("w 0x%lX tmp 0x%lX = h 0x%lX l 0x%lX",w,tmp,high,low);\
+        /*OSSL_DEBUG("w 0x%lX tmp 0x%lX = h 0x%lX l 0x%lX",w,tmp,high,low);*/\
         ret += (c);                     \
-        OSSL_DEBUG("2 ret 0x%lX",ret);\
+        /*OSSL_DEBUG("2 ret 0x%lX",ret);*/\
         (c) =  (ret<(c))?1:0;           \
         (c) += high;                    \
         ret += low;                     \
-        OSSL_DEBUG("3 ret 0x%lX", ret);\
+        /*OSSL_DEBUG("3 ret 0x%lX", ret);*/\
         (c) += (ret<low)?1:0;           \
         (r) =  ret;                     \
         }

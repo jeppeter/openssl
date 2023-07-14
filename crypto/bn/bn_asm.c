@@ -49,9 +49,9 @@ BN_ULONG bn_mul_add_words(BN_ULONG *rp, const BN_ULONG *ap, int num,
     }
 # endif
     while (num) {
-        OSSL_DEBUG("rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[0],i,ap[0],w,c1);
+        //OSSL_DEBUG("rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[0],i,ap[0],w,c1);
         mul_add(rp[0], ap[0], w, c1);
-        OSSL_DEBUG("after rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[0],i,ap[0],w,c1);
+        //OSSL_DEBUG("after rp[%d] 0x%lX ap[%d] 0x%lX w 0x%lX c1 0x%lX",i,rp[0],i,ap[0],w,c1);
         i ++;
         ap++;
         rp++;

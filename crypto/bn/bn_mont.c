@@ -147,16 +147,16 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
 
     /* clear the top words of T */
     for (rtop = r->top, i = 0; i < max; i++) {
-        OSSL_DEBUG("i 0x%x - rtop 0x%x = 0x%x ",i,rtop,i-rtop);
+        //OSSL_DEBUG("i 0x%x - rtop 0x%x = 0x%x ",i,rtop,i-rtop);
         v = (BN_ULONG)0 - ((i - rtop) >> (8 * sizeof(rtop) - 1));
-        OSSL_DEBUG("r->d[%d] 0x%lx ^ v 0x%lx => r->d[%d] 0x%lx",i,rp[i],v,i,rp[i] & v);
+        //OSSL_DEBUG("r->d[%d] 0x%lx ^ v 0x%lx => r->d[%d] 0x%lx",i,rp[i],v,i,rp[i] & v);
         rp[i] &= v;
     }
 
     r->top = max;
     r->flags |= BN_FLG_FIXED_TOP;
     n0 = mont->n0[0];
-    OSSL_DEBUG_BN((16,r,&xptr,NULL),"new r 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,r,&xptr,n,&yptr,NULL),"new r 0x%s n 0x%s",xptr,yptr);
 
     /*
      * Add multiples of |n| to |r| until R = 2^(nl * BN_BITS2) divides it. On
@@ -164,16 +164,16 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
      * includes |carry| which is stored separately.
      */
     for (carry = 0, i = 0; i < nl; i++, rp++) {
-        OSSL_DEBUG_BN((16,r,&xptr,n,&yptr,NULL),"[%d] r 0x%s n 0x%s w 0x%lX",i,xptr,yptr,(rp[0] * n0) & BN_MASK2);
+        //OSSL_DEBUG_BN((16,r,&xptr,n,&yptr,NULL),"[%d] r 0x%s n 0x%s w 0x%lX",i,xptr,yptr,(rp[0] * n0) & BN_MASK2);
         v = bn_mul_add_words(rp, np, nl, (rp[0] * n0) & BN_MASK2);
-        OSSL_DEBUG("v 0x%lX", v);
+        //OSSL_DEBUG("v 0x%lX", v);
         v = (v + carry + rp[nl]) & BN_MASK2;
         carry |= (v != rp[nl]);
         carry &= (v <= rp[nl]);
-        OSSL_DEBUG("r->d[%d] = 0x%lx",nl,v);
+        //OSSL_DEBUG("r->d[%d] = 0x%lx",nl,v);
         rp[nl] = v;
     }
-    OSSL_DEBUG_BN((16,r,&xptr,NULL),"second r 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,r,&xptr,n,&yptr,NULL),"second r 0x%s n 0x%s",xptr,yptr);
 
     if (bn_wexpand(ret, nl) == NULL){
         if (copyr) {
@@ -201,9 +201,9 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
      * |nl| words, and we know at most one subtraction is needed.
      */
     for (i = 0; i < nl; i++) {
-        OSSL_DEBUG("r->d[%d] 0x%lx",i,rp[i]);
+        //OSSL_DEBUG("r->d[%d] 0x%lx",i,rp[i]);
         rp[i] = (carry & ap[i]) | (~carry & rp[i]);
-        OSSL_DEBUG("r->d[%d] 0x%lx a->[%d] 0x%lx carry 0x%lx",i,rp[i],i,ap[i],carry);
+        //OSSL_DEBUG("r->d[%d] 0x%lx a->[%d] 0x%lx carry 0x%lx",i,rp[i],i,ap[i],carry);
         ap[i] = 0;
     }
     OSSL_DEBUG_BN((16,copyr,&xptr,&(mont->N),&yptr,ret,&zptr,NULL),"r 0x%s * mont->N 0x%s = ret 0x%s",xptr,yptr,zptr);
