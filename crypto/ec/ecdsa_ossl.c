@@ -163,7 +163,7 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
             goto err;
         }
         OSSL_DEBUG_BN((16,tmp_point->X,&xptr,tmp_point->Y,&yptr,tmp_point->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s tmp.z 0x%s",xptr,yptr,zptr);
-        OSSL_DEBUG_BN((16,X,&xptr,NULL),"X 0x%s",xptr);
+        OSSL_DEBUG_BN((16,X,&xptr,order,&yptr,NULL),"X 0x%s order 0x%s",xptr,yptr);
 
         if (!BN_nnmod(r, X, order, ctx)) {
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
