@@ -10,6 +10,16 @@
 #include "internal/cryptlib.h"
 #include "bn_local.h"
 
+#define USE_BN_MOD_DEBUG 0
+
+#if USE_BN_MOD_DEBUG
+#define MOD_BN(...)  OSSL_DEBUG_BN(__VA_ARGS__)
+#define MOD_DEBUG(...) OSSL_DEBUG(__VA_ARGS__)
+#else
+#define MOD_BN(...)  do{}while(0)
+#define MOD_DEBUG(...) do{}while(0)
+#endif
+
 int BN_nnmod(BIGNUM *r, const BIGNUM *m, const BIGNUM *d, BN_CTX *ctx)
 {
     /*
@@ -51,8 +61,10 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     size_t i, ai, bi, mtop = m->top;
     BN_ULONG storage[1024 / BN_BITS2];
     BN_ULONG carry, temp, mask, *rp, *tp = storage;
+#if USE_BN_MOD_DEBUG    
     BIGNUM *copya = NULL, *copyb= NULL, *copym=NULL;
     char *aptr=NULL,*bptr=NULL,*mptr=NULL,*rptr=NULL;
+#endif    
     const BN_ULONG *ap, *bp;
 
     if (bn_wexpand(r, mtop) == NULL)
@@ -66,6 +78,7 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
         }
     }
 
+#if USE_BN_MOD_DEBUG
     copya = BN_new();
     if (copya){
         BN_copy(copya,a);    
@@ -78,7 +91,7 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     if (copym) {
         BN_copy(copym,m);
     }    
-
+#endif
     ap = a->d != NULL ? a->d : tp;
     bp = b->d != NULL ? b->d : tp;
 
@@ -108,9 +121,9 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     if (tp != storage)
         OPENSSL_free(tp);
 
+#if USE_BN_MOD_DEBUG
     if (copya != NULL && copyb != NULL && copym != NULL) {
-        OSSL_DEBUG_BN((16,copya,&aptr,copyb,&bptr,copym,&mptr,r,&rptr,NULL),
-            "a 0x%s * b 0x%s %% m 0x%s = r 0x%s",aptr,bptr,mptr,rptr);        
+        MOD_BN((16,copya,&aptr,copyb,&bptr,copym,&mptr,r,&rptr,NULL),"a 0x%s * b 0x%s %% m 0x%s = r 0x%s",aptr,bptr,mptr,rptr);        
     }
     if (copya) {
         BN_free(copya);
@@ -124,7 +137,7 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
         BN_free(copym);
     }
     copym = NULL;
-
+#endif
     return 1;
 }
 

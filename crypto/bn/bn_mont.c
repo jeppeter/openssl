@@ -20,6 +20,20 @@
 
 #define MONT_WORD               /* use the faster word-based algorithm */
 
+#define USE_MONT_DEBUG 0
+
+#if USE_MONT_DEBUG
+
+#define MONT_BN(...) OSSL_DEBUG_BN(__VA_ARGS__)
+#define MONT_DEBUG(...)  OSSL_DEBUG(__VA_ARGS__)
+
+#else
+
+#define MONT_BN(...) do{}while(0)
+#define MONT_DEBUG(...) do{}while(0)
+
+#endif
+
 #ifdef MONT_WORD
 static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont);
 #endif
@@ -41,8 +55,10 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     BIGNUM *tmp;
     int ret = 0;
     int num = mont->N.top;
+#if USE_MONT_DEBUG    
     char *rptr=NULL,*aptr=NULL,*bptr=NULL,*nptr=NULL;
     BIGNUM *copya=NULL, *copyb=NULL;
+#endif    
 
 #if defined(OPENSSL_BN_ASM_MONT) && defined(MONT_WORD)
     if (num > 1 && a->top == num && b->top == num) {
@@ -66,6 +82,7 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
         goto err;
 
     bn_check_top(tmp);
+#if USE_MONT_DEBUG    
     copya = BN_new();
     if (copya) {
         BN_copy(copya,a);
@@ -74,6 +91,7 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     if (copyb) {
         BN_copy(copyb,b);
     }
+#endif    
     if (a == b) {
         if (!bn_sqr_fixed_top(tmp, a, ctx))
             goto err;
@@ -82,7 +100,7 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
             goto err;
     }
 
-    OSSL_DEBUG_BN((16,tmp,&rptr,copya,&aptr,copyb,&bptr,NULL),"tmp 0x%s = a 0x%s * b 0x%s",rptr,aptr,bptr);
+    MONT_BN((16,tmp,&rptr,copya,&aptr,copyb,&bptr,NULL),"tmp 0x%s = a 0x%s * b 0x%s",rptr,aptr,bptr);
     /* reduce from aRR to aR */
 #ifdef MONT_WORD
     if (!bn_from_montgomery_word(r, tmp, mont))
@@ -92,11 +110,14 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
         goto err;
 #endif
 
+#if USE_MONT_DEBUG
     if (copya && copyb) {
-        OSSL_DEBUG_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&mont->N,&nptr,NULL),"r 0x%s = a 0x%s b 0x%s mont->N 0x%s",rptr,aptr,bptr,nptr);
+        MONT_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&mont->N,&nptr,NULL),"r 0x%s = a 0x%s b 0x%s mont->N 0x%s",rptr,aptr,bptr,nptr);
     }
+#endif    
     ret = 1;
  err:
+#if USE_MONT_DEBUG 
     if (copyb){
         BN_free(copyb);
     }
@@ -105,6 +126,7 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
         BN_free(copya);
     }
     copya = NULL;
+#endif    
     BN_CTX_end(ctx);
     return ret;
 }
@@ -116,8 +138,10 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
     BN_ULONG *ap, *np, *rp, n0, v, carry;
     int nl, max, i;
     unsigned int rtop;
+#if USE_MONT_DEBUG    
     char *xptr=NULL,*yptr=NULL,*zptr = NULL;
     BIGNUM* copyr=NULL;
+#endif
 
     n = &(mont->N);
     nl = n->top;
@@ -125,19 +149,23 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
         ret->top = 0;
         return 1;
     }
+#if USE_MONT_DEBUG    
     copyr = BN_new();
     if (copyr) {
         BN_copy(copyr,r);
     }
+#endif
 
-    OSSL_DEBUG_BN((16,n,&xptr,r,&yptr,NULL),"mont->N 0x%s r 0x%s",xptr,yptr);
+    MONT_BN((16,n,&xptr,r,&yptr,NULL),"mont->N 0x%s r 0x%s",xptr,yptr);
 
     max = (2 * nl);             /* carry is stored separately */
     if (bn_wexpand(r, max) == NULL){
+#if USE_MONT_DEBUG        
         if (copyr) {
             BN_free(copyr);
         }
         copyr = NULL;
+#endif        
         return 0;
     }
 
@@ -147,16 +175,17 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
 
     /* clear the top words of T */
     for (rtop = r->top, i = 0; i < max; i++) {
-        //OSSL_DEBUG("i 0x%x - rtop 0x%x = 0x%x ",i,rtop,i-rtop);
+        MONT_DEBUG("i 0x%x - rtop 0x%x = 0x%x ",i,rtop,i-rtop);
+        MONT_DEBUG("(8 * sizeof(rtop) - 1) 0x%lx ((i - rtop) >> (8 * sizeof(rtop) - 1) 0x%lx", (BN_ULONG)(8 * sizeof(rtop) - 1),(BN_ULONG)((i - rtop) >> (8 * sizeof(rtop) - 1)));
         v = (BN_ULONG)0 - ((i - rtop) >> (8 * sizeof(rtop) - 1));
-        //OSSL_DEBUG("r->d[%d] 0x%lx ^ v 0x%lx => r->d[%d] 0x%lx",i,rp[i],v,i,rp[i] & v);
+        MONT_DEBUG("r->d[%d] 0x%lx & v 0x%lx => r->d[%d] 0x%lx",i,rp[i],v,i,rp[i] & v);
         rp[i] &= v;
     }
 
     r->top = max;
     r->flags |= BN_FLG_FIXED_TOP;
     n0 = mont->n0[0];
-    //OSSL_DEBUG_BN((16,r,&xptr,n,&yptr,NULL),"new r 0x%s n 0x%s",xptr,yptr);
+    MONT_BN((16,r,&xptr,n,&yptr,NULL),"new r 0x%s n 0x%s n0 0x%lx",xptr,yptr,n0);
 
     /*
      * Add multiples of |n| to |r| until R = 2^(nl * BN_BITS2) divides it. On
@@ -164,22 +193,24 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
      * includes |carry| which is stored separately.
      */
     for (carry = 0, i = 0; i < nl; i++, rp++) {
-        //OSSL_DEBUG_BN((16,r,&xptr,n,&yptr,NULL),"[%d] r 0x%s n 0x%s w 0x%lX",i,xptr,yptr,(rp[0] * n0) & BN_MASK2);
+        MONT_BN((16,r,&xptr,n,&yptr,NULL),"nl[%d][%d] r 0x%s n 0x%s rp[0] 0x%lx w 0x%lX",nl,i,xptr,yptr,rp[0],(rp[0] * n0) & BN_MASK2);
         v = bn_mul_add_words(rp, np, nl, (rp[0] * n0) & BN_MASK2);
-        //OSSL_DEBUG("v 0x%lX", v);
+        MONT_DEBUG("v 0x%lX", v);
         v = (v + carry + rp[nl]) & BN_MASK2;
         carry |= (v != rp[nl]);
         carry &= (v <= rp[nl]);
-        //OSSL_DEBUG("r->d[%d] = 0x%lx",nl,v);
+        MONT_DEBUG("r->d[%d] = 0x%lx",nl,v);
         rp[nl] = v;
     }
-    //OSSL_DEBUG_BN((16,r,&xptr,n,&yptr,NULL),"second r 0x%s n 0x%s",xptr,yptr);
+    MONT_BN((16,r,&xptr,n,&yptr,NULL),"second r 0x%s n 0x%s",xptr,yptr);
 
     if (bn_wexpand(ret, nl) == NULL){
+#if USE_MONT_DEBUG        
         if (copyr) {
             BN_free(copyr);
         }
         copyr  =NULL;
+#endif        
         return 0;
     }
     ret->top = nl;
@@ -201,18 +232,19 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
      * |nl| words, and we know at most one subtraction is needed.
      */
     for (i = 0; i < nl; i++) {
-        //OSSL_DEBUG("r->d[%d] 0x%lx",i,rp[i]);
+        MONT_DEBUG("r->d[%d] 0x%lx",i,rp[i]);
         rp[i] = (carry & ap[i]) | (~carry & rp[i]);
-        //OSSL_DEBUG("r->d[%d] 0x%lx a->[%d] 0x%lx carry 0x%lx",i,rp[i],i,ap[i],carry);
+        MONT_DEBUG("r->d[%d] 0x%lx a->[%d] 0x%lx carry 0x%lx",i,rp[i],i,ap[i],carry);
         ap[i] = 0;
     }
-    OSSL_DEBUG_BN((16,copyr,&xptr,&(mont->N),&yptr,ret,&zptr,NULL),"r 0x%s * mont->N 0x%s = ret 0x%s",xptr,yptr,zptr);
+    MONT_BN((16,copyr,&xptr,&(mont->N),&yptr,ret,&zptr,NULL),"r 0x%s * mont->N 0x%s = ret 0x%s",xptr,yptr,zptr);
 
+#if USE_MONT_DEBUG
     if (copyr) {
         BN_free(copyr);
     }
     copyr = NULL;
-
+#endif
     return 1;
 }
 #endif                          /* MONT_WORD */
@@ -243,7 +275,9 @@ int bn_from_mont_fixed_top(BIGNUM *ret, const BIGNUM *a, BN_MONT_CTX *mont,
     BN_CTX_end(ctx);
 #else                           /* !MONT_WORD */
     BIGNUM *t1, *t2;
+#if USE_MONT_DEBUG    
     char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+#endif
 
     BN_CTX_start(ctx);
     t1 = BN_CTX_get(ctx);
@@ -254,29 +288,29 @@ int bn_from_mont_fixed_top(BIGNUM *ret, const BIGNUM *a, BN_MONT_CTX *mont,
     if (!BN_copy(t1, a))
         goto err;
     BN_mask_bits(t1, mont->ri);
-    OSSL_DEBUG_BN((16,t1,&xptr,NULL),"t1 0x%s",xptr);
+    MONT_BN((16,t1,&xptr,NULL),"t1 0x%s",xptr);
 
     if (!BN_mul(t2, t1, &mont->Ni, ctx))
         goto err;
-    OSSL_DEBUG_BN((16,t1,&xptr,t2,&yptr,&mont->Ni,&zptr,NULL),"t1 0x%s * mont->Ni 0x%s = t2 0x%s",xptr,yptr,zptr);
+    MONT_BN((16,t1,&xptr,t2,&yptr,&mont->Ni,&zptr,NULL),"t1 0x%s * mont->Ni 0x%s = t2 0x%s",xptr,yptr,zptr);
     BN_mask_bits(t2, mont->ri);
-    OSSL_DEBUG_BN((16,t2,&xptr,NULL,mont->ri,&yptr,NULL),"t2 0x%s mont->ri 0x%s",xptr,yptr);
+    MONT_BN((16,t2,&xptr,NULL,mont->ri,&yptr,NULL),"t2 0x%s mont->ri 0x%s",xptr,yptr);
 
     if (!BN_mul(t1, t2, &mont->N, ctx))
         goto err;
-    OSSL_DEBUG_BN((16,t1,&xptr,&mont->N,&yptr,t2,&zptr,NULL),"t2 0x%s * mont->N 0x%s = t1 0x%s",zptr,yptr,xptr);
+    MONT_BN((16,t1,&xptr,&mont->N,&yptr,t2,&zptr,NULL),"t2 0x%s * mont->N 0x%s = t1 0x%s",zptr,yptr,xptr);
     if (!BN_add(t2, a, t1))
         goto err;
-    OSSL_DEBUG_BN((16,a,&xptr,t1,&yptr,t2,&zptr,NULL),"a 0x%s * t1 0x%s = t2 0x%s", xptr,yptr,zptr);
+    MONT_BN((16,a,&xptr,t1,&yptr,t2,&zptr,NULL),"a 0x%s * t1 0x%s = t2 0x%s", xptr,yptr,zptr);
     if (!BN_rshift(ret, t2, mont->ri))
         goto err;
-    OSSL_DEBUG_BN((16,t2,&xptr,ret,&yptr,NULL),"t2 0x%s >> 0x%x = ret 0x%s",xptr,mont->ri,yptr);
+    MONT_BN((16,t2,&xptr,ret,&yptr,NULL),"t2 0x%s >> 0x%x = ret 0x%s",xptr,mont->ri,yptr);
 
     if (BN_ucmp(ret, &(mont->N)) >= 0) {
         if (!BN_usub(ret, ret, &(mont->N)))
             goto err;
     }
-    OSSL_DEBUG_BN((16,ret,&xptr,&(mont->N),&yptr,NULL),"ret 0x%s mont->N 0x%s",xptr,yptr);
+    MONT_BN((16,ret,&xptr,&(mont->N),&yptr,NULL),"ret 0x%s mont->N 0x%s",xptr,yptr);
     retn = 1;
     bn_check_top(ret);
  err:
@@ -289,21 +323,26 @@ int bn_to_mont_fixed_top(BIGNUM *r, const BIGNUM *a, BN_MONT_CTX *mont,
                          BN_CTX *ctx)
 {
     int ret;
-    char  *xptr=NULL,*yptr=NULL,*zptr=NULL  ;
+#if USE_MONT_DEBUG    
+    char  *xptr=NULL,*yptr=NULL,*zptr=NULL,*nptr=NULL;
     BIGNUM* copya=NULL;
 
     copya = BN_new();
     if (copya) {
         BN_copy(copya,a);    
     }    
+#endif
+
     ret = bn_mul_mont_fixed_top(r, a, &(mont->RR), mont, ctx);
+#if USE_MONT_DEBUG    
     if (ret > 0 && copya != NULL) {
-        OSSL_DEBUG_BN((16,copya,&xptr,&(mont->RR),&yptr,r,&zptr,NULL),"a 0x%s * mont->RR 0x%s = r 0x%s",xptr,yptr,zptr);
+        MONT_BN((16,copya,&xptr,&(mont->RR),&yptr,r,&zptr,&(mont->N),&nptr,NULL),"a 0x%s * mont->RR 0x%s = r 0x%s %% 0x%s",xptr,yptr,zptr,nptr);
     }
     if (copya) {
         BN_free(copya);
     }
     copya = NULL;
+#endif    
     return ret;
 }
 
@@ -346,6 +385,9 @@ int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod, BN_CTX *ctx)
 {
     int i, ret = 0;
     BIGNUM *Ri, *R;
+#if USE_MONT_DEBUG    
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+#endif
 
     if (BN_is_zero(mod))
         return 0;
@@ -374,6 +416,7 @@ int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod, BN_CTX *ctx)
             BN_set_flags(&tmod, BN_FLG_CONSTTIME);
 
         mont->ri = (BN_num_bits(mod) + (BN_BITS2 - 1)) / BN_BITS2 * BN_BITS2;
+        MONT_DEBUG("ri 0x%x", mont->ri);
 
 # if defined(OPENSSL_BN_ASM_MONT) && (BN_BITS2<=32)
         /*
@@ -432,23 +475,30 @@ int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod, BN_CTX *ctx)
             BN_zero(Ri);
         else if ((BN_mod_inverse(Ri, R, &tmod, ctx)) == NULL)
             goto err;
+        MONT_BN((16,Ri,&xptr,R,&yptr,&(mont->N),&zptr,NULL), "Ri 0x%s R 0x%s N 0x%s",xptr,yptr,zptr);
         if (!BN_lshift(Ri, Ri, BN_BITS2))
             goto err;           /* R*Ri */
+        MONT_BN((16,Ri,&xptr,NULL),"Ri 0x%s", xptr);
         if (!BN_is_zero(Ri)) {
             if (!BN_sub_word(Ri, 1))
                 goto err;
+            MONT_BN((16,Ri,&xptr,NULL),"Ri 0x%s",xptr);
         } else {                /* if N mod word size == 1 */
 
             if (!BN_set_word(Ri, BN_MASK2))
                 goto err;       /* Ri-- (mod word size) */
+            MONT_BN((16,Ri,&xptr,NULL),"Ri 0x%s", xptr);
         }
+        MONT_BN((16,&tmod,&xptr,NULL),"tmod 0x%s",xptr);
         if (!BN_div(Ri, NULL, Ri, &tmod, ctx))
             goto err;
+        MONT_BN((16,Ri,&xptr,NULL),"Ri 0x%s", xptr);
         /*
          * Ni = (R*Ri-1)/N, keep only least significant word:
          */
         mont->n0[0] = (Ri->top > 0) ? Ri->d[0] : 0;
         mont->n0[1] = 0;
+        MONT_DEBUG("n0[0] 0x%lx", mont->n0[0]);
 # endif
     }
 #else                           /* !MONT_WORD */
@@ -460,15 +510,19 @@ int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod, BN_CTX *ctx)
         /* Ri = R^-1 mod N */
         if ((BN_mod_inverse(Ri, R, &mont->N, ctx)) == NULL)
             goto err;
+        MONT_BN((16,Ri,&xptr,R,&yptr,NULL),"Ri 0x%s R 0x%s",xptr,yptr);
         if (!BN_lshift(Ri, Ri, mont->ri))
             goto err;           /* R*Ri */
+        MONT_BN((16,Ri,&xptr,NULL),"Ri 0x%s", xptr);
         if (!BN_sub_word(Ri, 1))
             goto err;
+        MONT_BN((16,Ri,&xptr,NULL),"Ri 0x%s", xptr);
         /*
          * Ni = (R*Ri-1) / N
          */
         if (!BN_div(&(mont->Ni), NULL, Ri, &mont->N, ctx))
             goto err;
+        MONT_BN((16,Ri,&xptr,NULL),"Ri 0x%s", xptr);
     }
 #endif
 
@@ -476,9 +530,10 @@ int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod, BN_CTX *ctx)
     BN_zero(&(mont->RR));
     if (!BN_set_bit(&(mont->RR), mont->ri * 2))
         goto err;
+    MONT_BN((16,&(mont->RR),&xptr,NULL),"mont->RR 0x%s", xptr);
     if (!BN_mod(&(mont->RR), &(mont->RR), &(mont->N), ctx))
         goto err;
-
+    MONT_BN((16,&(mont->RR),&xptr,NULL),"mont->RR 0x%s", xptr);
     for (i = mont->RR.top, ret = mont->N.top; i < ret; i++)
         mont->RR.d[i] = 0;
     mont->RR.top = ret;

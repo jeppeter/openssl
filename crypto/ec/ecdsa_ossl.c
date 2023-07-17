@@ -173,7 +173,7 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
     } while (BN_is_zero(r));
 
     /* compute the inverse of k */
-    OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s",xptr);
     if (!ossl_ec_group_do_inverse_ord(group, k, k, ctx)) {
         OSSL_DEBUG("set inverse error");
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
@@ -218,7 +218,8 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
     const EC_GROUP *group;
     ECDSA_SIG *ret;
     const BIGNUM *priv_key;
-    char* sptr=NULL, *rptr=NULL, *xptr=NULL,*yptr=NULL;
+    char* sptr=NULL, *rptr=NULL;    
+    //char *xptr=NULL,*yptr=NULL;
 
     OSSL_DEBUG("begin sign");
     group = EC_KEY_get0_group(eckey);
@@ -301,12 +302,23 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
          * zero-padded vectors. Last operation, BN_mod_mul_montgomery
          * below, returns user-visible value with removed zero padding.
          */
+        if (!bn_to_mont_fixed_top(s, ret->r,group->mont_data,ctx)) {
+            ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
+            goto err;            
+        }
+        //OSSL_DEBUG_BN((16,ret->r,&xptr,s,&yptr,NULL),"ret->r 0x%s s 0x%s",xptr,yptr);
+        if (!bn_mul_mont_fixed_top(s, s, priv_key, group->mont_data, ctx)) {
+            ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
+            goto err;
+        }
+        //OSSL_DEBUG_BN((16,priv_key,&xptr,s,&yptr,NULL),"priv_key 0x%s s 0x%s",xptr,yptr);
+        /*
         if (!bn_to_mont_fixed_top(s, ret->r, group->mont_data, ctx)
             || !bn_mul_mont_fixed_top(s, s, priv_key, group->mont_data, ctx)) {
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
-        }
-        OSSL_DEBUG_BN((16,s,&sptr,ret->r,&rptr,m,&xptr,order,&yptr,NULL),"s 0x%s r 0x%s m 0x%s order 0x%s",sptr,rptr,xptr,yptr);
+        }*/
+        //OSSL_DEBUG_BN((16,s,&sptr,ret->r,&rptr,m,&xptr,order,&yptr,NULL),"s 0x%s r 0x%s m 0x%s order 0x%s",sptr,rptr,xptr,yptr);
         if (!bn_mod_add_fixed_top(s, s, m, order)) {
             ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
             goto err;
