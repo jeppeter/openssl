@@ -17,6 +17,7 @@ fi
 export LD_LIBRARY_PATH=/home/bt/source/openssl/:/mnt/zdisk/clibs/dynamiclib
 outfile=/mnt/zdisk/log.txt
 simpleout=/mnt/zdisk/log_simple.txt
+signlog=/mnt/zdisk/sign.log
 ecfile=/mnt/zdisk/ecpriv.bin
 signfile=/mnt/zdisk/sign.bin
 privnum=1152
@@ -26,7 +27,7 @@ then
 	pushd $PWD && cd /mnt/zdisk/clibs/test/ssltst && make && popd
 fi
 /mnt/zdisk/clibs/test/ssltst/ssltst ecgen --ecpriv $ecfile sect163k1 $privnum 2>/dev/null
-/mnt/zdisk/clibs/test/ssltst/ssltst ecsignbase -o $signfile $ecfile $hashnumber 2>/dev/null
+/mnt/zdisk/clibs/test/ssltst/ssltst ecsignbase -o $signfile $ecfile $hashnumber 2>$signlog
 /mnt/zdisk/clibs/test/ssltst/ssltst ecvfybase $ecfile $hashnumber $signfile 2>$outfile
 
 python /mnt/zdisk/pylib/utils.py filterlog -i $outfile -o $simpleout python

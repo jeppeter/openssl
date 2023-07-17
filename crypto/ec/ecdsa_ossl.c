@@ -377,12 +377,14 @@ int ossl_ecdsa_verify(int type, const unsigned char *dgst, int dgst_len,
     unsigned char *der = NULL;
     int derlen = -1;
     int ret = -1;
+    char *rptr=NULL,*sptr=NULL;
 
     s = ECDSA_SIG_new();
     if (s == NULL)
         return ret;
     if (d2i_ECDSA_SIG(&s, &p, sig_len) == NULL)
         goto err;
+    OSSL_DEBUG_BN((16,s->r,&rptr,s->s,&sptr,NULL),"r 0x%s s 0x%s", rptr,sptr);
     /* Ensure signature uses DER and doesn't have trailing garbage */
     derlen = i2d_ECDSA_SIG(s, &der);
     if (derlen != sig_len || memcmp(sigbuf, der, derlen) != 0)
