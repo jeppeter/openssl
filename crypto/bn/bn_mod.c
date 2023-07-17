@@ -51,6 +51,8 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     size_t i, ai, bi, mtop = m->top;
     BN_ULONG storage[1024 / BN_BITS2];
     BN_ULONG carry, temp, mask, *rp, *tp = storage;
+    BIGNUM *copya = NULL, *copyb= NULL, *copym=NULL;
+    char *aptr=NULL,*bptr=NULL,*mptr=NULL,*rptr=NULL;
     const BN_ULONG *ap, *bp;
 
     if (bn_wexpand(r, mtop) == NULL)
@@ -63,6 +65,19 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
             return 0;
         }
     }
+
+    copya = BN_new();
+    if (copya){
+        BN_copy(copya,a);    
+    }
+    copyb = BN_new();
+    if (copyb) {
+        BN_copy(copyb,b);    
+    }
+    copym = BN_new();
+    if (copym) {
+        BN_copy(copym,m);
+    }    
 
     ap = a->d != NULL ? a->d : tp;
     bp = b->d != NULL ? b->d : tp;
@@ -92,6 +107,23 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
 
     if (tp != storage)
         OPENSSL_free(tp);
+
+    if (copya != NULL && copyb != NULL && copym != NULL) {
+        OSSL_DEBUG_BN((16,copya,&aptr,copyb,&bptr,copym,&mptr,r,&rptr,NULL),
+            "a 0x%s * b 0x%s %% m 0x%s = r 0x%s",aptr,bptr,mptr,rptr);        
+    }
+    if (copya) {
+        BN_free(copya);
+    }
+    copya = NULL;
+    if (copyb) {
+        BN_free(copyb);
+    }
+    copyb = NULL;
+    if (copym) {
+        BN_free(copym);
+    }
+    copym = NULL;
 
     return 1;
 }

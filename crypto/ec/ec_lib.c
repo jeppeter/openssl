@@ -1272,15 +1272,16 @@ static int ec_field_inverse_mod_ord(const EC_GROUP *group, BIGNUM *r,
     if (!BN_sub(e, group->order, e))
         goto err;
     copyx = BN_new();
-    if (copyx != NULL) {
+    if (copyx) {
         BN_copy(copyx,x);
     }
     /*-
      * Exponent e is public.
      * No need for scatter-gather or BN_FLG_CONSTTIME.
      */
-    if (!BN_mod_exp_mont(r, x, e, group->order, ctx, group->mont_data))
+    if (!BN_mod_exp_mont(r, x, e, group->order, ctx, group->mont_data)){
         goto err;
+    }
 
     if (copyx != NULL) {
         OSSL_DEBUG_BN((16,copyx,&xptr,group->order,&yptr,e,&zptr,r,&sptr,NULL),
@@ -1316,10 +1317,12 @@ static int ec_field_inverse_mod_ord(const EC_GROUP *group, BIGNUM *r,
 int ossl_ec_group_do_inverse_ord(const EC_GROUP *group, BIGNUM *res,
                                  const BIGNUM *x, BN_CTX *ctx)
 {
-    if (group->meth->field_inverse_mod_ord != NULL)
+    if (group->meth->field_inverse_mod_ord != NULL){
         return group->meth->field_inverse_mod_ord(group, res, x, ctx);
-    else
+    }
+    else{
         return ec_field_inverse_mod_ord(group, res, x, ctx);
+    }
 }
 
 /*-

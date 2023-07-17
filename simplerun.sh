@@ -17,6 +17,12 @@ fi
 export LD_LIBRARY_PATH=/home/bt/source/openssl/:/mnt/zdisk/clibs/dynamiclib
 outfile=/mnt/zdisk/log.txt
 simpleout=/mnt/zdisk/log_simple.txt
+ecfile=/mnt/zdisk/ecpriv.bin
+if [ ! -x /mnt/zdisk/clibs/test/ssltst/ssltst ]
+then
+	pushd $PWD && cd /mnt/zdisk/clibs/test/ssltst && make && popd
+fi
+/mnt/zdisk/clibs/test/ssltst/ssltst ecgen --ecpriv $ecfile sect163k1 1152 2>/dev/null
 /mnt/zdisk/clibs/test/ssltst/ssltst ecsignbase /mnt/zdisk/ecpriv.bin 1152 2>$outfile
 python /mnt/zdisk/pylib/utils.py filterlog -i $outfile -o $simpleout python
 numbers=`cat $simpleout | grep -e 'random number' | awk '{print $3}' | xargs -I {} echo -n " {}"`

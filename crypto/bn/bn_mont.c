@@ -288,7 +288,23 @@ int bn_from_mont_fixed_top(BIGNUM *ret, const BIGNUM *a, BN_MONT_CTX *mont,
 int bn_to_mont_fixed_top(BIGNUM *r, const BIGNUM *a, BN_MONT_CTX *mont,
                          BN_CTX *ctx)
 {
-    return bn_mul_mont_fixed_top(r, a, &(mont->RR), mont, ctx);
+    int ret;
+    char  *xptr=NULL,*yptr=NULL,*zptr=NULL  ;
+    BIGNUM* copya=NULL;
+
+    copya = BN_new();
+    if (copya) {
+        BN_copy(copya,a);    
+    }    
+    ret = bn_mul_mont_fixed_top(r, a, &(mont->RR), mont, ctx);
+    if (ret > 0 && copya != NULL) {
+        OSSL_DEBUG_BN((16,copya,&xptr,&(mont->RR),&yptr,r,&zptr,NULL),"a 0x%s * mont->RR 0x%s = r 0x%s",xptr,yptr,zptr);
+    }
+    if (copya) {
+        BN_free(copya);
+    }
+    copya = NULL;
+    return ret;
 }
 
 BN_MONT_CTX *BN_MONT_CTX_new(void)

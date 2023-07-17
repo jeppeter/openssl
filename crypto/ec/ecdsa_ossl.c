@@ -173,7 +173,9 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
     } while (BN_is_zero(r));
 
     /* compute the inverse of k */
+    OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s",xptr);
     if (!ossl_ec_group_do_inverse_ord(group, k, k, ctx)) {
+        OSSL_DEBUG("set inverse error");
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
