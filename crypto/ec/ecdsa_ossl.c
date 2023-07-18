@@ -271,13 +271,12 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,m,&sptr,NULL),"dgst 0x%s", sptr);
     /* If still too long, truncate remaining bits with a shift */
     if ((8 * dgst_len > i) && !BN_rshift(m, m, 8 - (i & 0x7))) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    OSSL_DEBUG_BN((16,m,&sptr,NULL),"dgst rshift 0x%s", sptr);
+    OSSL_DEBUG_BN((16,m,&sptr,NULL),"dgst 0x%s", sptr);
     do {
         if (in_kinv == NULL || in_r == NULL) {
             if (!ecdsa_sign_setup(eckey, ctx, &kinv, &ret->r, dgst, dgst_len)) {
@@ -382,6 +381,7 @@ int ossl_ecdsa_verify(int type, const unsigned char *dgst, int dgst_len,
     s = ECDSA_SIG_new();
     if (s == NULL)
         return ret;
+    OSSL_BUFFER_DEBUG(p,sig_len,"sig buffer");
     if (d2i_ECDSA_SIG(&s, &p, sig_len) == NULL)
         goto err;
     OSSL_DEBUG_BN((16,s->r,&rptr,s->s,&sptr,NULL),"r 0x%s s 0x%s", rptr,sptr);
@@ -406,6 +406,10 @@ int ossl_ecdsa_simple_verify_sig(const unsigned char *dgst, int dgst_len,
     EC_POINT *point = NULL;
     const EC_GROUP *group;
     const EC_POINT *pub_key;
+
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*optr=NULL;
+
+    OSSL_DEBUG_BN((16,sig->r,&xptr,sig->s,&yptr,NULL),"sig.r 0x%s sig.s 0x%s",xptr,yptr);
 
     /* check input values */
     if (eckey == NULL || (group = EC_KEY_get0_group(eckey)) == NULL ||
@@ -452,6 +456,7 @@ int ossl_ecdsa_simple_verify_sig(const unsigned char *dgst, int dgst_len,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
+    OSSL_DEBUG_BN((16,u2,&xptr,sig->s,&yptr,NULL),"s 0x%s u2 0x%s",yptr,xptr);
     /* digest -> m */
     i = BN_num_bits(order);
     /*
@@ -468,11 +473,13 @@ int ossl_ecdsa_simple_verify_sig(const unsigned char *dgst, int dgst_len,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
+    OSSL_DEBUG_BN((16,m,&xptr,NULL),"dgst 0x%s",xptr);
     /* u1 = m * tmp mod order */
     if (!BN_mod_mul(u1, m, u2, order, ctx)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
+    OSSL_DEBUG_BN((16,m,&xptr,u1,&yptr,u2,&zptr,order,&optr,NULL),"u1 0x%s = m 0x%s * tmp 0x%s %% order 0x%s",yptr,xptr,zptr,optr);
     /* u2 = r * w mod q */
     if (!BN_mod_mul(u2, sig->r, u2, order, ctx)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);

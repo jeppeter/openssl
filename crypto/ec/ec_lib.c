@@ -26,6 +26,9 @@
 
 /* functions for EC_GROUP objects */
 
+#define  ECLIB_DEBUG           0
+
+
 EC_GROUP *ossl_ec_group_new_ex(OSSL_LIB_CTX *libctx, const char *propq,
                                const EC_METHOD *meth)
 {
@@ -1243,8 +1246,10 @@ static int ec_field_inverse_mod_ord(const EC_GROUP *group, BIGNUM *r,
 {
     BIGNUM *e = NULL;
     int ret = 0;
+#if ECLIB_DEBUG
     BIGNUM *copyx=NULL;
     char *xptr=NULL,*yptr=NULL,*zptr=NULL,*sptr= NULL;
+#endif
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
@@ -1271,10 +1276,12 @@ static int ec_field_inverse_mod_ord(const EC_GROUP *group, BIGNUM *r,
         goto err;
     if (!BN_sub(e, group->order, e))
         goto err;
+#if ECLIB_DEBUG
     copyx = BN_new();
     if (copyx) {
         BN_copy(copyx,x);
     }
+#endif
     /*-
      * Exponent e is public.
      * No need for scatter-gather or BN_FLG_CONSTTIME.
@@ -1283,17 +1290,20 @@ static int ec_field_inverse_mod_ord(const EC_GROUP *group, BIGNUM *r,
         goto err;
     }
 
+#if ECLIB_DEBUG
     if (copyx != NULL) {
-        OSSL_DEBUG_BN((16,copyx,&xptr,group->order,&yptr,e,&zptr,r,&sptr,NULL),
-            "(x 0x%s ^ e 0x%s) = (r 0x%s) = 1 %% order 0x%s",xptr,zptr,sptr,yptr);
+        OSSL_DEBUG_BN((16,copyx,&xptr,group->order,&yptr,e,&zptr,r,&sptr,NULL),"(x 0x%s ^ e 0x%s) = (r 0x%s) = 1 %% order 0x%s",xptr,zptr,sptr,yptr);
     }
+#endif    
     ret = 1;
 
  err:
+ #if ECLIB_DEBUG
     if (copyx) {
         BN_free(copyx);
     }
     copyx = NULL;
+#endif    
     BN_CTX_end(ctx);
 #ifndef FIPS_MODULE
     BN_CTX_free(new_ctx);
