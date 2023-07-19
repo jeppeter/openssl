@@ -485,6 +485,7 @@ int ossl_ecdsa_simple_verify_sig(const unsigned char *dgst, int dgst_len,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
+    OSSL_DEBUG_BN((16,u2,&xptr,sig->r,&yptr,order,&zptr,NULL),"u2 0x%s sig->r 0x%s order 0x%s",xptr,yptr,zptr);
 
     if ((point = EC_POINT_new(group)) == NULL) {
         ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
