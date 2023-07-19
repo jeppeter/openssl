@@ -268,7 +268,7 @@ int ossl_ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
-    char *xptr=NULL,*yptr=NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     if (len == 0) {
         ERR_raise(ERR_LIB_EC, EC_R_BUFFER_TOO_SMALL);
@@ -356,6 +356,7 @@ int ossl_ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
             ERR_raise(ERR_LIB_EC, EC_R_INVALID_ENCODING);
             goto err;
         }
+        OSSL_DEBUG_BN((16,y,&yptr,NULL),"y 0x%s",yptr);
 
         if (form == POINT_CONVERSION_HYBRID) {
             /*
@@ -371,6 +372,7 @@ int ossl_ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
             } else {
                 if (!group->meth->field_div(group, yxi, y, x, ctx))
                     goto err;
+                OSSL_DEBUG_BN((16,yxi,&xptr,y,&yptr,x,&zptr,NULL),"yxi 0x%s y 0x%s x 0x%s",xptr,yptr,zptr);
                 if (y_bit != BN_is_odd(yxi)) {
                     ERR_raise(ERR_LIB_EC, EC_R_INVALID_ENCODING);
                     goto err;
