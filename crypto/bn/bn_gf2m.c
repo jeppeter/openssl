@@ -1084,6 +1084,7 @@ int BN_GF2m_mod_div(BIGNUM *r, const BIGNUM *y, const BIGNUM *x,
 {
     BIGNUM *xinv = NULL;
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*pptr=NULL;
 
     bn_check_top(y);
     bn_check_top(x);
@@ -1096,8 +1097,10 @@ int BN_GF2m_mod_div(BIGNUM *r, const BIGNUM *y, const BIGNUM *x,
 
     if (!BN_GF2m_mod_inv(xinv, x, p, ctx))
         goto err;
+    OSSL_DEBUG_BN((16,xinv,&xptr,x,&yptr,p,&zptr,NULL),"0x%s * 0x%s = 1 %% 0x%s", xptr,yptr,zptr);
     if (!BN_GF2m_mod_mul(r, y, xinv, p, ctx))
         goto err;
+    OSSL_DEBUG_BN((16,r,&xptr,y,&yptr,xinv,&zptr,p,&pptr,NULL),"r 0x%s = ( y 0x%s * xinv 0x%s %% p 0x%s )",xptr,yptr,zptr,pptr);
     bn_check_top(r);
     ret = 1;
 

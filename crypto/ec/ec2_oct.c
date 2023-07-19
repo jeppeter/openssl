@@ -13,6 +13,7 @@
  * internal use.
  */
 #include "internal/deprecated.h"
+#include "internal/intern_log.h"
 
 #include <openssl/err.h>
 
@@ -43,6 +44,7 @@ int ossl_ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
 {
     BIGNUM *tmp, *x, *y, *z;
     int ret = 0, z0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 
@@ -65,6 +67,7 @@ int ossl_ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
 
     if (!BN_GF2m_mod_arr(x, x_, group->poly))
         goto err;
+    OSSL_DEBUG_BN((16,x,&xptr,x_,&yptr,group->field,&zptr,NULL),"x 0x%s = x_ 0x%s %% group->field 0x%s",xptr,yptr,zptr);
     if (BN_is_zero(x)) {
         if (!BN_GF2m_mod_sqrt_arr(y, group->b, group->poly, ctx))
             goto err;
@@ -265,6 +268,7 @@ int ossl_ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
+    char *xptr=NULL,*yptr=NULL;
 
     if (len == 0) {
         ERR_raise(ERR_LIB_EC, EC_R_BUFFER_TOO_SMALL);
@@ -334,10 +338,13 @@ int ossl_ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
 
     if (!BN_bin2bn(buf + 1, field_len, x))
         goto err;
+    OSSL_DEBUG_BN((16,x,&xptr,NULL),"x 0x%s", xptr);
     if (BN_num_bits(x) > m) {
         ERR_raise(ERR_LIB_EC, EC_R_INVALID_ENCODING);
         goto err;
     }
+
+
 
     if (form == POINT_CONVERSION_COMPRESSED) {
         if (!EC_POINT_set_compressed_coordinates(group, point, x, y_bit, ctx))
@@ -349,6 +356,7 @@ int ossl_ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
             ERR_raise(ERR_LIB_EC, EC_R_INVALID_ENCODING);
             goto err;
         }
+
         if (form == POINT_CONVERSION_HYBRID) {
             /*
              * Check that the form in the encoding was set correctly
