@@ -101,9 +101,10 @@ int ossl_ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
             goto err;
         }
         ERR_clear_last_mark();
+        OSSL_DEBUG_BN((16,z,&xptr,NULL),"z 0x%s", xptr);
         z0 = (BN_is_odd(z)) ? 1 : 0;
         if (!group->meth->field_mul(group, y, x, z, ctx))
-            goto err;        
+            goto err;
         if (z0 != y_bit) {
             if (!BN_GF2m_add(y, y, x))
                 goto err;
@@ -111,6 +112,7 @@ int ossl_ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
         }
     }
 
+    OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
     if (!EC_POINT_set_affine_coordinates(group, point, x, y, ctx))
         goto err;
 
@@ -388,6 +390,7 @@ int ossl_ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
          * EC_POINT_set_affine_coordinates is responsible for checking that
          * the point is on the curve.
          */
+        OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
         if (!EC_POINT_set_affine_coordinates(group, point, x, y, ctx))
             goto err;
     }
