@@ -112,10 +112,9 @@ int ossl_ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
         }
     }
 
-    OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
     if (!EC_POINT_set_affine_coordinates(group, point, x, y, ctx))
         goto err;
-
+    OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
     ret = 1;
 
  err:
