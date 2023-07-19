@@ -90,10 +90,14 @@ static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
         }
     }
     buf[0] &= ~mask;
-    if (bottom)                 /* set bottom bit if requested */
+    OSSL_DEBUG("buf[0] 0x%x",buf[0]);
+    if (bottom)                 /* set bottom bit if requested */{
         buf[bytes - 1] |= 1;
+        OSSL_DEBUG("buf[0x%x] = [0x%x]", bytes-1,buf[bytes-1]);
+    }
     if (!BN_bin2bn(buf, bytes, rnd))
         goto err;
+    OSSL_BUFFER_DEBUG(buf,bytes,"buffer");
     OSSL_DEBUG_BN((16,rnd,&xptr,NULL),"rnd 0x%s",xptr);
     ret = 1;
  err:

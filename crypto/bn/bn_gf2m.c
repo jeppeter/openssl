@@ -15,6 +15,16 @@
 #include "bn_local.h"
 #include "internal/intern_log.h"
 
+#define BN_GF2M_DEBUG 0
+
+#if BN_GF2M_DEBUG
+#define BN_GF2M_BN(...)  OSSL_DEBUG_BN(__VA_ARGS__)
+#define BN_GF2M_DEBUG_OUT(...) OSSL_DEBUG(__VA_ARGS__)
+#else
+#define BN_GF2M_BN(...)  do{}while(0)
+#define BN_GF2M_DEBUG_OUT(...) do{}while(0)
+#endif
+
 #ifndef OPENSSL_NO_EC2M
 
 /*
@@ -1290,6 +1300,9 @@ int BN_GF2m_mod_solve_quad_arr(BIGNUM *r, const BIGNUM *a_, const int p[],
 {
     int ret = 0, count = 0, j;
     BIGNUM *a, *z, *rho, *w, *w2, *tmp;
+#if BN_GF2M_DEBUG    
+    char *xptr=NULL, *yptr=NULL,*zptr=NULL;
+#endif
 
     bn_check_top(a_);
 
@@ -1322,10 +1335,13 @@ int BN_GF2m_mod_solve_quad_arr(BIGNUM *r, const BIGNUM *a_, const int p[],
         for (j = 1; j <= (p[0] - 1) / 2; j++) {
             if (!BN_GF2m_mod_sqr_arr(z, z, p, ctx))
                 goto err;
+            BN_GF2M_BN((16,z,&xptr,NULL),"[%d] z 0x%s",j,xptr);
             if (!BN_GF2m_mod_sqr_arr(z, z, p, ctx))
                 goto err;
+            BN_GF2M_BN((16,z,&xptr,NULL),"[%d] z 0x%s",j,xptr);
             if (!BN_GF2m_add(z, z, a))
                 goto err;
+            BN_GF2M_BN((16,z,&xptr,a,&yptr,NULL),"[%d] z 0x%s a 0x%s",j,xptr,yptr);
         }
 
     } else {                    /* m is even */
@@ -1341,20 +1357,26 @@ int BN_GF2m_mod_solve_quad_arr(BIGNUM *r, const BIGNUM *a_, const int p[],
                 goto err;
             if (!BN_GF2m_mod_arr(rho, rho, p))
                 goto err;
+            BN_GF2M_BN((16,rho,&xptr,NULL),"rho 0x%s",xptr);
             BN_zero(z);
             if (!BN_copy(w, rho))
                 goto err;
             for (j = 1; j <= p[0] - 1; j++) {
                 if (!BN_GF2m_mod_sqr_arr(z, z, p, ctx))
                     goto err;
+                BN_GF2M_BN((16,z,&xptr,NULL),"[%d] z 0x%s",j,xptr);
                 if (!BN_GF2m_mod_sqr_arr(w2, w, p, ctx))
                     goto err;
+                BN_GF2M_BN((16,w2,&xptr,w,&yptr,NULL),"[%d] w2 0x%s w 0x%s",j,xptr,yptr);
                 if (!BN_GF2m_mod_mul_arr(tmp, w2, a, p, ctx))
                     goto err;
+                BN_GF2M_BN((16,tmp,&xptr,w2,&yptr,a,&zptr,NULL),"[%d] tmp 0x%s = ( w2 0x%s * a 0x%s )",j,xptr,yptr,zptr);
                 if (!BN_GF2m_add(z, z, tmp))
                     goto err;
+                BN_GF2M_BN((16,z,&xptr,NULL),"[%d] z 0x%s", j,xptr);
                 if (!BN_GF2m_add(w, w2, rho))
                     goto err;
+                BN_GF2M_BN((16,w,&xptr,w2,&yptr,rho,&zptr,NULL),"[%d] w 0x%s w2 0x%s rho 0x%s", j,xptr,yptr,zptr);
             }
             count++;
         } while (BN_is_zero(w) && (count < MAX_ITERATIONS));
@@ -1366,8 +1388,10 @@ int BN_GF2m_mod_solve_quad_arr(BIGNUM *r, const BIGNUM *a_, const int p[],
 
     if (!BN_GF2m_mod_sqr_arr(w, z, p, ctx))
         goto err;
+    BN_GF2M_BN((16,w,&xptr,z,&yptr,NULL),"w 0x%s z 0x%s",xptr,yptr);
     if (!BN_GF2m_add(w, z, w))
         goto err;
+    BN_GF2M_BN((16,w,&xptr,z,&yptr,a,&zptr,NULL),"w 0x%s z 0x%s a 0x%s",xptr,yptr,zptr);
     if (BN_GF2m_cmp(w, a)) {
         ERR_raise(ERR_LIB_BN, BN_R_NO_SOLUTION);
         goto err;

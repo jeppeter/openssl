@@ -71,6 +71,7 @@ int ossl_ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
     if (BN_is_zero(x)) {
         if (!BN_GF2m_mod_sqrt_arr(y, group->b, group->poly, ctx))
             goto err;
+        OSSL_DEBUG_BN((16,y,&xptr,group->b,&yptr,group->field,&zptr,NULL),"y 0x%s = group->b 0x%s ^ 2 %% field 0x%s",xptr,yptr,zptr);
     } else {
         if (!group->meth->field_sqr(group, tmp, x, ctx))
             goto err;
@@ -78,8 +79,10 @@ int ossl_ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
             goto err;
         if (!BN_GF2m_add(tmp, group->a, tmp))
             goto err;
+        OSSL_DEBUG_BN((16,tmp,&xptr,group->a,&yptr,NULL),"tmp 0x%s group->a 0x%s",xptr,yptr);
         if (!BN_GF2m_add(tmp, x, tmp))
             goto err;
+        OSSL_DEBUG_BN((16,tmp,&xptr,x,&yptr,NULL),"tmp 0x%s x 0x%s",xptr,yptr);
         ERR_set_mark();
         if (!BN_GF2m_mod_solve_quad_arr(z, tmp, group->poly, ctx)) {
 #ifndef FIPS_MODULE
@@ -100,10 +103,11 @@ int ossl_ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
         ERR_clear_last_mark();
         z0 = (BN_is_odd(z)) ? 1 : 0;
         if (!group->meth->field_mul(group, y, x, z, ctx))
-            goto err;
+            goto err;        
         if (z0 != y_bit) {
             if (!BN_GF2m_add(y, y, x))
                 goto err;
+            OSSL_DEBUG_BN((16,y,&yptr,x,&xptr,NULL),"y 0x%s x 0x%s",yptr,xptr);
         }
     }
 
