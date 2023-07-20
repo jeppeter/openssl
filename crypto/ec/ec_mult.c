@@ -182,6 +182,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
         }
+        OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.x 0x%s p.y 0x%s p.z 0x%s",xptr,yptr,zptr);
     } else {
         if (!EC_POINT_copy(p, point)) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
@@ -283,7 +284,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
     }
     //OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);
     //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.X 0x%s r.Y 0x%s r.Z 0x%s", xptr,yptr,zptr);
-    //OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
+    OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.X 0x%s p.Y 0x%s p.Z 0x%s", xptr,yptr,zptr);
 
 
     //BACKTRACE_DEBUG("group->meth->make_affine %p",group->meth->make_affine);

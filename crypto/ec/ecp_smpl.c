@@ -515,6 +515,7 @@ int ossl_ec_GFp_simple_point_get_affine_coordinates(const EC_GROUP *group,
     BIGNUM *Z, *Z_1, *Z_2, *Z_3;
     const BIGNUM *Z_;
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     if (EC_POINT_is_at_infinity(group, point)) {
         ERR_raise(ERR_LIB_EC, EC_R_POINT_AT_INFINITY);
@@ -526,6 +527,8 @@ int ossl_ec_GFp_simple_point_get_affine_coordinates(const EC_GROUP *group,
         if (ctx == NULL)
             return 0;
     }
+
+    OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.X 0x%s point.Y 0x%s point.Z 0x%s",xptr,yptr,zptr);
 
     BN_CTX_start(ctx);
     Z = BN_CTX_get(ctx);
@@ -1373,13 +1376,54 @@ int ossl_ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
 int ossl_ec_GFp_simple_field_mul(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a,
                                  const BIGNUM *b, BN_CTX *ctx)
 {
-    return BN_mod_mul(r, a, b, group->field, ctx);
+    int ret;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*optr=NULL;
+    BIGNUM* copya=NULL,*copyb=NULL;
+    copya = BN_new();
+    copyb = BN_new();
+    if (copya) {
+        BN_copy(copya,a);
+    }
+    if (copyb) {
+        BN_copy(copyb,b);
+    }
+    ret =  BN_mod_mul(r, a, b, group->field, ctx);
+    if (ret > 0 && copya && copyb) {
+        OSSL_DEBUG_BN((16,copya,&xptr,copyb,&yptr,group->field,&optr,r,&zptr,NULL),"a 0x%s * b 0x%s %% ord 0x%s = 0x%s",xptr,yptr,optr,zptr);
+    }
+    if (copya) {
+        BN_free(copya);
+    }
+    copya = NULL;
+    if (copyb) {
+        BN_free(copyb);
+    }
+    copyb = NULL;
+    return ret;
 }
 
 int ossl_ec_GFp_simple_field_sqr(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a,
                                  BN_CTX *ctx)
 {
-    return BN_mod_sqr(r, a, group->field, ctx);
+    int ret;
+    char *xptr=NULL,*yptr=NULL,*optr=NULL;
+    BIGNUM* copya=NULL;
+    copya = BN_new();
+    if (copya) {
+        BN_copy(copya,a);
+    }
+
+    ret = BN_mod_sqr(r, a, group->field, ctx);
+
+    if (ret > 0 && copya) {
+        OSSL_DEBUG_BN((16,copya,&xptr,group->field,&optr,r,&yptr,NULL),"a 0x%s * a 0x%s %% ord 0x%s = 0x%s",xptr,xptr,optr,yptr);
+    }
+    if (copya) {
+        BN_free(copya);
+    }
+    copya = NULL;
+
+    return ret;
 }
 
 /*-
