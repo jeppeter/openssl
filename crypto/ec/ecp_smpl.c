@@ -397,6 +397,7 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
     if (x != NULL) {
         if (!BN_nnmod(point->X, x, group->field, ctx))
             goto err;
+        OSSL_DEBUG_BN((16,point->X,&xptr,x,&yptr,group->field,&zptr,NULL),"point->X 0x%s = x 0x%s %% group->field 0x%s",xptr,yptr,zptr);
         if (group->meth->field_encode) {
             if (!group->meth->field_encode(group, point->X, point->X, ctx))
                 goto err;
@@ -406,6 +407,7 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
     if (y != NULL) {
         if (!BN_nnmod(point->Y, y, group->field, ctx))
             goto err;
+        OSSL_DEBUG_BN((16,point->Y,&xptr,y,&yptr,group->field,&zptr,NULL),"point->Y 0x%s = y 0x%s %% group->field 0x%s",xptr,yptr,zptr);
         if (group->meth->field_encode) {
             if (!group->meth->field_encode(group, point->Y, point->Y, ctx))
                 goto err;
@@ -417,6 +419,7 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
 
         if (!BN_nnmod(point->Z, z, group->field, ctx))
             goto err;
+        OSSL_DEBUG_BN((16,point->Z,&xptr,z,&yptr,group->field,&zptr,NULL),"point->Z 0x%s = z 0x%s %% group->field 0x%s",xptr,yptr,zptr);
         Z_is_one = BN_is_one(point->Z);
         if (group->meth->field_encode) {
             if (Z_is_one && (group->meth->field_set_to_one != 0)) {
