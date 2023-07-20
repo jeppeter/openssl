@@ -187,6 +187,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
             goto err;
         }
+        OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.x 0x%s p.y 0x%s p.z 0x%s",xptr,yptr,zptr);
     }
 
     EC_POINT_BN_set_flags(p, BN_FLG_CONSTTIME);

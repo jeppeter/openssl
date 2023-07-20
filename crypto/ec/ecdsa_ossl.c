@@ -376,15 +376,12 @@ int ossl_ecdsa_verify(int type, const unsigned char *dgst, int dgst_len,
     unsigned char *der = NULL;
     int derlen = -1;
     int ret = -1;
-    char *rptr=NULL,*sptr=NULL;
 
     s = ECDSA_SIG_new();
     if (s == NULL)
         return ret;
-    OSSL_BUFFER_DEBUG(p,sig_len,"sig buffer");
     if (d2i_ECDSA_SIG(&s, &p, sig_len) == NULL)
         goto err;
-    OSSL_DEBUG_BN((16,s->r,&rptr,s->s,&sptr,NULL),"r 0x%s s 0x%s", rptr,sptr);
     /* Ensure signature uses DER and doesn't have trailing garbage */
     derlen = i2d_ECDSA_SIG(s, &der);
     if (derlen != sig_len || memcmp(sigbuf, der, derlen) != 0)
@@ -505,6 +502,7 @@ int ossl_ecdsa_simple_verify_sig(const unsigned char *dgst, int dgst_len,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
+    OSSL_DEBUG_BN((16,u1,&xptr,X,&yptr,order,&zptr,sig->r,&optr,NULL),"u1 0x%s = X 0x%s %% order 0x%s sig->r 0x%s",xptr,yptr,zptr,optr);
     /*  if the signature is correct u1 is equal to sig->r */
     ret = (BN_ucmp(u1, sig->r) == 0);
  err:

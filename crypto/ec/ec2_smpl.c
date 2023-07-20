@@ -364,6 +364,7 @@ int ossl_ec_GF2m_simple_add(const EC_GROUP *group, EC_POINT *r,
                             const EC_POINT *a, const EC_POINT *b, BN_CTX *ctx)
 {
     BIGNUM *x0, *y0, *x1, *y1, *x2, *y2, *s, *t;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
     int ret = 0;
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
@@ -420,21 +421,29 @@ int ossl_ec_GF2m_simple_add(const EC_GROUP *group, EC_POINT *r,
             goto err;
     }
 
+    OSSL_DEBUG_BN((16,x0,&xptr,y0,&yptr,NULL),"x0 0x%s y0 0x%s",xptr,yptr);
+    OSSL_DEBUG_BN((16,x1,&xptr,y1,&yptr,NULL),"x1 0x%s y1 0x%s",xptr,yptr);
+
     if (BN_GF2m_cmp(x0, x1)) {
         if (!BN_GF2m_add(t, x0, x1))
             goto err;
+        OSSL_DEBUG_BN((16,t,&xptr,x0,&yptr,x1,&zptr,NULL),"t 0x%s = x0 0x%s + x1 0x%s",xptr,yptr,zptr);
         if (!BN_GF2m_add(s, y0, y1))
             goto err;
+        OSSL_DEBUG_BN((16,s,&xptr,y0,&yptr,y1,&zptr,NULL),"s 0x%s = y0 0x%s + y1 0x%s",xptr,yptr,zptr);
         if (!group->meth->field_div(group, s, s, t, ctx))
             goto err;
         if (!group->meth->field_sqr(group, x2, s, ctx))
             goto err;
         if (!BN_GF2m_add(x2, x2, group->a))
             goto err;
+        OSSL_DEBUG_BN((16,x2,&xptr,group->a,&yptr,NULL),"x2 0x%s group->a 0x%s",xptr,yptr);
         if (!BN_GF2m_add(x2, x2, s))
             goto err;
+        OSSL_DEBUG_BN((16,x2,&xptr,s,&yptr,NULL),"x2 0x%s s 0x%s",xptr,yptr);
         if (!BN_GF2m_add(x2, x2, t))
             goto err;
+        OSSL_DEBUG_BN((16,x2,&xptr,t,&yptr,NULL),"x2 0x%s t 0x%s",xptr,yptr);
     } else {
         if (BN_GF2m_cmp(y0, y1) || BN_is_zero(x1)) {
             if (!EC_POINT_set_to_infinity(group, r))
@@ -446,27 +455,33 @@ int ossl_ec_GF2m_simple_add(const EC_GROUP *group, EC_POINT *r,
             goto err;
         if (!BN_GF2m_add(s, s, x1))
             goto err;
-
+        OSSL_DEBUG_BN((16,s,&xptr,x1,&yptr,NULL),"s 0x%s x1 0x%s",xptr,yptr);
         if (!group->meth->field_sqr(group, x2, s, ctx))
             goto err;
         if (!BN_GF2m_add(x2, x2, s))
             goto err;
+        OSSL_DEBUG_BN((16,x2,&xptr,s,&yptr,NULL),"x2 0x%s s 0x%s",xptr,yptr);
         if (!BN_GF2m_add(x2, x2, group->a))
             goto err;
+        OSSL_DEBUG_BN((16,x2,&xptr,group->a,&yptr,NULL),"x2 0x%s group->a 0x%s",xptr,yptr);
     }
 
     if (!BN_GF2m_add(y2, x1, x2))
         goto err;
+    OSSL_DEBUG_BN((16,y2,&xptr,x1,&yptr,x2,&zptr,NULL),"y2 0x%s = x1 0x%s + x2 0x%s",xptr,yptr,zptr);
     if (!group->meth->field_mul(group, y2, y2, s, ctx))
         goto err;
     if (!BN_GF2m_add(y2, y2, x2))
         goto err;
+    OSSL_DEBUG_BN((16,y2,&xptr,x2,&yptr,NULL),"y2 0x%s  x2 0x%s",xptr,yptr);
     if (!BN_GF2m_add(y2, y2, y1))
         goto err;
+    OSSL_DEBUG_BN((16,y2,&xptr,y1,&yptr,NULL),"y2 0x%s  y1 0x%s",xptr,yptr);
 
     if (!EC_POINT_set_affine_coordinates(group, r, x2, y2, ctx))
         goto err;
 
+    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s",xptr,yptr,zptr);
     ret = 1;
 
  err:
@@ -1024,7 +1039,7 @@ int ec_GF2m_simple_points_mul(const EC_GROUP *group, EC_POINT *r,
     }
 
     if (scalar != NULL && num == 0){
-        //OSSL_DEBUG(" ");
+        OSSL_DEBUG(" ");
         /* Fixed point multiplication */
         return ossl_ec_scalar_mul_ladder(group, r, scalar, NULL, ctx);
     }
@@ -1045,6 +1060,7 @@ int ec_GF2m_simple_points_mul(const EC_GROUP *group, EC_POINT *r,
         return 0;
     }
 
+    //OSSL_DEBUG(" ");
     if (!ossl_ec_scalar_mul_ladder(group, t, scalar, NULL, ctx)
         || !ossl_ec_scalar_mul_ladder(group, r, scalars[0], points[0], ctx)
         || !EC_POINT_add(group, r, t, r, ctx))

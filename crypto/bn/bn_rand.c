@@ -97,7 +97,6 @@ static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
     }
     if (!BN_bin2bn(buf, bytes, rnd))
         goto err;
-    OSSL_BUFFER_DEBUG(buf,bytes,"buffer");
     OSSL_DEBUG_BN((16,rnd,&xptr,NULL),"rnd 0x%s",xptr);
     ret = 1;
  err:
