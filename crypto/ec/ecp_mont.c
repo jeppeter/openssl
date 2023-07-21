@@ -110,6 +110,7 @@ void ossl_ec_GFp_mont_group_clear_finish(EC_GROUP *group)
 
 int ossl_ec_GFp_mont_group_copy(EC_GROUP *dest, const EC_GROUP *src)
 {
+    char *xptr=NULL,*yptr=NULL;
     BN_MONT_CTX_free(dest->field_data1);
     dest->field_data1 = NULL;
     BN_clear_free(dest->field_data2);
@@ -127,6 +128,7 @@ int ossl_ec_GFp_mont_group_copy(EC_GROUP *dest, const EC_GROUP *src)
     }
     if (src->field_data2 != NULL) {
         dest->field_data2 = BN_dup(src->field_data2);
+        OSSL_DEBUG_BN((16,dest->field_data2, &xptr,src->field_data2,&yptr,NULL),"dest->field_data2 0x%s src->field_data2 0x%s",xptr,yptr);
         if (dest->field_data2 == NULL)
             goto err;
     }
@@ -147,6 +149,7 @@ int ossl_ec_GFp_mont_group_set_curve(EC_GROUP *group, const BIGNUM *p,
     BN_MONT_CTX *mont = NULL;
     BIGNUM *one = NULL;
     int ret = 0;
+    char *xptr=NULL;
 
     BN_MONT_CTX_free(group->field_data1);
     group->field_data1 = NULL;
@@ -175,6 +178,8 @@ int ossl_ec_GFp_mont_group_set_curve(EC_GROUP *group, const BIGNUM *p,
     group->field_data1 = mont;
     mont = NULL;
     group->field_data2 = one;
+    OSSL_DEBUG_BN((16,group->field_data2,&xptr,NULL),"group->field_data2 0x%s", xptr);
+
     one = NULL;
 
     ret = ossl_ec_GFp_simple_group_set_curve(group, p, a, b, ctx);
@@ -267,7 +272,7 @@ int ossl_ec_GFp_mont_field_inv(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a
 int ossl_ec_GFp_mont_field_encode(const EC_GROUP *group, BIGNUM *r,
                                   const BIGNUM *a, BN_CTX *ctx)
 {
-    char *xptr=NULL,*zptr=NULL;
+    char *xptr=NULL,*zptr=NULL,*yptr=NULL;
     int ret;
     BIGNUM *copya=NULL;
     if (group->field_data1 == NULL) {
@@ -283,7 +288,7 @@ int ossl_ec_GFp_mont_field_encode(const EC_GROUP *group, BIGNUM *r,
 
     ret = BN_to_montgomery(r, a, (BN_MONT_CTX *)group->field_data1, ctx);
     if (ret > 0 && copya) {
-        OSSL_DEBUG_BN((16,copya,&xptr,r,&zptr,NULL),"r 0x%s = a 0x%s ",zptr,xptr);
+        OSSL_DEBUG_BN((16,copya,&xptr,group->field,&yptr,r,&zptr,NULL),"r 0x%s = BN_to_montgomery(a 0x%s,field 0x%s);",zptr,xptr,yptr);
     }
 
     if (copya){

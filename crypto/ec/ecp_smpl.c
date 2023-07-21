@@ -395,7 +395,7 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
 
     OSSL_DEBUG_BN((16,group->field,&xptr,NULL),"field 0x%s", xptr);
     OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,z,&zptr,NULL),"x 0x%s y 0x%s z 0x%s",xptr,yptr,zptr);
-    BACKTRACE_DEBUG("group->meth->field_encode %p", group->meth->field_encode);
+    //BACKTRACE_DEBUG("group->meth->field_encode %p", group->meth->field_encode);
 
     if (x != NULL) {
         if (!BN_nnmod(point->X, x, group->field, ctx))
