@@ -173,6 +173,7 @@ int ossl_ec_GFp_simple_group_set_curve(EC_GROUP *group,
     if (!BN_nnmod(tmp_a, a, p, ctx))
         goto err;
     if (group->meth->field_encode) {
+        OSSL_DEBUG("field_encode a");
         if (!group->meth->field_encode(group, group->a, tmp_a, ctx))
             goto err;
     } else if (!BN_copy(group->a, tmp_a))
@@ -181,9 +182,11 @@ int ossl_ec_GFp_simple_group_set_curve(EC_GROUP *group,
     /* group->b */
     if (!BN_nnmod(group->b, b, p, ctx))
         goto err;
-    if (group->meth->field_encode)
+    if (group->meth->field_encode){
+        OSSL_DEBUG("field_encode b");
         if (!group->meth->field_encode(group, group->b, group->b, ctx))
             goto err;
+    }
 
     /* group->a_is_minus3 */
     if (!BN_add_word(tmp_a, 3))
@@ -401,6 +404,7 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
         if (group->meth->field_encode) {
             if (!group->meth->field_encode(group, point->X, point->X, ctx))
                 goto err;
+            OSSL_DEBUG_BN((16,point->X,&xptr,NULL),"field_encode point->X 0x%s",xptr);
         }
     }
 
@@ -411,6 +415,7 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
         if (group->meth->field_encode) {
             if (!group->meth->field_encode(group, point->Y, point->Y, ctx))
                 goto err;
+            OSSL_DEBUG_BN((16,point->Y,&xptr,NULL),"field_encode point->Y 0x%s", xptr);
         }
     }
 
@@ -426,11 +431,13 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
                 BACKTRACE_DEBUG("group->meth->field_set_to_one %p",group->meth->field_set_to_one);
                 if (!group->meth->field_set_to_one(group, point->Z, ctx))
                     goto err;
+                OSSL_DEBUG_BN((16,point->Z,&xptr,NULL),"field_set_to_one point->Z 0x%s",xptr);
             } else {
                 BACKTRACE_DEBUG("group->meth->field_encode %p",group->meth->field_encode);
                 if (!group->
                     meth->field_encode(group, point->Z, point->Z, ctx))
                     goto err;
+                OSSL_DEBUG_BN((16,point->Z,&xptr,NULL),"field_encode point->Z 0x%s",xptr);
             }
         }
         point->Z_is_one = Z_is_one;

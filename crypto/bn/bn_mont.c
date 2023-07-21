@@ -20,7 +20,7 @@
 
 #define MONT_WORD               /* use the faster word-based algorithm */
 
-#define USE_MONT_DEBUG 1
+#define USE_MONT_DEBUG 0
 
 #if USE_MONT_DEBUG
 
@@ -62,7 +62,22 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     BIGNUM *copya=NULL, *copyb=NULL;
 #endif    
 
+#if USE_MONT_DEBUG == 0
 #if defined(OPENSSL_BN_ASM_MONT) && defined(MONT_WORD)
+#if USE_MONT_DEBUG    
+    if (copya == NULL) {
+        copya = BN_new();
+        if (copya) {
+            BN_copy(copya,a);
+        }        
+    }
+    if (copyb == NULL) {
+        copyb = BN_new();
+        if (copyb) {
+            BN_copy(copyb,b);
+        }        
+    }
+#endif
     if (num > 1 && a->top == num && b->top == num) {
         if (bn_wexpand(r, num) == NULL)
             return 0;
@@ -70,13 +85,36 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
             r->neg = a->neg ^ b->neg;
             r->top = num;
             r->flags |= BN_FLG_FIXED_TOP;
+            MONT_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&(mont->N),&nptr,NULL),"r 0x%s a 0x%s b 0x%s mont->N 0x%s",rptr, aptr,bptr,nptr);
+#if USE_MONT_DEBUG
+            if (copya) {
+                BN_free(copya);
+            }
+            copya = NULL;
+            if (copyb) {
+                BN_free(copyb);
+            }
+            copyb = NULL;
+#endif    
             return 1;
         }
     }
 #endif
+#endif
 
-    if ((a->top + b->top) > 2 * num)
+    if ((a->top + b->top) > 2 * num){
+#if USE_MONT_DEBUG
+            if (copya) {
+                BN_free(copya);
+            }
+            copya = NULL;
+            if (copyb) {
+                BN_free(copyb);
+            }
+            copyb = NULL;
+#endif
         return 0;
+    }
 
     BN_CTX_start(ctx);
     tmp = BN_CTX_get(ctx);
@@ -85,13 +123,17 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
 
     bn_check_top(tmp);
 #if USE_MONT_DEBUG    
-    copya = BN_new();
-    if (copya) {
-        BN_copy(copya,a);
+    if (copya == NULL) {
+        copya = BN_new();
+        if (copya) {
+            BN_copy(copya,a);
+        }        
     }
-    copyb = BN_new();
-    if (copyb) {
-        BN_copy(copyb,b);
+    if (copyb == NULL) {
+        copyb = BN_new();
+        if (copyb) {
+            BN_copy(copyb,b);
+        }        
     }
 #endif    
     if (a == b) {
@@ -140,9 +182,9 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
     BN_ULONG *ap, *np, *rp, n0, v, carry;
     int nl, max, i;
     unsigned int rtop;
+#if USE_MONT_DEBUG
     BN_ULONG *orp;
     int rpoff=0;
-#if USE_MONT_DEBUG
     char *xptr=NULL,*yptr=NULL,*zptr = NULL;
     BIGNUM* copyr=NULL;
 #endif
@@ -176,8 +218,9 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
     r->neg ^= n->neg;
     np = n->d;
     rp = r->d;
+#if USE_MONT_DEBUG    
     orp = r->d;
-
+#endif
     /* clear the top words of T */
     for (rtop = r->top, i = 0; i < max; i++) {
         MONT_DEBUG("i 0x%x - rtop 0x%x = 0x%x ",i,rtop,i-rtop);
@@ -198,7 +241,9 @@ static int bn_from_montgomery_word(BIGNUM *ret, BIGNUM *r, BN_MONT_CTX *mont)
      * includes |carry| which is stored separately.
      */
     for (carry = 0, i = 0; i < nl; i++, rp++) {
+#if USE_MONT_DEBUG        
         rpoff = ((rp - orp) / sizeof(rp[0]));
+#endif        
         MONT_BN((16,r,&xptr,n,&yptr,NULL),"nl[%d][%d] r 0x%s n 0x%s rp[%d] 0x%lx w 0x%lX",nl,i,xptr,yptr,rpoff,rp[0],(rp[0] * n0) & BN_MASK2);
         v = bn_mul_add_words(rp, np, nl, (rp[0] * n0) & BN_MASK2);
         MONT_DEBUG("v 0x%lX", v);
