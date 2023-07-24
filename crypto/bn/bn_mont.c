@@ -57,7 +57,9 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     BIGNUM *tmp;
     int ret = 0;
     int num = mont->N.top;
+#if USE_MONT_DEBUG
     char *rptr=NULL,*aptr=NULL,*bptr=NULL,*nptr=NULL;
+#endif
     BIGNUM *copya=NULL, *copyb=NULL;
 
 #if USE_MONT_DEBUG == 0
@@ -83,7 +85,7 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
             r->top = num;
             r->flags |= BN_FLG_FIXED_TOP;
             if (copya && copyb) {
-                OSSL_DEBUG_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&(mont->N),&nptr,NULL),"r 0x%s = (a 0x%s * b 0x%s) %% mont->N 0x%s",rptr, aptr,bptr,nptr);                
+                MONT_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&(mont->N),&nptr,NULL),"r 0x%s = (a 0x%s * b 0x%s) %% mont->N 0x%s",rptr, aptr,bptr,nptr);                
             }
             if (copya) {
                 BN_free(copya);
@@ -148,7 +150,7 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
 #endif
 
     if (copya && copyb) {
-        OSSL_DEBUG_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&mont->N,&nptr,NULL),"r 0x%s = (a 0x%s * b 0x%s) %% mont->N 0x%s",rptr,aptr,bptr,nptr);
+        MONT_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&mont->N,&nptr,NULL),"r 0x%s = (a 0x%s * b 0x%s) %% mont->N 0x%s",rptr,aptr,bptr,nptr);
     }
     ret = 1;
  err:

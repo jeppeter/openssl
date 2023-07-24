@@ -1626,6 +1626,7 @@ int ossl_ec_GFp_simple_ladder_pre(const EC_GROUP *group,
         || !BN_mod_lshift_quick(r->Z, t2, 2, group->field))
         return 0;
 #endif
+    OSSL_DEBUG("before rnd points");
     /* make sure lambda (r->Y here for storage) is not zero */
     do {
         if (!BN_priv_rand_range_ex(r->Y, group->field, 0, ctx))
@@ -1637,6 +1638,8 @@ int ossl_ec_GFp_simple_ladder_pre(const EC_GROUP *group,
         if (!BN_priv_rand_range_ex(s->Z, group->field, 0, ctx))
             return 0;
     } while (BN_is_zero(s->Z));
+
+    OSSL_DEBUG("after rnd points");
 
     /* if field_encode defined convert between representations */
     if (group->meth->field_encode != NULL

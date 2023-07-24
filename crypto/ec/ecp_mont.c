@@ -201,23 +201,72 @@ int ossl_ec_GFp_mont_group_set_curve(EC_GROUP *group, const BIGNUM *p,
 int ossl_ec_GFp_mont_field_mul(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a,
                                const BIGNUM *b, BN_CTX *ctx)
 {
+    int ret;
+    BIGNUM *copya=NULL,*copyb=NULL;
+    char *aptr=NULL,*bptr=NULL,*rptr=NULL,*mptr=NULL;
     if (group->field_data1 == NULL) {
         ERR_raise(ERR_LIB_EC, EC_R_NOT_INITIALIZED);
         return 0;
     }
+    if (copya == NULL) {
+        copya = BN_new();
+        if (copya) {
+            BN_copy(copya,a);
+        }
+    }
 
-    return BN_mod_mul_montgomery(r, a, b, group->field_data1, ctx);
+    if (copyb == NULL) {
+        copyb = BN_new();
+        if (copyb) {
+            BN_copy(copyb,b);
+        }
+    }
+
+    ret =  BN_mod_mul_montgomery(r, a, b, group->field_data1, ctx);
+    if (ret > 0 && copya && copyb) {
+        OSSL_DEBUG_BN((16,copya,&aptr,copyb,&bptr,r,&rptr,group->field,&mptr,NULL),"r 0x%s = a 0x%s * b 0x%s %% m 0x%s",rptr,aptr,bptr,mptr);
+    }
+
+    if (copya) {
+        BN_free(copya);
+    }
+    copya = NULL;
+    if (copyb) {
+        BN_free(copyb);
+    }
+    copyb = NULL;
+
+    return ret;
 }
 
 int ossl_ec_GFp_mont_field_sqr(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a,
                                BN_CTX *ctx)
 {
+    int ret;
+    BIGNUM *copya=NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
     if (group->field_data1 == NULL) {
         ERR_raise(ERR_LIB_EC, EC_R_NOT_INITIALIZED);
         return 0;
     }
 
-    return BN_mod_mul_montgomery(r, a, a, group->field_data1, ctx);
+    if (copya == NULL) {
+        copya = BN_new();
+        if (copya) {
+            BN_copy(copya,a);
+        }
+    }
+
+    ret = BN_mod_mul_montgomery(r, a, a, group->field_data1, ctx);
+    if (ret > 0 && copya) {
+        OSSL_DEBUG_BN((16,copya,&xptr,r,&yptr,group->field,&zptr,NULL),"r 0x%s = a 0x%s ^ 2 %% group.field 0x%s",yptr,xptr,zptr);
+    }
+    if (copya) {
+        BN_free(copya);
+    }
+    copya = NULL;
+    return ret;
+
 }
 
 /*-

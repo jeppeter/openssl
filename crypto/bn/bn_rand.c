@@ -55,7 +55,7 @@ static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
         goto err;
     //OSSL_BUFFER_DEBUG(buf,bytes,"random buffer");
     BN_bin2bn(buf,bytes,rnd);
-    OSSL_DEBUG_BN((16,rnd,&xptr,NULL),"random number 0x%s", xptr);
+    OSSL_DEBUG_BN((16,rnd,&xptr,NULL),"random number 0x%s bits 0x%x top %d bottom %d", xptr,bits,top,bottom);
 
     if (flag == TESTING) {
         /*
