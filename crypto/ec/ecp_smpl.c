@@ -1678,6 +1678,7 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
 {
     int ret = 0;
     BIGNUM *t0, *t1, *t2, *t3, *t4, *t5, *t6 = NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
 
     BN_CTX_start(ctx);
     t0 = BN_CTX_get(ctx);
@@ -1688,6 +1689,137 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
     t5 = BN_CTX_get(ctx);
     t6 = BN_CTX_get(ctx);
 
+#if 1
+    if (t6 == NULL) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t6, r->X, s->X, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t0, r->Z, s->Z, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t4, r->X, s->Z, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t3, r->Z, s->X, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t5, group->a, t0, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_add_quick(t5, t6, t5, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t5,&xptr,t6,&yptr,group->field,&zptr,NULL),"add_mod_quick(t5 0x%s,t6 0x%s,t5,group.field 0x%s)",xptr,yptr,zptr);
+    if (!BN_mod_add_quick(t6, t3, t4, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t6,&xptr,t3,&yptr,t4,&zptr,group->field,&aptr,NULL),"add_mod_quick(t6 0x%s,t3 0x%s,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    if (!group->meth->field_mul(group, t5, t6, t5, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_sqr(group, t0, t0, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_lshift_quick(t2, group->b, 2, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t2,&xptr,group->b,&yptr,group->field,&zptr,NULL),"mod_lshift_quick(t2 0x%s,group.b 0x%s,2,group.field 0x%s)",xptr,yptr,zptr);
+    if (!group->meth->field_mul(group, t0, t2, t0, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_lshift1_quick(t5, t5, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t5,&xptr,group->field,&yptr,NULL),"lshift1_mod_quick(t5 0x%s,t5,group.field 0x%s)",xptr,yptr);
+    if (!BN_mod_sub_quick(t3, t4, t3, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t3 0x%s,t4 0x%s,t3,group.field 0x%s)",xptr,yptr,zptr);
+    /* s->Z coord output */
+    if (!group->meth->field_sqr(group, s->Z, t3, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t4, s->Z, p->X, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_add_quick(t0, t0, t5, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t0,&xptr,t5,&yptr,group->field,&zptr,NULL),"add_mod_quick(t0 0x%s,t0,t5 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    /* s->X coord output */
+    if (!BN_mod_sub_quick(s->X, t0, t4, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,s->X,&xptr,t0,&yptr,t4,&zptr,group->field,&aptr,NULL),"sub_mod_quick(s.x 0x%s,t0 0x%s,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    if (!group->meth->field_sqr(group, t4, r->X, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_sqr(group, t5, r->Z, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t6, t5, group->a, ctx)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t6,&xptr,NULL),"new t6 0x%s",xptr);
+    if (!BN_mod_add_quick(t1, r->X, r->Z, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t1,&xptr,r->X,&yptr,r->Z,&zptr,group->field,&aptr,NULL),"add_mod_quick(t1 0x%s,r.x 0x%s,r.z 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    if (!group->meth->field_sqr(group, t1, t1, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_sub_quick(t1, t1, t4, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t1,&xptr,t4,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t1 0x%s,t1,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    if (!BN_mod_sub_quick(t1, t1, t5, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t1,&xptr,t5,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t1 0x%s,t1,t5 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    if (!BN_mod_sub_quick(t3, t4, t6, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,t6,&zptr,group->field,&aptr,NULL),"sub_mod_quick(t3 0x%s,t4 0x%s,t6 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    if (!group->meth->field_sqr(group, t3, t3, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t0, t5, t1, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t0, t2, t0, ctx)) {
+        goto err;
+    }
+    /* r->X coord output */
+    if (!BN_mod_sub_quick(r->X, t3, t0, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,r->X,&xptr,t3,&yptr,t0,&zptr,group->field,&aptr,NULL),"sub_mod_quick(r.x 0x%s,t3 0x%s,t0 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    if (!BN_mod_add_quick(t3, t4, t6, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,t6,&zptr,group->field,&aptr,NULL),"add_mod_quick(t3 0x%s,t4 0x%s,t6 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    if (!group->meth->field_sqr(group, t4, t5, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t4, t4, t2, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t1, t1, t3, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_lshift1_quick(t1, t1, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t1,&xptr,group->field,&yptr,NULL),"lshift1_mod_quick(t1 0x%s,t1,group.field 0x%s)",xptr,yptr);
+    /* r->Z coord output */
+    if (!BN_mod_add_quick(r->Z, t4, t1, group->field)){
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,r->Z,&xptr,t4,&yptr,t1,&zptr,group->field,&aptr,NULL),"add_mod_quick(r.z 0x%s,t4 0x%s,t1 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+
+#else
     if (t6 == NULL
         || !group->meth->field_mul(group, t6, r->X, s->X, ctx)
         || !group->meth->field_mul(group, t0, r->Z, s->Z, ctx)
@@ -1729,6 +1861,7 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
         /* r->Z coord output */
         || !BN_mod_add_quick(r->Z, t4, t1, group->field))
         goto err;
+#endif
 
     ret = 1;
 
@@ -1766,6 +1899,7 @@ int ossl_ec_GFp_simple_ladder_post(const EC_GROUP *group,
 {
     int ret = 0;
     BIGNUM *t0, *t1, *t2, *t3, *t4, *t5, *t6 = NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
 
     if (BN_is_zero(r->Z))
         return EC_POINT_set_to_infinity(group, r);
@@ -1786,6 +1920,103 @@ int ossl_ec_GFp_simple_ladder_post(const EC_GROUP *group,
     t5 = BN_CTX_get(ctx);
     t6 = BN_CTX_get(ctx);
 
+#if 1
+    if (t6 == NULL ) {
+        goto err;
+    }
+    if (!BN_mod_lshift1_quick(t4, p->Y, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t4,&xptr,p->Y,&yptr,group->field,&zptr,NULL),"lshift1_mod_quick(t4 0x%s,p.y 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    if (!group->meth->field_mul(group, t6, r->X, t4, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t6, s->Z, t6, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t5, r->Z, t6, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_lshift1_quick(t1, group->b, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t1,&xptr,group->b,&yptr,group->field,&zptr,NULL),"lshift1_mod_quick(t1 0x%s,group.b 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    if (!group->meth->field_mul(group, t1, s->Z, t1, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_sqr(group, t3, r->Z, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t2, t3, t1, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t6, r->Z, group->a, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t1, p->X, r->X, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_add_quick(t1, t1, t6, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t1,&xptr,t6,&yptr,group->field,&zptr,NULL),"add_mod_quick(t1 0x%s,t1,t6 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    if (!group->meth->field_mul(group, t1, s->Z, t1, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t0, p->X, r->Z, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_add_quick(t6, r->X, t0, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t6,&xptr,r->X,&yptr,t0,&zptr,group->field,&aptr,NULL),"add_mod_quick(t6 0x%s,r.x 0x%s,t0 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    if (!group->meth->field_mul(group, t6, t6, t1, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_add_quick(t6, t6, t2, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t6,&xptr,t2,&yptr,group->field,&zptr,NULL),"add_mod_quick(t6 0x%s,t6,t2 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    if (!BN_mod_sub_quick(t0, t0, r->X, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t0,&xptr,r->X,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t0 0x%s,t0,r.x 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    if (!group->meth->field_sqr(group, t0, t0, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t0, t0, s->X, ctx)) {
+        goto err;
+    }
+    if (!BN_mod_sub_quick(t0, t6, t0, group->field)) {
+        goto err;
+    }
+    OSSL_DEBUG_BN((16,t0,&xptr,t6,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t0 0x%s,t6 0x%s,t0,group.field 0x%s)",xptr,yptr,zptr);
+    if (!group->meth->field_mul(group, t1, s->Z, t4, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, t1, t3, t1, ctx)) {
+        goto err;
+    }
+    if ((group->meth->field_decode != NULL
+            && !group->meth->field_decode(group, t1, t1, ctx))) {
+        goto err;
+    }
+    if (!group->meth->field_inv(group, t1, t1, ctx)) {
+        goto err;
+    }
+    if ((group->meth->field_encode != NULL
+            && !group->meth->field_encode(group, t1, t1, ctx))) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, r->X, t5, t1, ctx)) {
+        goto err;
+    }
+    if (!group->meth->field_mul(group, r->Y, t0, t1, ctx)) {
+        goto err;
+    }
+    
+
+#else
     if (t6 == NULL
         || !BN_mod_lshift1_quick(t4, p->Y, group->field)
         || !group->meth->field_mul(group, t6, r->X, t4, ctx)
@@ -1817,6 +2048,7 @@ int ossl_ec_GFp_simple_ladder_post(const EC_GROUP *group,
         || !group->meth->field_mul(group, r->X, t5, t1, ctx)
         || !group->meth->field_mul(group, r->Y, t0, t1, ctx))
         goto err;
+#endif
 
     if (group->meth->field_set_to_one != NULL) {
         if (!group->meth->field_set_to_one(group, r->Z, ctx))

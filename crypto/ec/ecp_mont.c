@@ -280,6 +280,7 @@ int ossl_ec_GFp_mont_field_inv(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a
     BIGNUM *e = NULL;
     BN_CTX *new_ctx = NULL;
     int ret = 0;
+    BIGNUM *copya=NULL;
 
     if (group->field_data1 == NULL)
         return 0;
@@ -292,6 +293,11 @@ int ossl_ec_GFp_mont_field_inv(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a
     if ((e = BN_CTX_get(ctx)) == NULL)
         goto err;
 
+    if ((copya=BN_CTX_get(ctx)) == NULL) {
+        goto err;
+    }
+    BN_copy(copya,a);
+
     /* Inverse in constant time with Fermats Little Theorem */
     if (!BN_set_word(e, 2))
         goto err;
@@ -303,6 +309,8 @@ int ossl_ec_GFp_mont_field_inv(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a
      */
     if (!BN_mod_exp_mont(r, a, e, group->field, ctx, group->field_data1))
         goto err;
+
+    OSSL_DEBUG_BN((16,r,&xptr,copya,&yptr,e,&zptr,group->field,&aptr,NULL),"field_inv(r 0x%s,a 0x%s,e 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
 
     /* throw an error on zero */
     if (BN_is_zero(r)) {
@@ -350,12 +358,31 @@ int ossl_ec_GFp_mont_field_encode(const EC_GROUP *group, BIGNUM *r,
 int ossl_ec_GFp_mont_field_decode(const EC_GROUP *group, BIGNUM *r,
                                   const BIGNUM *a, BN_CTX *ctx)
 {
+    int ret;
+    BIGNUM *copya=NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
     if (group->field_data1 == NULL) {
         ERR_raise(ERR_LIB_EC, EC_R_NOT_INITIALIZED);
         return 0;
     }
 
-    return BN_from_montgomery(r, a, group->field_data1, ctx);
+    if (copya == NULL){
+        copya = BN_new();
+        if (copya) {
+            BN_copy(copya,a);
+        }
+    }
+
+    ret = BN_from_montgomery(r, a, group->field_data1, ctx);
+    if (ret > 0 && copya) {
+        OSSL_DEBUG_BN((16,r,&xptr,copya,&zptr,group->field,&zptr,NULL),"BN_from_montgomery(r 0x%s,a 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    }
+    if (copya) {
+        BN_free(copya);
+    }
+    copya = NULL;
+
+    return ret;
 }
 
 int ossl_ec_GFp_mont_field_set_to_one(const EC_GROUP *group, BIGNUM *r,
