@@ -82,7 +82,9 @@ int bn_mul_mont_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
             r->neg = a->neg ^ b->neg;
             r->top = num;
             r->flags |= BN_FLG_FIXED_TOP;
-            OSSL_DEBUG_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&(mont->N),&nptr,NULL),"r 0x%s = (a 0x%s * b 0x%s) %% mont->N 0x%s",rptr, aptr,bptr,nptr);
+            if (copya && copyb) {
+                OSSL_DEBUG_BN((16,r,&rptr,copya,&aptr,copyb,&bptr,&(mont->N),&nptr,NULL),"r 0x%s = (a 0x%s * b 0x%s) %% mont->N 0x%s",rptr, aptr,bptr,nptr);                
+            }
             if (copya) {
                 BN_free(copya);
             }

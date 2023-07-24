@@ -1557,13 +1557,60 @@ int ossl_ec_GFp_simple_ladder_pre(const EC_GROUP *group,
                                   EC_POINT *p, BN_CTX *ctx)
 {
     BIGNUM *t1, *t2, *t3, *t4, *t5 = NULL;
+    char *aptr=NULL,*bptr=NULL,*cptr=NULL,*dptr=NULL;
 
     t1 = s->Z;
     t2 = r->Z;
     t3 = s->X;
     t4 = r->X;
     t5 = s->Y;
+    OSSL_DEBUG("ladder_pre");
 
+#if 1
+    if (!p->Z_is_one) {
+        return 0;
+    }
+    if (!group->meth->field_sqr(group,t3,p->X,ctx)) {
+        return 0;
+    }
+
+    if (!BN_mod_sub_quick(t4,t3,group->a,group->field)) {
+        return 0;
+    }
+    OSSL_DEBUG_BN((16,t4,&aptr,t3,&bptr,group->a,&cptr,group->field,&dptr,NULL),"r.x 0x%s = sub_mod_quick(s.x 0x%s,group.a 0x%s,group.field 0x%s)",aptr,bptr,cptr,dptr);
+    if (!group->meth->field_sqr(group, t4, t4, ctx)) {
+        return 0;
+    }
+    if (!group->meth->field_mul(group, t5, p->X, group->b, ctx)) {
+        return 0;
+    }
+    if (!BN_mod_lshift_quick(t5, t5, 3, group->field)) {
+        return 0;
+    }
+    OSSL_DEBUG_BN((16,t5,&aptr,group->field,&bptr,NULL),"s.y 0x%s = s.y << 3 %% 0x%s",aptr,bptr);
+    /* r->X coord output */
+    if (!BN_mod_sub_quick(r->X, t4, t5, group->field)) {
+        return 0;
+    }
+    OSSL_DEBUG_BN((16,r->X,&aptr,t4,&bptr,t5,&cptr,group->field,&dptr,NULL),"r.X 0x%s = sub_mod_quick(r.x 0x%s,s.y 0x%s,group.field 0x%s)",aptr,bptr,cptr,dptr);
+    if (!BN_mod_add_quick(t1, t3, group->a, group->field)){
+        return 0;
+    }
+    OSSL_DEBUG_BN((16,t1,&aptr,t3,&bptr,group->a,&cptr,group->field,&dptr,NULL),"s.z 0x%s = add_mod_quick(s.x 0x%s,group.a 0x%s,group.field 0x%s)",aptr,bptr,cptr,dptr);
+    if (!group->meth->field_mul(group, t2, p->X, t1, ctx)) {
+        return 0;
+    }
+    if (!BN_mod_add_quick(t2, group->b, t2, group->field)) {
+        return 0;
+    }
+    OSSL_DEBUG_BN((16,t2,&aptr,group->b,&bptr,group->field,&cptr,NULL),"r.z 0x%s = add_mod_quick(group.b 0x%s,r.z,group.field 0x%s)",aptr,bptr,cptr);
+    /* r->Z coord output */
+    if (!BN_mod_lshift_quick(r->Z, t2, 2, group->field)) {
+        return 0;
+    }
+    OSSL_DEBUG_BN((16,r->Z,&aptr,group->field,&cptr,NULL),"r.z 0x%s = lshift_mod_quick(r.z,2,group.field 0x%s)",aptr,cptr);
+
+#else
     if (!p->Z_is_one /* r := 2p */
         || !group->meth->field_sqr(group, t3, p->X, ctx)
         || !BN_mod_sub_quick(t4, t3, group->a, group->field)
@@ -1578,7 +1625,7 @@ int ossl_ec_GFp_simple_ladder_pre(const EC_GROUP *group,
         /* r->Z coord output */
         || !BN_mod_lshift_quick(r->Z, t2, 2, group->field))
         return 0;
-
+#endif
     /* make sure lambda (r->Y here for storage) is not zero */
     do {
         if (!BN_priv_rand_range_ex(r->Y, group->field, 0, ctx))
