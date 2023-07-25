@@ -260,14 +260,14 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
-    //OSSL_DEBUG_BN((16,k,&xptr,cardinality,&yptr,NULL),"k 0x%s cardinality 0x%s", xptr,yptr);
+    OSSL_DEBUG_BN((16,k,&xptr,cardinality,&yptr,NULL),"k 0x%s cardinality 0x%s", xptr,yptr);
     /*
      * lambda := scalar + cardinality
      * k := scalar + 2*cardinality
      */
     kbit = BN_is_bit_set(lambda, cardinality_bits);
     BN_consttime_swap(kbit, k, lambda, group_top + 2);
-    //OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s cardinality_bits 0x%x", xptr,yptr,cardinality_bits);
+    OSSL_DEBUG_BN((16,k,&xptr,lambda,&yptr,NULL),"k 0x%s lambda 0x%s cardinality_bits 0x%x", xptr,yptr,cardinality_bits);
 
     group_top = bn_get_top(group->field);
     if ((bn_wexpand(s->X, group_top) == NULL)
