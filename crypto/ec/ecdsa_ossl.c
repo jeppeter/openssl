@@ -271,6 +271,7 @@ ECDSA_SIG *ossl_ecdsa_simple_sign_sig(const unsigned char *dgst, int dgst_len,
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
+
     /* If still too long, truncate remaining bits with a shift */
     if ((8 * dgst_len > i) && !BN_rshift(m, m, 8 - (i & 0x7))) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
