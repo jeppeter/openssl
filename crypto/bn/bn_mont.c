@@ -365,8 +365,8 @@ int bn_to_mont_fixed_top(BIGNUM *r, const BIGNUM *a, BN_MONT_CTX *mont,
                          BN_CTX *ctx)
 {
     int ret;
-    char *xptr=NULL;
 #if USE_MONT_DEBUG    
+    char *xptr=NULL;
     char  *yptr=NULL,*zptr=NULL,*nptr=NULL;
     BIGNUM* copya=NULL;
 
@@ -386,7 +386,7 @@ int bn_to_mont_fixed_top(BIGNUM *r, const BIGNUM *a, BN_MONT_CTX *mont,
     }
     copya = NULL;
 #endif    
-    OSSL_DEBUG_BN((16,&(mont->N),&xptr,NULL),"mont->N 0x%s",xptr);
+    MONT_BN((16,&(mont->N),&xptr,NULL),"mont->N 0x%s",xptr);
     return ret;
 }
 

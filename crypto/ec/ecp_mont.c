@@ -281,6 +281,7 @@ int ossl_ec_GFp_mont_field_inv(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a
     BN_CTX *new_ctx = NULL;
     int ret = 0;
     BIGNUM *copya=NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
 
     if (group->field_data1 == NULL)
         return 0;
@@ -375,7 +376,7 @@ int ossl_ec_GFp_mont_field_decode(const EC_GROUP *group, BIGNUM *r,
 
     ret = BN_from_montgomery(r, a, group->field_data1, ctx);
     if (ret > 0 && copya) {
-        OSSL_DEBUG_BN((16,r,&xptr,copya,&zptr,group->field,&zptr,NULL),"BN_from_montgomery(r 0x%s,a 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+        OSSL_DEBUG_BN((16,r,&xptr,copya,&yptr,group->field,&zptr,NULL),"BN_from_montgomery(r 0x%s,a 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     }
     if (copya) {
         BN_free(copya);
@@ -388,6 +389,7 @@ int ossl_ec_GFp_mont_field_decode(const EC_GROUP *group, BIGNUM *r,
 int ossl_ec_GFp_mont_field_set_to_one(const EC_GROUP *group, BIGNUM *r,
                                       BN_CTX *ctx)
 {
+    char *xptr=NULL;
     if (group->field_data2 == NULL) {
         ERR_raise(ERR_LIB_EC, EC_R_NOT_INITIALIZED);
         return 0;
@@ -395,5 +397,6 @@ int ossl_ec_GFp_mont_field_set_to_one(const EC_GROUP *group, BIGNUM *r,
 
     if (!BN_copy(r, group->field_data2))
         return 0;
+    OSSL_DEBUG_BN((16,r,&xptr,NULL),"set_to_one(r 0x%s)",xptr);
     return 1;
 }

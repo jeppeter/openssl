@@ -623,6 +623,8 @@ int ossl_ec_GFp_simple_point_get_affine_coordinates(const EC_GROUP *group,
         }
     }
 
+    OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,NULL),"x 0x%s y 0x%s",xptr,yptr);
+
     ret = 1;
 
  err:
