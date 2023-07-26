@@ -561,10 +561,12 @@ int ossl_ec_GFp_simple_point_get_affine_coordinates(const EC_GROUP *group,
     if (BN_is_one(Z_)) {
         if (group->meth->field_decode) {
             if (x != NULL) {
+                OSSL_DEBUG("field_decode x");
                 if (!group->meth->field_decode(group, x, point->X, ctx))
                     goto err;
             }
             if (y != NULL) {
+                OSSL_DEBUG("field_decode y");
                 if (!group->meth->field_decode(group, y, point->Y, ctx))
                     goto err;
             }
@@ -623,7 +625,24 @@ int ossl_ec_GFp_simple_point_get_affine_coordinates(const EC_GROUP *group,
         }
     }
 
-    OSSL_DEBUG_BN((16,x,&xptr,y,&yptr,Z_,&zptr,NULL),"x 0x%s y 0x%s z 0x%s",xptr,yptr,zptr);
+    if (x != NULL) {
+        OSSL_DEBUG_BN((16,x,&xptr,NULL),"x 0x%s",xptr);
+    } else {
+        OSSL_DEBUG("x null");
+    }
+
+    if (y != NULL) {
+        OSSL_DEBUG_BN((16,y,&xptr,NULL),"y 0x%s", xptr);
+    } else {
+        OSSL_DEBUG("y null");
+    }
+
+    if (Z_ != NULL) {
+        OSSL_DEBUG_BN((16,Z_,&xptr,NULL),"Z_ 0x%s",xptr);
+    } else {
+        OSSL_DEBUG("Z_ null");
+    }
+
 
     ret = 1;
 
