@@ -146,6 +146,7 @@ int ossl_ec_GFp_simple_group_set_curve(EC_GROUP *group,
     int ret = 0;
     BN_CTX *new_ctx = NULL;
     BIGNUM *tmp_a;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     /* p must be a prime > 3 */
     if (BN_num_bits(p) <= 2 || !BN_is_odd(p)) {
@@ -168,14 +169,17 @@ int ossl_ec_GFp_simple_group_set_curve(EC_GROUP *group,
     if (!BN_copy(group->field, p))
         goto err;
     BN_set_negative(group->field, 0);
+    OSSL_DEBUG_BN((16,group->field,&xptr,NULL),"group.field 0x%s",xptr);
 
     /* group->a */
     if (!BN_nnmod(tmp_a, a, p, ctx))
         goto err;
+    OSSL_DEBUG_BN((16,tmp_a,&xptr,a,&yptr,p,&zptr,NULL),"nnmod(tmp_a 0x%s,a 0x%s,p 0x%s)",xptr,yptr,zptr);
     if (group->meth->field_encode) {
         OSSL_DEBUG("field_encode a");
         if (!group->meth->field_encode(group, group->a, tmp_a, ctx))
             goto err;
+        OSSL_DEBUG_BN((16,group->a,&xptr,tmp_a,&yptr,NULL),"group.a 0x%s tmp_a 0x%s",xptr,yptr);
     } else if (!BN_copy(group->a, tmp_a))
         goto err;
 
@@ -185,7 +189,7 @@ int ossl_ec_GFp_simple_group_set_curve(EC_GROUP *group,
     if (group->meth->field_encode){
         OSSL_DEBUG("field_encode b");
         if (!group->meth->field_encode(group, group->b, group->b, ctx))
-            goto err;
+            goto err;        
     }
 
     /* group->a_is_minus3 */

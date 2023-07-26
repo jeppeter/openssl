@@ -130,6 +130,7 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
         goto err;
     }
     ERR_clear_last_mark();
+    OSSL_DEBUG_BN((16,y,&xptr,tmp1,&yptr,group->field,&zptr,NULL),"mod_sqr(y 0x%s,tmp1 0x%s,group.field 0x%s)",xptr,yptr,zptr);
 
     if (y_bit != BN_is_odd(y)) {
         if (BN_is_zero(y)) {
