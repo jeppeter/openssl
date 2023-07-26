@@ -20,6 +20,7 @@ int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
     int ret = -2;               /* avoid 'uninitialized' warning */
     int err = 0;
     BIGNUM *A, *B, *tmp;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
     /*-
      * In 'tab', only odd-indexed entries are relevant:
      * For any odd BIGNUM n,
@@ -45,6 +46,7 @@ int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
     if (err)
         goto end;
 
+    OSSL_DEBUG_BN((16,A,&xptr,B,&yptr,NULL),"A 0x%s B 0x%s",xptr,yptr);
     /*
      * Kronecker symbol, implemented according to Henri Cohen,
      * "A Course in Computational Algebraic Number Theory"
@@ -55,6 +57,7 @@ int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 
     if (BN_is_zero(B)) {
         ret = BN_abs_is_word(A, 1);
+        OSSL_DEBUG("ret %d",ret);
         goto end;
     }
 
@@ -62,6 +65,7 @@ int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 
     if (!BN_is_odd(A) && !BN_is_odd(B)) {
         ret = 0;
+        OSSL_DEBUG("ret 0");
         goto end;
     }
 
@@ -69,24 +73,30 @@ int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
     i = 0;
     while (!BN_is_bit_set(B, i))
         i++;
+    OSSL_DEBUG_BN((16,B,&zptr,NULL),"B 0x%s i %d",zptr,i);
     err = !BN_rshift(B, B, i);
     if (err)
         goto end;
+    OSSL_DEBUG_BN((16,B,&xptr,NULL),"B 0x%s",xptr);
     if (i & 1) {
         /* i is odd */
         /* (thus  B  was even, thus  A  must be odd!)  */
 
         /* set 'ret' to $(-1)^{(A^2-1)/8}$ */
         ret = tab[BN_lsw(A) & 7];
+        OSSL_DEBUG_BN((16,A,&xptr,NULL),"ret %d tab[BN_lsw(0x%s)&7 = 0x%lx]",ret,xptr,BN_lsw(A) & 7);
     } else {
         /* i is even */
         ret = 1;
+        OSSL_DEBUG("ret 1");
     }
 
     if (B->neg) {
         B->neg = 0;
-        if (A->neg)
+        if (A->neg){
             ret = -ret;
+            OSSL_DEBUG("A net ret %d",ret);
+        }
     }
 
     /*
@@ -101,6 +111,7 @@ int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 
         if (BN_is_zero(A)) {
             ret = BN_is_one(B) ? ret : 0;
+            OSSL_DEBUG_BN((16,B,&xptr,NULL),"B 0x%s ret %d",xptr,ret);
             goto end;
         }
 
@@ -108,27 +119,34 @@ int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
         i = 0;
         while (!BN_is_bit_set(A, i))
             i++;
+        OSSL_DEBUG_BN((16,A,&xptr,NULL),"A 0x%s i %d",xptr,i);
         err = !BN_rshift(A, A, i);
         if (err)
             goto end;
+        OSSL_DEBUG_BN((16,A,&xptr,NULL),"A 0x%s",xptr);
         if (i & 1) {
             /* i is odd */
             /* multiply 'ret' by  $(-1)^{(B^2-1)/8}$ */
+            OSSL_DEBUG_BN((16,A,&xptr,NULL),"ret %d = ret %d * tab[BN_lsw(0x%s)&7 = 0x%lx]",ret * tab[BN_lsw(B) & 7],ret,xptr,BN_lsw(A) & 7);
             ret = ret * tab[BN_lsw(B) & 7];
         }
 
         /* Cohen's step 4: */
         /* multiply 'ret' by  $(-1)^{(A-1)(B-1)/4}$ */
-        if ((A->neg ? ~BN_lsw(A) : BN_lsw(A)) & BN_lsw(B) & 2)
+        if ((A->neg ? ~BN_lsw(A) : BN_lsw(A)) & BN_lsw(B) & 2){
+            OSSL_DEBUG_BN((16,A,&xptr,B,&yptr,NULL),"A->neg %d A 0x%s B 0x%s",A->neg,xptr,yptr);
             ret = -ret;
+        }
 
         /* (A, B) := (B mod |A|, |A|) */
         err = !BN_nnmod(B, B, A, ctx);
         if (err)
             goto end;
+        OSSL_DEBUG_BN((16,B,&xptr,A,&yptr,NULL),"nnmod(B 0x%s,B,A 0x%s)",xptr,yptr);
         tmp = A;
         A = B;
         B = tmp;
+        OSSL_DEBUG_BN((16,A,&xptr,B,&yptr,NULL),"A 0x%s B 0x%s",xptr,yptr);
         tmp->neg = 0;
     }
  end:

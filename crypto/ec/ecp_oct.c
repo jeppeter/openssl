@@ -27,6 +27,7 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
     BN_CTX *new_ctx = NULL;
     BIGNUM *tmp1, *tmp2, *x, *y;
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
 
     if (ctx == NULL) {
         ctx = new_ctx = BN_CTX_new_ex(group->libctx);
@@ -53,6 +54,7 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
     /* tmp1 := x^3 */
     if (!BN_nnmod(x, x_, group->field, ctx))
         goto err;
+    OSSL_DEBUG_BN((16,x,&xptr,x_,&yptr,group->field,&zptr,NULL),"nnmod(x 0x%s,x_ 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     if (group->meth->field_decode == 0) {
         /* field_{sqr,mul} work on standard representation */
         if (!group->meth->field_sqr(group, tmp2, x_, ctx))
@@ -62,24 +64,30 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
     } else {
         if (!BN_mod_sqr(tmp2, x_, group->field, ctx))
             goto err;
+        OSSL_DEBUG_BN((16,tmp2,&xptr,x_,&yptr,group->field,&zptr,NULL),"mod_sqr(tmp2 0x%s,x_ 0x%s,group.field 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_mul(tmp1, tmp2, x_, group->field, ctx))
             goto err;
+        OSSL_DEBUG_BN((16,tmp1,&xptr,tmp2,&yptr,x_,&zptr,group->field,&aptr,NULL),"mod_mul(tmp1 0x%s,tmp2 0x%s,x_ 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
     }
 
     /* tmp1 := tmp1 + a*x */
     if (group->a_is_minus3) {
         if (!BN_mod_lshift1_quick(tmp2, x, group->field))
             goto err;
+        OSSL_DEBUG_BN((16,tmp2,&xptr,x,&yptr,group->field,&zptr,NULL),"lshift1_mod_quick(tmp2 0x%s,x 0x%s,group.field 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_add_quick(tmp2, tmp2, x, group->field))
             goto err;
+        OSSL_DEBUG_BN((16,tmp2,&xptr,x,&yptr,group->field,&zptr,NULL),"add_mod_quick(tmp2 0x%s,tmp2,x 0x%s,group.field 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_sub_quick(tmp1, tmp1, tmp2, group->field))
             goto err;
+        OSSL_DEBUG_BN((16,tmp1,&xptr,tmp2,&yptr,group->field,&zptr,NULL),"sub_mod_quick(tmp1 0x%s,tmp1,tmp2 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     } else {
         if (group->meth->field_decode) {
             if (!group->meth->field_decode(group, tmp2, group->a, ctx))
                 goto err;
             if (!BN_mod_mul(tmp2, tmp2, x, group->field, ctx))
                 goto err;
+            OSSL_DEBUG_BN((16,tmp2,&xptr,x,&yptr,group->field,&zptr,NULL),"mod_mul(tmp2 0x%s,tmp2,x 0x%s,group.field 0x%s)",xptr,yptr,zptr);
         } else {
             /* field_mul works on standard representation */
             if (!group->meth->field_mul(group, tmp2, group->a, x, ctx))
@@ -88,6 +96,7 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
 
         if (!BN_mod_add_quick(tmp1, tmp1, tmp2, group->field))
             goto err;
+        OSSL_DEBUG_BN((16,tmp1,&xptr,tmp2,&yptr,group->field,&zptr,NULL),"add_mod_quick(tmp1 0x%s,tmp1,tmp2 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     }
 
     /* tmp1 := tmp1 + b */
@@ -96,9 +105,11 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
             goto err;
         if (!BN_mod_add_quick(tmp1, tmp1, tmp2, group->field))
             goto err;
+        OSSL_DEBUG_BN((16,tmp1,&xptr,tmp2,&yptr,group->field,&zptr,NULL),"add_mod_quick(tmp1 0x%s,tmp1,tmp2 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     } else {
         if (!BN_mod_add_quick(tmp1, tmp1, group->b, group->field))
             goto err;
+        OSSL_DEBUG_BN((16,tmp1,&xptr,group->b,&yptr,group->field,&zptr,NULL),"add_mod_quick(tmp1 0x%s,tmp1,group.b 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     }
 
     ERR_set_mark();
@@ -125,6 +136,7 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
             int kron;
 
             kron = BN_kronecker(x, group->field, ctx);
+            OSSL_DEBUG_BN((16,x,&xptr,group->field,&yptr,NULL),"kron %d = BN_kronecker(x 0x%s,group.field 0x%s)",kron,xptr,yptr);
             if (kron == -2)
                 goto err;
 
@@ -139,6 +151,7 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
         }
         if (!BN_usub(y, group->field, y))
             goto err;
+        OSSL_DEBUG_BN((16,y,&xptr,group->field,&yptr,NULL),"usub(y 0x%s,group.field 0x%s,y)",xptr,yptr);
     }
     if (y_bit != BN_is_odd(y)) {
         ERR_raise(ERR_LIB_EC, ERR_R_INTERNAL_ERROR);
