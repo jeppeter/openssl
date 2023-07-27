@@ -1134,6 +1134,7 @@ EC_KEY *d2i_ECParameters(EC_KEY **a, const unsigned char **in, long len)
 EC_KEY *o2i_ECPublicKey(EC_KEY **a, const unsigned char **in, long len)
 {
     EC_KEY *ret = NULL;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     if (a == NULL || (*a) == NULL || (*a)->group == NULL) {
         /*
@@ -1148,6 +1149,7 @@ EC_KEY *o2i_ECPublicKey(EC_KEY **a, const unsigned char **in, long len)
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         return 0;
     }
+    OSSL_DEBUG_BN((16,ret->pub_key->X,&xptr,ret->pub_key->Y,&yptr,ret->pub_key->Z,&zptr,NULL),"pubkey.x 0x%s pubkey.y 0x%s pubkey.z 0x%s",xptr,yptr,zptr);
     *in += len;
     return ret;
 }

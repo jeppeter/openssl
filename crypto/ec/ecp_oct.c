@@ -162,6 +162,8 @@ int ossl_ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *group,
     if (!EC_POINT_set_affine_coordinates(group, point, x, y, ctx))
         goto err;
 
+    OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
+
     ret = 1;
 
  err:
@@ -296,6 +298,8 @@ int ossl_ec_GFp_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
     size_t field_len, enc_len;
     int ret = 0;
 
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+
     if (len == 0) {
         ERR_raise(ERR_LIB_EC, EC_R_BUFFER_TOO_SMALL);
         return 0;
@@ -355,6 +359,7 @@ int ossl_ec_GFp_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
     if (form == POINT_CONVERSION_COMPRESSED) {
         if (!EC_POINT_set_compressed_coordinates(group, point, x, y_bit, ctx))
             goto err;
+        OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
     } else {
         if (!BN_bin2bn(buf + 1 + field_len, field_len, y))
             goto err;
