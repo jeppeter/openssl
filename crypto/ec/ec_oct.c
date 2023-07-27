@@ -25,7 +25,6 @@ int EC_POINT_set_compressed_coordinates(const EC_GROUP *group, EC_POINT *point,
                                         const BIGNUM *x, int y_bit, BN_CTX *ctx)
 {
     int ret;
-    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
     if (group->meth->point_set_compressed_coordinates == NULL
         && !(group->meth->flags & EC_FLAGS_DEFAULT_OCT)) {
         ERR_raise(ERR_LIB_EC, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
@@ -39,9 +38,6 @@ int EC_POINT_set_compressed_coordinates(const EC_GROUP *group, EC_POINT *point,
         if (group->meth->field_type == NID_X9_62_prime_field){
             ret = ossl_ec_GFp_simple_set_compressed_coordinates(group, point, x,
                                                                  y_bit, ctx);
-            if (ret > 0) {
-                OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
-            }
             return ret;
         }
         else
@@ -54,18 +50,12 @@ int EC_POINT_set_compressed_coordinates(const EC_GROUP *group, EC_POINT *point,
         {
             ret = ossl_ec_GF2m_simple_set_compressed_coordinates(group, point,
                                                                   x, y_bit, ctx);
-            if (ret > 0) {
-                OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
-            }
             return ret;
         }
 #endif
     }
     ret = group->meth->point_set_compressed_coordinates(group, point, x,
                                                          y_bit, ctx);
-    if (ret > 0) {
-        OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
-    }
     return ret;
 }
 
@@ -123,7 +113,6 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
                        const unsigned char *buf, size_t len, BN_CTX *ctx)
 {
     int ret;
-    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
     if (group->meth->oct2point == 0
         && !(group->meth->flags & EC_FLAGS_DEFAULT_OCT)) {
         ERR_raise(ERR_LIB_EC, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
@@ -136,9 +125,6 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
     if (group->meth->flags & EC_FLAGS_DEFAULT_OCT) {
         if (group->meth->field_type == NID_X9_62_prime_field){
             ret = ossl_ec_GFp_simple_oct2point(group, point, buf, len, ctx);
-            if (ret > 0) {
-                OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
-            }
             return ret;
         }
         else
@@ -150,17 +136,11 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
 #else
         {
             ret = ossl_ec_GF2m_simple_oct2point(group, point, buf, len, ctx);
-            if (ret > 0) {
-                OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);   
-            }
             return ret;
         }
 #endif
     }
     ret = group->meth->oct2point(group, point, buf, len, ctx);
-    if (ret > 0) {
-        OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
-    }
     return ret;
 }
 

@@ -445,8 +445,6 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
         point->Z_is_one = Z_is_one;
     }
 
-    OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0x%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
-
     ret = 1;
 
  err:
@@ -1009,6 +1007,7 @@ int ossl_ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
     BN_CTX *new_ctx = NULL;
     BIGNUM *rh, *tmp, *Z4, *Z6;
     int ret = -1;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     if (EC_POINT_is_at_infinity(group, point))
         return 1;
@@ -1057,10 +1056,13 @@ int ossl_ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
         if (group->a_is_minus3) {
             if (!BN_mod_lshift1_quick(tmp, Z4, p))
                 goto err;
+            OSSL_DEBUG_BN((16,tmp,&xptr,Z4,&yptr,p,&zptr,NULL),"lshift1_mod_quick(tmp 0x%s,Z4 0x%s,p 0x%s)",xptr,yptr,zptr);
             if (!BN_mod_add_quick(tmp, tmp, Z4, p))
                 goto err;
+            OSSL_DEBUG_BN((16,tmp,&xptr,Z4,&yptr,p,&zptr,NULL),"add_mod_quick(tmp 0x%s,tmp,Z4 0x%s,p 0x%s)",xptr,yptr,zptr);
             if (!BN_mod_sub_quick(rh, rh, tmp, p))
                 goto err;
+            OSSL_DEBUG_BN((16,rh,&xptr,tmp,&yptr,p,&zptr,NULL),"sub_mod_quick(rh 0x%s,rh,tmp 0x%s,p 0x%s)",xptr,yptr,zptr);
             if (!field_mul(group, rh, rh, point->X, ctx))
                 goto err;
         } else {
@@ -1068,6 +1070,7 @@ int ossl_ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
                 goto err;
             if (!BN_mod_add_quick(rh, rh, tmp, p))
                 goto err;
+            OSSL_DEBUG_BN((16,rh,&xptr,tmp,&yptr,p,&zptr,NULL),"add_mod_quick(rh 0x%s,rh,tmp 0x%s,p 0x%s)",xptr,yptr,zptr);
             if (!field_mul(group, rh, rh, point->X, ctx))
                 goto err;
         }
@@ -1077,17 +1080,20 @@ int ossl_ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
             goto err;
         if (!BN_mod_add_quick(rh, rh, tmp, p))
             goto err;
+        OSSL_DEBUG_BN((16,rh,&xptr,tmp,&yptr,p,&zptr,NULL),"add_mod_quick(rh 0x%s,rh,tmp 0x%s,p 0x%s)",xptr,yptr,zptr);
     } else {
         /* point->Z_is_one */
 
         /* rh := (rh + a)*X */
         if (!BN_mod_add_quick(rh, rh, group->a, p))
             goto err;
+        OSSL_DEBUG_BN((16,rh,&xptr,group->a,&yptr,p,&zptr,NULL),"add_mod_quick(rh 0x%s,rh,group.a 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (!field_mul(group, rh, rh, point->X, ctx))
             goto err;
         /* rh := rh + b */
         if (!BN_mod_add_quick(rh, rh, group->b, p))
             goto err;
+        OSSL_DEBUG_BN((16,rh,&xptr,group->b,&yptr,p,&zptr,NULL),"add_mod_quick(rh 0x%s,rh,group.b 0x%s,p 0x%s)",xptr,yptr,zptr);
     }
 
     /* 'lh' := Y^2 */

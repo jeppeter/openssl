@@ -867,7 +867,6 @@ int EC_POINT_set_affine_coordinates(const EC_GROUP *group, EC_POINT *point,
                                     const BIGNUM *x, const BIGNUM *y,
                                     BN_CTX *ctx)
 {
-    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
     if (group->meth->point_set_affine_coordinates == NULL) {
         ERR_raise(ERR_LIB_EC, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
         return 0;
@@ -880,13 +879,10 @@ int EC_POINT_set_affine_coordinates(const EC_GROUP *group, EC_POINT *point,
     if (!group->meth->point_set_affine_coordinates(group, point, x, y, ctx))
         return 0;
 
-    OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);
-
     if (EC_POINT_is_on_curve(group, point, ctx) <= 0) {
         ERR_raise(ERR_LIB_EC, EC_R_POINT_IS_NOT_ON_CURVE);
         return 0;
     }
-    OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0%s point.y 0x%s point.z 0x%s",xptr,yptr,zptr);    
     return 1;
 }
 
