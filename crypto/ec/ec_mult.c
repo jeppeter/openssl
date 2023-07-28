@@ -475,6 +475,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
                                  * treated like other scalars, i.e.
                                  * precomputation is not available */
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     if (!BN_is_zero(group->order) && !BN_is_zero(group->cofactor)) {
         /*-
@@ -491,6 +492,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
              * is why we ignore if BN_FLG_CONSTTIME is actually set and we
              * always call the ladder version.
              */
+            OSSL_DEBUG(" ");
             return ossl_ec_scalar_mul_ladder(group, r, scalar, NULL, ctx);
         }
         if ((scalar == NULL) && (num == 1) && (scalars[0] != group->order)) {
@@ -501,12 +503,14 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
              * To protect the secret scalar, we ignore if BN_FLG_CONSTTIME is
              * actually set and we always call the ladder version.
              */
+            OSSL_DEBUG(" ");
             return ossl_ec_scalar_mul_ladder(group, r, scalars[0], points[0],
                                              ctx);
         }
     }
 
     if (scalar != NULL) {
+        OSSL_DEBUG(" ");
         generator = EC_GROUP_get0_generator(group);
         if (generator == NULL) {
             ERR_raise(ERR_LIB_EC, EC_R_UNDEFINED_GENERATOR);
@@ -516,6 +520,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
         /* look if we can use precomputed multiples of generator */
 
         pre_comp = group->pre_comp.ec;
+        OSSL_DEBUG("pre_comp %p",pre_comp);
         if (pre_comp && pre_comp->numblocks
             && (EC_POINT_cmp(group, generator, pre_comp->points[0], ctx) ==
                 0)) {
@@ -570,6 +575,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
      * num_val will be the total number of temporarily precomputed points
      */
     num_val = 0;
+    OSSL_DEBUG(" ");
 
     for (i = 0; i < num + num_scalar; i++) {
         size_t bits;
@@ -585,6 +591,12 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
             goto err;
         if (wNAF_len[i] > max_len)
             max_len = wNAF_len[i];
+        if (i < num) {
+            OSSL_DEBUG_BN((16,scalars[i],&xptr,NULL),"[%ld]scalars[%ld] 0x%s",i,i,xptr);
+        } else {
+            OSSL_DEBUG_BN((16,scalar,&xptr,NULL),"[%ld]scalar 0x%s",i,xptr);
+        }
+        OSSL_BUFFER_DEBUG(wNAF[i],wNAF_len[i],"[%ld] wNAF wsize[%ld] 0x%lx",i,i,wsize[i]);
     }
 
     if (numblocks) {
@@ -612,6 +624,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
             tmp_wNAF = bn_compute_wNAF(scalar, wsize[num], &tmp_len);
             if (!tmp_wNAF)
                 goto err;
+            OSSL_BUFFER_DEBUG(tmp_wNAF,tmp_len,"[%ld] scalar buffer",num);
 
             if (tmp_len <= max_len) {
                 /*
@@ -746,10 +759,15 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
         if (wsize[i] > 1) {
             if (!EC_POINT_dbl(group, tmp, val_sub[i][0], ctx))
                 goto err;
+            OSSL_DEBUG_BN((16,val_sub[i][0]->X,&xptr,val_sub[i][0]->Y,&yptr,val_sub[i][0]->Z,&zptr,NULL),"val_sub[%ld][0].x 0x%s val_sub[%ld][0].y 0x%s val_sub[%ld][0].z 0x%s",i,xptr,i,yptr,i,zptr);
+            OSSL_DEBUG_BN((16,tmp->X,&xptr,tmp->Y,&yptr,tmp->Z,&zptr,NULL),"tmp.x 0x%s tmp.y 0x%s tmp.z 0x%s",xptr,yptr,zptr);
             for (j = 1; j < ((size_t)1 << (wsize[i] - 1)); j++) {
                 if (!EC_POINT_add
-                    (group, val_sub[i][j], val_sub[i][j - 1], tmp, ctx))
+                    (group, val_sub[i][j], val_sub[i][j - 1], tmp, ctx)){
                     goto err;
+                }
+                OSSL_DEBUG_BN((16,val_sub[i][j-1]->X,&xptr,val_sub[i][j-1]->Y,&yptr,val_sub[i][j-1]->Z,&zptr,NULL),"val_sub[%ld][%ld].x 0x%s val_sub[%ld][%ld].y 0x%s val_sub[%ld][%ld].z 0x%s",i,j-1,xptr,i,j-1,yptr,i,j-1,zptr);
+                OSSL_DEBUG_BN((16,val_sub[i][j]->X,&xptr,val_sub[i][j]->Y,&yptr,val_sub[i][j]->Z,&zptr,NULL),"val_sub[%ld][%ld].x 0x%s val_sub[%ld][%ld].y 0x%s val_sub[%ld][%ld].z 0x%s",i,j,xptr,i,j,yptr,i,j,zptr);
             }
         }
     }
