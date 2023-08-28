@@ -81,8 +81,6 @@ int BN_rshift1(BIGNUM *r, const BIGNUM *a)
 int BN_lshift(BIGNUM *r, const BIGNUM *a, int n)
 {
     int ret;
-    signed char* pn=NULL;
-    size_t retlen=0;
 
     if (n < 0) {
         ERR_raise(ERR_LIB_BN, BN_R_INVALID_SHIFT);
@@ -94,13 +92,6 @@ int BN_lshift(BIGNUM *r, const BIGNUM *a, int n)
     bn_correct_top(r);
     bn_check_top(r);
 
-    pn = bn_compute_wNAF(a,n,&retlen);
-    if (pn != NULL) {
-        OSSL_BUFFER_DEBUG(pn,retlen,"pn out");
-        free(pn);
-        pn = NULL;
-        retlen = 0;
-    }
 
     return ret;
 }

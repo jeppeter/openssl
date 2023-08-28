@@ -581,7 +581,13 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
         size_t bits;
 
         bits = i < num ? BN_num_bits(scalars[i]) : BN_num_bits(scalar);
+        if (i < num) {
+            OSSL_DEBUG_BN((16,scalars[i],&xptr,NULL),"scalars[%ld] 0x%s", i,xptr);
+        } else {
+            OSSL_DEBUG_BN((16,scalar,&xptr,NULL),"scalar 0x%s",xptr);
+        }
         wsize[i] = EC_window_bits_for_scalar_size(bits);
+        OSSL_DEBUG("[%ld] bits [%ld] wsize[%ld] %ld", i, bits,i,wsize[i]);
         num_val += (size_t)1 << (wsize[i] - 1);
         wNAF[i + 1] = NULL;     /* make sure we always have a pivot */
         wNAF[i] =
@@ -749,12 +755,15 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
      */
     for (i = 0; i < num + num_scalar; i++) {
         if (i < num) {
+            OSSL_DEBUG("[%ld] copy points [%ld]", i,i);
             if (!EC_POINT_copy(val_sub[i][0], points[i]))
                 goto err;
         } else {
+            OSSL_DEBUG("[%ld] copy generator",i);
             if (!EC_POINT_copy(val_sub[i][0], generator))
                 goto err;
         }
+        OSSL_DEBUG_BN((16,val_sub[i][0]->X,&xptr,val_sub[i][0]->Y,&yptr,val_sub[i][0]->Z,&zptr,NULL),"val_sub[%ld][0].X 0x%s val_sub[%ld][0].Y 0x%s val_sub[%ld][0].Z 0x%s",i,xptr,i,yptr,i,zptr);
 
         if (wsize[i] > 1) {
             if (!EC_POINT_dbl(group, tmp, val_sub[i][0], ctx))
