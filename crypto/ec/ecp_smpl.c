@@ -664,6 +664,7 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     BN_CTX *new_ctx = NULL;
     BIGNUM *n0, *n1, *n2, *n3, *n4, *n5, *n6;
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
 
     if (a == b)
         return EC_POINT_dbl(group, r, a, ctx);
@@ -703,8 +704,10 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     if (b->Z_is_one) {
         if (!BN_copy(n1, a->X))
             goto end;
+        OSSL_DEBUG_BN((16,n1,&xptr,a->X,&yptr,NULL),"BN_copy(n1 0x%s,a.x 0x%s)",xptr,yptr);
         if (!BN_copy(n2, a->Y))
             goto end;
+        OSSL_DEBUG_BN((16,n2,&xptr,a->Y,&yptr,NULL),"BN_copy(n2 0x%s,a.y 0x%s)",xptr,yptr);
         /* n1 = X_a */
         /* n2 = Y_a */
     } else {
@@ -725,8 +728,10 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     if (a->Z_is_one) {
         if (!BN_copy(n3, b->X))
             goto end;
+        OSSL_DEBUG_BN((16,n3,&xptr,b->X,&yptr,NULL),"BN_copy(n3 0x%s,b.x 0x%s)",xptr,yptr);
         if (!BN_copy(n4, b->Y))
             goto end;
+        OSSL_DEBUG_BN((16,n4,&xptr,b->Y,&yptr,NULL),"BN_copy(n4 0x%s,b.y 0x%s)",xptr,yptr);
         /* n3 = X_b */
         /* n4 = Y_b */
     } else {
@@ -746,8 +751,10 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     /* n5, n6 */
     if (!BN_mod_sub_quick(n5, n1, n3, p))
         goto end;
+    OSSL_DEBUG_BN((16,n5,&xptr,n1,&yptr,n3,&zptr,p,&aptr,NULL),"mod_sub_quick(n5 0x%s,n1 0x%s,n3 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
     if (!BN_mod_sub_quick(n6, n2, n4, p))
         goto end;
+    OSSL_DEBUG_BN((16,n6,&xptr,n2,&yptr,n4,&zptr,p,&aptr,NULL),"mod_sub_quick(n6 0x%s,n2 0x%s,n4 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
     /* n5 = n1 - n3 */
     /* n6 = n2 - n4 */
 
@@ -756,12 +763,15 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
             /* a is the same point as b */
             BN_CTX_end(ctx);
             ret = EC_POINT_dbl(group, r, a, ctx);
+            OSSL_DEBUG_BN((16,a->X,&xptr,a->Y,&yptr,a->Z,&zptr,NULL),"a.x 0x%s a.y 0x%s a.z 0x%s",xptr,yptr,zptr);
+            OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s",xptr,yptr,zptr);
             ctx = NULL;
             goto end;
         } else {
             /* a is the inverse of b */
             BN_zero(r->Z);
             r->Z_is_one = 0;
+            OSSL_DEBUG("r.z 0");
             ret = 1;
             goto end;
         }
@@ -770,8 +780,10 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     /* 'n7', 'n8' */
     if (!BN_mod_add_quick(n1, n1, n3, p))
         goto end;
+    OSSL_DEBUG_BN((16,n1,&xptr,n3,&yptr,p,&zptr,NULL),"mod_add_quick(n1 0x%s,n1,n3 0x%s,p 0x%s)",xptr,yptr,zptr);
     if (!BN_mod_add_quick(n2, n2, n4, p))
         goto end;
+    OSSL_DEBUG_BN((16,n2,&xptr,n4,&yptr,p,&zptr,NULL),"mod_add_quick(n2 0x%s,n2,n4 0x%s,p 0x%s)",xptr,yptr,zptr);
     /* 'n7' = n1 + n3 */
     /* 'n8' = n2 + n4 */
 
@@ -849,6 +861,7 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     BN_CTX *new_ctx = NULL;
     BIGNUM *n0, *n1, *n2, *n3;
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
 
     if (EC_POINT_is_at_infinity(group, a)) {
         BN_zero(r->Z);
@@ -886,24 +899,31 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
             goto err;
         if (!BN_mod_lshift1_quick(n1, n0, p))
             goto err;
+        OSSL_DEBUG_BN((16,n1,&xptr,n0,&yptr,p,&zptr,NULL),"mod_lshift_quick(n1 0x%s,n0 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_add_quick(n0, n0, n1, p))
             goto err;
+        OSSL_DEBUG_BN((16,n0,&xptr,n1,&yptr,p,&zptr,NULL),"mod_add_quick(n0 0x%s,n0,n1 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_add_quick(n1, n0, group->a, p))
             goto err;
+        OSSL_DEBUG_BN((16,n1,&xptr,n0,&yptr,group->a,&zptr,p,&aptr,NULL),"mod_add_quick(n1 0x%s,n0 0x%s,group.a 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
         /* n1 = 3 * X_a^2 + a_curve */
     } else if (group->a_is_minus3) {
         if (!field_sqr(group, n1, a->Z, ctx))
             goto err;
         if (!BN_mod_add_quick(n0, a->X, n1, p))
             goto err;
+        OSSL_DEBUG_BN((16,n0,&xptr,a->X,&yptr,n1,&zptr,p,&aptr,NULL),"mod_add_quick(n0 0x%s,a.x 0x%s,n1 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
         if (!BN_mod_sub_quick(n2, a->X, n1, p))
             goto err;
+        OSSL_DEBUG_BN((16,n2,&xptr,a->X,&yptr,n1,&zptr,p,&aptr,NULL),"mod_sub_quick(n2 0x%s,a.x 0x%s,n1 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
         if (!field_mul(group, n1, n0, n2, ctx))
             goto err;
         if (!BN_mod_lshift1_quick(n0, n1, p))
             goto err;
+        OSSL_DEBUG_BN((16,n0,&xptr,n1,&yptr,p,&zptr,NULL),"mod_lshift_quick(n0 0x%s,n1 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_add_quick(n1, n0, n1, p))
             goto err;
+        OSSL_DEBUG_BN((16,n1,&xptr,n0,&yptr,p,&zptr,NULL),"mod_add_quick(n1 0x%s,n0 0x%s,n1,p 0x%s)",xptr,yptr,zptr);
         /*-
          * n1 = 3 * (X_a + Z_a^2) * (X_a - Z_a^2)
          *    = 3 * X_a^2 - 3 * Z_a^4
@@ -913,8 +933,10 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
             goto err;
         if (!BN_mod_lshift1_quick(n1, n0, p))
             goto err;
+        OSSL_DEBUG_BN((16,n1,&xptr,n0,&yptr,p,&zptr,NULL),"mod_lshift_quick(n1 0x%s,n0 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_add_quick(n0, n0, n1, p))
             goto err;
+        OSSL_DEBUG_BN((16,n0,&xptr,n1,&yptr,p,&zptr,NULL),"mod_add_quick(n0 0x%s,n0,n1 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (!field_sqr(group, n1, a->Z, ctx))
             goto err;
         if (!field_sqr(group, n1, n1, ctx))
@@ -923,6 +945,7 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
             goto err;
         if (!BN_mod_add_quick(n1, n1, n0, p))
             goto err;
+        OSSL_DEBUG_BN((16,n1,&xptr,n0,&yptr,p,&zptr,NULL),"mod_add_quick(n1 0x%s,n1,n0 0x%s,p 0x%s)",xptr,yptr,zptr);
         /* n1 = 3 * X_a^2 + a_curve * Z_a^4 */
     }
 
@@ -930,12 +953,14 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     if (a->Z_is_one) {
         if (!BN_copy(n0, a->Y))
             goto err;
+        OSSL_DEBUG_BN((16,n0,&xptr,a->Y,&yptr,NULL),"BN_copy(n0 0x%s,a.y 0x%s)",xptr,yptr);
     } else {
         if (!field_mul(group, n0, a->Y, a->Z, ctx))
             goto err;
     }
     if (!BN_mod_lshift1_quick(r->Z, n0, p))
         goto err;
+    OSSL_DEBUG_BN((16,r->Z,&xptr,n0,&yptr,p,&zptr,NULL),"mod_lshift_quick(r.z 0x%s,n0 0x%s,p 0x%s)",xptr,yptr,zptr);
     r->Z_is_one = 0;
     /* Z_r = 2 * Y_a * Z_a */
 
@@ -946,15 +971,18 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
         goto err;
     if (!BN_mod_lshift_quick(n2, n2, 2, p))
         goto err;
+    OSSL_DEBUG_BN((16,n2,&xptr,p,&yptr,NULL),"mod_lshift_quick(n2 0x%s,n2,0x2,p 0x%s)",xptr,yptr);
     /* n2 = 4 * X_a * Y_a^2 */
 
     /* X_r */
     if (!BN_mod_lshift1_quick(n0, n2, p))
         goto err;
+    OSSL_DEBUG_BN((16,n0,&xptr,n2,&yptr,p,&zptr,NULL),"mod_lshift_quick(n0 0x%s,n2 0x%s,p 0x%s)",xptr,yptr,zptr);
     if (!field_sqr(group, r->X, n1, ctx))
         goto err;
     if (!BN_mod_sub_quick(r->X, r->X, n0, p))
         goto err;
+    OSSL_DEBUG_BN((16,r->X,&xptr,n0,&yptr,p,&zptr,NULL),"mod_sub_quick(r.x 0x%s,r.x,n0 0x%s,p 0x%s)",xptr,yptr,zptr);
     /* X_r = n1^2 - 2 * n2 */
 
     /* n3 */
@@ -962,15 +990,18 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
         goto err;
     if (!BN_mod_lshift_quick(n3, n0, 3, p))
         goto err;
+    OSSL_DEBUG_BN((16,n3,&xptr,n0,&yptr,p,&zptr,NULL),"mod_lshift_quick(n3 0x%s,n0 0x%s,0x3,p 0x%s)",xptr,yptr,zptr);
     /* n3 = 8 * Y_a^4 */
 
     /* Y_r */
     if (!BN_mod_sub_quick(n0, n2, r->X, p))
         goto err;
+    OSSL_DEBUG_BN((16,n0,&xptr,n2,&yptr,r->X,&zptr,p,&aptr,NULL),"mod_sub_quick(n0 0x%s,n2 0x%s,r.x 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
     if (!field_mul(group, n0, n1, n0, ctx))
         goto err;
     if (!BN_mod_sub_quick(r->Y, n0, n3, p))
         goto err;
+    OSSL_DEBUG_BN((16,r->Y,&xptr,n0,&yptr,n3,&zptr,p,&aptr,NULL),"mod_sub_quick(r.y 0x%s,n0 0x%s,n3 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
     /* Y_r = n1 * (n2 - X_r) - n3 */
 
     ret = 1;
