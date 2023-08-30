@@ -781,6 +781,12 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
         }
     }
 
+    for(i=0;i<num_val;i++) {
+        if (val[i] != NULL) {
+            OSSL_DEBUG_BN((16,val[i]->X,&xptr,val[i]->Y,&yptr,val[i]->Z,&zptr,NULL),"val[%ld].x 0x%s val[%ld].y 0x%s val[%ld].z 0x%s",i,xptr,i,yptr,i,zptr);            
+        }
+    }
+
     if (group->meth->points_make_affine == NULL
         || !group->meth->points_make_affine(group, num_val, val, ctx))
         goto err;
