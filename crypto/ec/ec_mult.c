@@ -792,6 +792,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
         goto err;
 
     r_is_at_infinity = 1;
+    OSSL_DEBUG("max_len %ld wnaf.len() %ld",max_len,totalnum);
 
     for (k = max_len - 1; k >= 0; k--) {
         if (!r_is_at_infinity) {
@@ -809,6 +810,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
 
                     if (is_neg)
                         digit = -digit;
+                    OSSL_DEBUG("digit [%d]",digit);
 
                     if (is_neg != r_is_inverted) {
                         if (!r_is_at_infinity) {
@@ -821,6 +823,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
                     /* digit > 0 */
 
                     if (r_is_at_infinity) {
+                        OSSL_DEBUG("digit [%d]",digit);
                         if (!EC_POINT_copy(r, val_sub[i][digit >> 1]))
                             goto err;
 
@@ -839,6 +842,8 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
 
                         r_is_at_infinity = 0;
                     } else {
+                        OSSL_DEBUG("digit [%d]",digit);
+                        OSSL_DEBUG("will get [%ld][%d]",i,(digit >> 1));
                         if (!EC_POINT_add
                             (group, r, r, val_sub[i][digit >> 1], ctx))
                             goto err;

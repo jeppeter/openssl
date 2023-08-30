@@ -595,6 +595,7 @@ int ossl_ec_GFp_simple_point_get_affine_coordinates(const EC_GROUP *group,
         } else {
             if (!BN_mod_sqr(Z_2, Z_1, group->field, ctx))
                 goto err;
+            OSSL_DEBUG_BN((16,Z_2,&xptr,Z_1,&yptr,group->field,&zptr,NULL),"BN_mod_sqr(Z_2 0x%s,Z_1 0x%s,group.field 0x%s)",xptr,yptr,zptr);
         }
 
         if (x != NULL) {
@@ -1025,11 +1026,15 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
 int ossl_ec_GFp_simple_invert(const EC_GROUP *group, EC_POINT *point,
                               BN_CTX *ctx)
 {
+    int ret;
+    char *xptr=NULL,*yptr=NULL;
     if (EC_POINT_is_at_infinity(group, point) || BN_is_zero(point->Y))
         /* point is its own inverse */
         return 1;
 
-    return BN_usub(point->Y, group->field, point->Y);
+    ret = BN_usub(point->Y, group->field, point->Y);
+    OSSL_DEBUG_BN((16,point->Y,&xptr,group->field,&yptr,NULL),"BN_usub(p.y 0x%s,group.field 0x%s,p.y)",xptr,yptr);
+    return ret;
 }
 
 int ossl_ec_GFp_simple_is_at_infinity(const EC_GROUP *group,
@@ -1595,7 +1600,41 @@ int ossl_ec_GFp_simple_blind_coordinates(const EC_GROUP *group, EC_POINT *p,
         }
     } while (BN_is_zero(lambda));
 
+    if (group->meth->field_encode != NULL && !group->meth->field_encode(group, lambda, lambda, ctx)) {
+        goto end;
+    }
+    OSSL_DEBUG("field_encode");
+
+    if (!group->meth->field_mul(group, p->Z, p->Z, lambda, ctx)) {
+        goto end;
+    }
+    OSSL_DEBUG("field_mul");
+
+    if (!group->meth->field_sqr(group, temp, lambda, ctx)) {
+        goto end;
+    }
+    OSSL_DEBUG("field_sqr");
+
+    if (!group->meth->field_mul(group, p->X, p->X, temp, ctx)) {
+        goto end;
+    }
+    OSSL_DEBUG("field_mul");
+
+    if (!group->meth->field_mul(group, temp, temp, lambda, ctx)){
+        goto end;
+    }
+
+    OSSL_DEBUG("field_mul");
+
+    if (!group->meth->field_mul(group, p->Y, p->Y, temp, ctx)) {
+        goto end;
+    }
+    OSSL_DEBUG("field_mul");
+
+
+
     /* if field_encode defined convert between representations */
+#if 0    
     if ((group->meth->field_encode != NULL
          && !group->meth->field_encode(group, lambda, lambda, ctx))
         || !group->meth->field_mul(group, p->Z, p->Z, lambda, ctx)
@@ -1604,6 +1643,7 @@ int ossl_ec_GFp_simple_blind_coordinates(const EC_GROUP *group, EC_POINT *p,
         || !group->meth->field_mul(group, temp, temp, lambda, ctx)
         || !group->meth->field_mul(group, p->Y, p->Y, temp, ctx))
         goto end;
+#endif
 
     p->Z_is_one = 0;
     ret = 1;
