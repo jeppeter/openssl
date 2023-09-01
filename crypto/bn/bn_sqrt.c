@@ -10,6 +10,17 @@
 #include "internal/cryptlib.h"
 #include "bn_local.h"
 
+#define BN_SQRT_DEBUG            1
+
+#if BN_SQRT_DEBUG
+#define SQRT_DEBUG_BN(...)             OSSL_DEBUG_BN(__VA_ARGS__)
+#define SQRT_DEBUG(...)                OSSL_DEBUG(__VA_ARGS__)
+#else
+#define SQRT_DEBUG_BN(...)             do{}while(0)
+#define SQRT_DEBUG(...)                do{}while(0)
+#endif
+
+
 BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
 /*
  * Returns 'ret' such that ret^2 == a (mod p), using the Tonelli/Shanks
@@ -24,6 +35,9 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
     BIGNUM *A, *b, *q, *t, *x, *y;
     int e, i, j;
     int used_ctx = 0;
+#if BN_SQRT_DEBUG
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL, *aptr=NULL;
+#endif    
 
     if (!BN_is_odd(p) || BN_abs_is_word(p, 1)) {
         if (BN_abs_is_word(p, 2)) {
@@ -35,8 +49,9 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
                 if (ret != in)
                     BN_free(ret);
                 return NULL;
-            }
+            }            
             bn_check_top(ret);
+            SQRT_DEBUG_BN((16,ret,&xptr,NULL),"ret 0x%s",xptr);
             return ret;
         }
 
@@ -55,6 +70,7 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
             return NULL;
         }
         bn_check_top(ret);
+        SQRT_DEBUG_BN((16,ret,&xptr,NULL),"ret 0x%s",xptr);
         return ret;
     }
 
@@ -77,11 +93,13 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
     /* A = a mod p */
     if (!BN_nnmod(A, a, p, ctx))
         goto end;
+    SQRT_DEBUG_BN((16,A,&xptr,a,&yptr,p,&zptr,NULL),"BN_nnmod(A 0x%s,a 0x%s,p 0x%s)",xptr,yptr,zptr);
 
     /* now write  |p| - 1  as  2^e*q  where  q  is odd */
     e = 1;
     while (!BN_is_bit_set(p, e))
         e++;
+    SQRT_DEBUG("e 0x%x",e);
     /* we'll set  q  later (if needed) */
 
     if (e == 1) {
@@ -95,11 +113,14 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
          */
         if (!BN_rshift(q, p, 2))
             goto end;
+        SQRT_DEBUG_BN((16,q,&xptr,p,&yptr,NULL),"BN_rshift(q 0x%s,p 0x%s,2)",xptr,yptr);
         q->neg = 0;
         if (!BN_add_word(q, 1))
             goto end;
+        SQRT_DEBUG_BN((16,q,&xptr,NULL),"BN_add_word(q 0x%s,1)",xptr);
         if (!BN_mod_exp(ret, A, q, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,ret,&xptr,A,&yptr,q,&zptr,p,&aptr,NULL),"BN_mod_exp(ret 0x%s,A 0x%s,q 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
         err = 0;
         goto vrfy;
     }
@@ -136,32 +157,40 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
         /* t := 2*a */
         if (!BN_mod_lshift1_quick(t, A, p))
             goto end;
+        SQRT_DEBUG_BN((16,t,&xptr,A,&yptr,p,&zptr,NULL),"BN_mod_lshift1_quick(t 0x%s,A 0x%s,p 0x%s)",xptr,yptr,zptr);
 
         /* b := (2*a)^((|p|-5)/8) */
         if (!BN_rshift(q, p, 3))
             goto end;
+        SQRT_DEBUG_BN((16,q,&xptr,p,&yptr,NULL),"BN_rshift(q 0x%s,p 0x%s,0x3)",xptr,yptr);
         q->neg = 0;
         if (!BN_mod_exp(b, t, q, p, ctx))
             goto end;
-
+        SQRT_DEBUG_BN((16,b,&xptr,t,&yptr,q,&zptr,p,&aptr,NULL),"BN_mod_exp(b 0x%s,t 0x%s,q 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
         /* y := b^2 */
         if (!BN_mod_sqr(y, b, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,y,&xptr,b,&yptr,p,&zptr,NULL),"BN_mod_sqr(y 0x%s,b 0x%s,p 0x%s)",xptr,yptr,zptr);
 
         /* t := (2*a)*b^2 - 1 */
         if (!BN_mod_mul(t, t, y, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,t,&xptr,y,&yptr,p,&zptr,NULL),"BN_mod_mul(t 0x%s,t,y 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (!BN_sub_word(t, 1))
             goto end;
+        SQRT_DEBUG_BN((16,t,&xptr,NULL),"BN_sub_word(t 0x%s,1)",xptr);
 
         /* x = a*b*t */
         if (!BN_mod_mul(x, A, b, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,x,&xptr,A,&yptr,b,&zptr,p,&aptr,NULL),"BN_mod_mul(x 0x%s,A 0x%s,b 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
         if (!BN_mod_mul(x, x, t, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,x,&xptr,t,&yptr,p,&zptr,NULL),"BN_mod_mul(x 0x%s,x,t 0x%s,p 0x%s)",xptr,yptr,zptr);
 
         if (!BN_copy(ret, x))
             goto end;
+        SQRT_DEBUG_BN((16,ret,&xptr,x,&yptr,NULL),"BN_copy(ret 0x%s,x 0x%s)",xptr,yptr);
         err = 0;
         goto vrfy;
     }
@@ -172,6 +201,7 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
      */
     if (!BN_copy(q, p))
         goto end;               /* use 'q' as temp */
+    SQRT_DEBUG_BN((16,q,&xptr,p,&yptr,NULL),"BN_copy(q 0x%s,p 0x%s)",xptr,yptr);
     q->neg = 0;
     i = 2;
     do {
@@ -195,7 +225,9 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
                     goto end;
         }
 
+        SQRT_DEBUG_BN((16,y,&xptr,q,&yptr,NULL),"before BN_kronecker(y 0x%s,q 0x%s)",xptr,yptr);
         r = BN_kronecker(y, q, ctx); /* here 'q' is |p| */
+        SQRT_DEBUG_BN((16,y,&xptr,q,&yptr,NULL),"r (%d)=BN_kronecker(y 0x%s,q 0x%s)",r,xptr,yptr);
         if (r < -1)
             goto end;
         if (r == 0) {
@@ -205,7 +237,7 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
         }
     }
     while (r == 1 && ++i < 82);
-
+    SQRT_DEBUG("r = %d",r);
     if (r != -1) {
         /*
          * Many rounds and still no non-square -- this is more likely a bug
@@ -219,6 +251,7 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
     /* Here's our actual 'q': */
     if (!BN_rshift(q, q, e))
         goto end;
+    SQRT_DEBUG_BN((16,q,&xptr,NULL),"BN_rshift(q 0x%s,q,e 0x%x)",xptr,e);
 
     /*
      * Now that we have some non-square, we can find an element of order 2^e
@@ -226,6 +259,7 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
      */
     if (!BN_mod_exp(y, y, q, p, ctx))
         goto end;
+    SQRT_DEBUG_BN((16,y,&xptr,q,&yptr,p,&zptr,NULL),"BN_mod_exp(y 0x%s,y,q 0x%s,p 0x%s)",xptr,yptr,zptr);
     if (BN_is_one(y)) {
         ERR_raise(ERR_LIB_BN, BN_R_P_IS_NOT_PRIME);
         goto end;
@@ -253,11 +287,13 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
     /* t := (q-1)/2  (note that  q  is odd) */
     if (!BN_rshift1(t, q))
         goto end;
+    SQRT_DEBUG_BN((16,t,&xptr,q,&yptr,NULL),"BN_rshift1(t 0x%s,q 0x%s)",xptr,yptr);
 
     /* x := a^((q-1)/2) */
     if (BN_is_zero(t)) {        /* special case: p = 2^e + 1 */
         if (!BN_nnmod(t, A, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,t,&xptr,A,&yptr,p,&zptr,NULL),"BN_nnmod(t 0x%s,A 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (BN_is_zero(t)) {
             /* special case: a == 0  (mod p) */
             BN_zero(ret);
@@ -268,6 +304,7 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
     } else {
         if (!BN_mod_exp(x, A, t, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,x,&xptr,A,&yptr,t,&zptr,p,&aptr,NULL),"BN_mod_exp(x 0x%s,A 0x%s,t 0x%s,p 0x%s)",xptr,yptr,zptr,aptr);
         if (BN_is_zero(x)) {
             /* special case: a == 0  (mod p) */
             BN_zero(ret);
@@ -279,12 +316,14 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
     /* b := a*x^2  (= a^q) */
     if (!BN_mod_sqr(b, x, p, ctx))
         goto end;
+    SQRT_DEBUG_BN((16,b,&xptr,x,&yptr,p,&zptr,NULL),"BN_mod_sqr(b 0x%s,x 0x%s,p 0x%s)",xptr,yptr,zptr);
     if (!BN_mod_mul(b, b, A, p, ctx))
         goto end;
-
+    SQRT_DEBUG_BN((16,b,&xptr,A,&yptr,p,&zptr,NULL),"BN_mod_mul(b 0x%s,b,A 0x%s,p 0x%s)",xptr,yptr,zptr);
     /* x := a*x    (= a^((q+1)/2)) */
     if (!BN_mod_mul(x, x, A, p, ctx))
         goto end;
+    SQRT_DEBUG_BN((16,x,&xptr,A,&yptr,p,&zptr,NULL),"BN_mod_mul(x 0x%s,x,A 0x%s,p 0x%s)",xptr,yptr,zptr);
 
     while (1) {
         /*-
@@ -300,6 +339,7 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
         if (BN_is_one(b)) {
             if (!BN_copy(ret, x))
                 goto end;
+            SQRT_DEBUG_BN((16,ret,&xptr,x,&yptr,NULL),"BN_copy(ret 0x%s,x 0x%s)",xptr,yptr);
             err = 0;
             goto vrfy;
         }
@@ -309,10 +349,11 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
             if (i == 1) {
                 if (!BN_mod_sqr(t, b, p, ctx))
                     goto end;
-
+                SQRT_DEBUG_BN((16,t,&xptr,b,&yptr,p,&zptr,NULL),"BN_mod_sqr(t 0x%s,b 0x%s,p 0x%s)",xptr,yptr,zptr);
             } else {
                 if (!BN_mod_mul(t, t, t, p, ctx))
                     goto end;
+                SQRT_DEBUG_BN((16,t,&xptr,p,&yptr,NULL),"BN_mod_mul(t 0x%s,t,t,p 0x%s)",xptr,yptr);
             }
             if (BN_is_one(t))
                 break;
@@ -329,13 +370,17 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
         for (j = e - i - 1; j > 0; j--) {
             if (!BN_mod_sqr(t, t, p, ctx))
                 goto end;
+            SQRT_DEBUG_BN((16,t,&xptr,p,&yptr,NULL),"BN_mod_sqr(t 0x%s,t,p 0x%s)",xptr,yptr);
         }
         if (!BN_mod_mul(y, t, t, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,y,&xptr,t,&yptr,p,&zptr,NULL),"BN_mod_mul(y 0x%s,t 0x%s,t,p 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_mul(x, x, t, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,x,&xptr,t,&yptr,p,&zptr,NULL),"BN_mod_mul(x 0x%s,x,t 0x%s,p 0x%s)",xptr,yptr,zptr);
         if (!BN_mod_mul(b, b, y, p, ctx))
             goto end;
+        SQRT_DEBUG_BN((16,b,&xptr,y,&yptr,p,&zptr,NULL),"BN_mod_mul(b 0x%s,b,y 0x%s,p 0x%s)",xptr,yptr,zptr);
         e = i;
     }
 
