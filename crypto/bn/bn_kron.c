@@ -139,7 +139,7 @@ int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
         if (i & 1) {
             /* i is odd */
             /* multiply 'ret' by  $(-1)^{(B^2-1)/8}$ */
-            KRON_DEBUG_BN((16,A,&xptr,NULL),"ret %d = ret %d * tab[BN_lsw(0x%s)&7 = 0x%lx]",ret * tab[BN_lsw(B) & 7],ret,xptr,BN_lsw(A) & 7);
+            KRON_DEBUG_BN((16,B,&xptr,NULL),"ret %d = ret %d * tab[BN_lsw(0x%s)&7 = 0x%lx]",ret * tab[BN_lsw(B) & 7],ret,xptr,BN_lsw(B) & 7);
             ret = ret * tab[BN_lsw(B) & 7];
         }
 
