@@ -22,20 +22,20 @@ genlog=/mnt/zdisk/gen.log
 ecfile=/mnt/zdisk/ecpriv.bin
 ecpub=/mnt/zdisk/ecpub.bin
 signfile=/mnt/zdisk/sign.bin
-#ectype=secp112r1
-ectype=secp224r1
-privnum=1152
-hashnumber=7201
-hashsize=10
+ectype=secp112r1
+#ectype=secp224r1
+privnum=0x13c5873c53d1046528aeed5cbe4b
+hashnumber=0x99bcf1bc2a70d552e85a3b7efe51
+hashsize=14
 if [ ! -x /mnt/zdisk/clibs/test/ssltst/ssltst ]
 then
 	pushd $PWD && cd /mnt/zdisk/clibs/test/ssltst && make && popd
 fi
 /mnt/zdisk/clibs/test/ssltst/ssltst ecgen --ecpriv $ecfile --ecpub $ecpub $ectype $privnum 2>$genlog
 #/mnt/zdisk/clibs/test/ssltst/ssltst ecgen --ecpriv $ecfile --ecpub $ecpub $ectype $privnum 2>$outfile
-/mnt/zdisk/clibs/test/ssltst/ssltst ecpubload $ectype  $ecpub 2>$outfile
-#/mnt/zdisk/clibs/test/ssltst/ssltst ecsignbase -o $signfile $ecfile $hashnumber $hashsize 2>$signlog
-#/mnt/zdisk/clibs/test/ssltst/ssltst ecvfybase $ectype $ecpub $hashnumber $signfile $hashsize 2>$outfile
+#/mnt/zdisk/clibs/test/ssltst/ssltst ecpubload $ectype  $ecpub 2>$outfile
+/mnt/zdisk/clibs/test/ssltst/ssltst ecsignbase -o $signfile $ecfile $hashnumber $hashsize 2>$signlog
+/mnt/zdisk/clibs/test/ssltst/ssltst ecvfybase $ectype $ecpub $hashnumber $signfile $hashsize 2>$outfile
 
 python /mnt/zdisk/pylib/utils.py filterlog -i $outfile -o $simpleout python
 numbers=`cat $simpleout | grep -e 'random number' | awk '{print $3}' | xargs -I {} echo -n " {}"`
