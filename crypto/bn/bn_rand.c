@@ -21,6 +21,31 @@ typedef enum bnrand_flag_e {
     NORMAL, TESTING, PRIVATE
 } BNRAND_FLAG;
 
+int RAND_FILE_get_bytes_ex(OSSL_LIB_CTX *ctx, unsigned char *buf, size_t num,
+                  unsigned int strength,int fmode)
+{
+    static FILE* st_randfp=NULL;
+    int ret;
+    
+    if (st_randfp == NULL) {
+        char* randfile = getenv("OPENSSL_RANDFILE");
+        if (randfile != NULL)  {
+            st_randfp = fopen(randfile,"r+b");
+        }
+    }
+    if (st_randfp != NULL) {
+        ret = fread(buf,num,1,st_randfp);
+        if (ret == 1) {
+            return 1;
+        }
+    } 
+    if (fmode) {
+        return RAND_bytes_ex(ctx,buf,num,strength);
+    } else {
+        return RAND_priv_bytes_ex(ctx,buf,num,strength);
+    }
+}
+
 static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
                   unsigned int strength, BN_CTX *ctx)
 {
@@ -48,9 +73,13 @@ static int bnrand(BNRAND_FLAG flag, BIGNUM *rnd, int bits, int top, int bottom,
         goto err;
     }
 
+#if 1
+    b = RAND_FILE_get_bytes_ex(libctx,buf,bytes,strength,flag == NORMAL);
+#else
     /* make a random number and set the top and bottom bits */
     b = flag == NORMAL ? RAND_bytes_ex(libctx, buf, bytes, strength)
                        : RAND_priv_bytes_ex(libctx, buf, bytes, strength);
+#endif
     if (b <= 0)
         goto err;
     //OSSL_BUFFER_DEBUG(buf,bytes,"random buffer");
