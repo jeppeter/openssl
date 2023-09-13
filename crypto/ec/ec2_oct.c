@@ -139,6 +139,7 @@ size_t ossl_ec_GF2m_simple_point2oct(const EC_GROUP *group,
     int used_ctx = 0;
     BIGNUM *x, *y, *yxi;
     size_t field_len, i, skip;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
@@ -198,8 +199,10 @@ size_t ossl_ec_GF2m_simple_point2oct(const EC_GROUP *group,
         if ((form != POINT_CONVERSION_UNCOMPRESSED) && !BN_is_zero(x)) {
             if (!group->meth->field_div(group, yxi, y, x, ctx))
                 goto err;
-            if (BN_is_odd(yxi))
+            OSSL_DEBUG_BN((16,yxi,&xptr,y,&yptr,x,&zptr,NULL),"field_div(yxi 0x%s,y 0x%s,x 0x%s)", xptr,yptr,zptr);
+            if (BN_is_odd(yxi)){
                 buf[0]++;
+            }
         }
 
         i = 1;
