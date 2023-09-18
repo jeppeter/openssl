@@ -9,7 +9,14 @@ extern "C" {
 };
 #endif /* __cplusplus*/
 
-#if 1
+#define INTERN_LOG_ERROR              0
+#define INTERN_LOG_WARN               10
+#define INTERN_LOG_INFO               20
+#define INTERN_LOG_DEBUG              30
+#define INTERN_LOG_TRACE              40
+
+
+#if 0
 #include <execinfo.h>
 
 #define  BACKTRACE_DEBUG(...)                                                                     \
@@ -71,12 +78,6 @@ do{                                                                             
 	}                                                                                             \
 } while(0)
 
-#else
-
-#define  BACK_TRACE_DUMP(...)  do { fprintf(stderr,"[%s:%d] <DEBUG> ",__FILE__,__LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n"); } while(0)
-
-#endif
-
 #define  OSSL_DEBUG(...)  do { fprintf(stderr,"[%s:%d] <DEBUG> ",__FILE__,__LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n"); fflush(stderr); } while(0)
 
 #define  OSSL_BUFFER_DEBUG(ptr,size,...)                                                          \
@@ -124,6 +125,18 @@ do {                                                                            
 } while(0)
 
 
+#else
+
+#define  BACK_TRACE_DUMP(...)  do { fprintf(stderr,"[%s:%d] <DEBUG> ",__FILE__,__LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n"); } while(0)
+
+#define BACKTRACE_DEBUG(...)  do{ intern_back_trace(INTERN_LOG_DEBUG,__FILE__,__LINE__,__VA_ARGS__); }while(0)
+#define OSSL_DEBUG(...)       intern_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,__VA_ARGS__);
+#define OSSL_BUFFER_DEBUG(ptr,size,...)  intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,(void*)(ptr),(int)(size),__VA_ARGS__);
+
+#endif
+
+
+
 #define OSSL_DEBUG_BN(X,...)                                                                      \
 do{                                                                                               \
 	int __retv;                                                                                   \
@@ -134,5 +147,9 @@ do{                                                                             
 	}                                                                                             \
 	BN_free_safe X;                                                                               \
 } while(0)
+
+void intern_back_trace(int level,char* file, int lineno,const char* fmt,...);
+void intern_log(int level,const char* file,int lineno, const char* fmt,...);
+void intern_buffer_log(int level, const char* file,int lineno,void* pbuf,int size,const char* fmt,...);
 
 #endif /* __INTERN_LOG_H_47D822EB5F5DDD396D70E3833E294350__ */
