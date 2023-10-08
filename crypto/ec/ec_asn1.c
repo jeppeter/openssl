@@ -909,6 +909,7 @@ EC_GROUP *d2i_ECPKParameters(EC_GROUP **a, const unsigned char **in, long len)
 int i2d_ECPKParameters(const EC_GROUP *a, unsigned char **out)
 {
     int ret = 0;
+    BACKTRACE_DEBUG("i2d_ECPKParameters %p",i2d_ECPKParameters);
     ECPKPARAMETERS *tmp = EC_GROUP_get_ecpkparameters(a, NULL);
     if (tmp == NULL) {
         ERR_raise(ERR_LIB_EC, EC_R_GROUP2PKPARAMETERS_FAILURE);

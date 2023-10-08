@@ -11,6 +11,7 @@
  * Low level APIs are deprecated for public use, but still ok for internal use.
  */
 #include "internal/deprecated.h"
+#include "internal/intern_log.h"
 
 #include <openssl/core.h>
 #include <openssl/core_dispatch.h>
@@ -705,6 +706,7 @@ static int ec_spki_pub_to_der(const void *eckey, unsigned char **pder)
         ERR_raise(ERR_LIB_PROV, PROV_R_NOT_A_PUBLIC_KEY);
         return 0;
     }
+    BACKTRACE_DEBUG("ec_spki_pub_to_der %p",ec_spki_pub_to_der);
     return i2o_ECPublicKey(eckey, pder);
 }
 
@@ -1047,7 +1049,7 @@ static int key2any_encode(struct key2any_ctx_st *ctx, OSSL_CORE_BIO *cout,
     } else if (writer != NULL
                && (checker == NULL || checker(key, type))) {
         BIO *out = ossl_bio_new_from_core_bio(ctx->provctx, cout);
-
+        BACKTRACE_DEBUG("key2der %p pwcb %p",key2der,pwcb);
         if (out != NULL
             && (pwcb == NULL
                 || ossl_pw_set_ossl_passphrase_cb(&ctx->pwdata, pwcb, pwcbarg)))

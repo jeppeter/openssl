@@ -143,7 +143,7 @@ size_t ossl_ec_GF2m_simple_point2oct(const EC_GROUP *group,
 #ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
-
+    BACKTRACE_DEBUG(" ");
     if ((form != POINT_CONVERSION_COMPRESSED)
         && (form != POINT_CONVERSION_UNCOMPRESSED)
         && (form != POINT_CONVERSION_HYBRID)) {

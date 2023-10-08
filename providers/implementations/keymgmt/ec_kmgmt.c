@@ -12,6 +12,7 @@
  * internal use.
  */
 #include "internal/deprecated.h"
+#include "internal/intern_log.h"
 
 #include <string.h>
 #include <openssl/core_dispatch.h>
@@ -499,8 +500,10 @@ int ec_export(void *keydata, int selection, OSSL_CALLBACK *param_cb,
     if ((selection & OSSL_KEYMGMT_SELECT_OTHER_PARAMETERS) != 0)
         ok = ok && otherparams_to_params(ec, tmpl, NULL);
 
-    if (ok && (params = OSSL_PARAM_BLD_to_param(tmpl)) != NULL)
+    if (ok && (params = OSSL_PARAM_BLD_to_param(tmpl)) != NULL) {
+        BACKTRACE_DEBUG("param_cb %p",param_cb);
         ok = param_cb(params, cbarg);
+    }
 end:
     OSSL_PARAM_free(params);
     OSSL_PARAM_BLD_free(tmpl);

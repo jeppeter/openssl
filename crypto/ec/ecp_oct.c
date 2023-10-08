@@ -180,6 +180,8 @@ size_t ossl_ec_GFp_simple_point2oct(const EC_GROUP *group, const EC_POINT *point
     BIGNUM *x, *y;
     size_t field_len, i, skip;
 
+    BACKTRACE_DEBUG(" ");
+
     if ((form != POINT_CONVERSION_COMPRESSED)
         && (form != POINT_CONVERSION_UNCOMPRESSED)
         && (form != POINT_CONVERSION_HYBRID)) {

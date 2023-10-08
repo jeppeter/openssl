@@ -582,6 +582,7 @@ static int encoder_process(struct encoder_process_data_st *data)
                 return 0;
             }
 
+            OSSL_DEBUG("data->ctx->construct %p",data->ctx->construct);
             original_data =
                 data->ctx->construct(current_encoder_inst,
                                      data->ctx->construct_data);
@@ -650,6 +651,7 @@ static int encoder_process(struct encoder_process_data_st *data)
             if (ok)
                 ok = (cbio = ossl_core_bio_new_from_bio(current_out)) != NULL;
             if (ok) {
+                OSSL_DEBUG("current_encoder->encode %p",current_encoder->encode);
                 ok = current_encoder->encode(current_encoder_ctx, cbio,
                                              original_data, current_abstract,
                                              data->ctx->selection,
