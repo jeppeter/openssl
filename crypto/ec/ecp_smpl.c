@@ -995,7 +995,7 @@ int ossl_ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     if (!BN_mod_lshift1_quick(r->Z, n0, p))
         goto err;
     OSSL_DEBUG_BN((16,r->Z,&xptr,n0,&yptr,p,&zptr,NULL),"mod_lshift_quick(r.z 0x%s,n0 0x%s,p 0x%s)",xptr,yptr,zptr);
-    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s Z_is_one %d",xptr,yptr,zptr,r->Z_is_one);
+    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s Z_is_one %d => 0",xptr,yptr,zptr,r->Z_is_one);
     r->Z_is_one = 0;
     /* Z_r = 2 * Y_a * Z_a */
 
