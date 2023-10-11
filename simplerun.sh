@@ -31,11 +31,13 @@ if [ ! -x /mnt/zdisk/clibs/test/ssltst/ssltst ]
 then
 	pushd $PWD && cd /mnt/zdisk/clibs/test/ssltst && make && popd
 fi
-/mnt/zdisk/clibs/test/ssltst/ssltst ecgen --ecpriv $ecfile --ecpub $ecpub $ectype $privnum 2>$genlog
-#/mnt/zdisk/clibs/test/ssltst/ssltst ecgen --ecpriv $ecfile --ecpub $ecpub $ectype $privnum 2>$outfile
+export OPENSSL_LOG_LEVEL=50
+#/mnt/zdisk/clibs/test/ssltst/ssltst ecgenbase --ecpriv $ecfile --ecpub $ecpub $ectype $privnum 2>$genlog
+/mnt/zdisk/clibs/test/ssltst/ssltst ecgenbase --ecpriv $ecfile --ecpub $ecpub $ectype $privnum 2>$outfile
 #/mnt/zdisk/clibs/test/ssltst/ssltst ecpubload $ectype  $ecpub 2>$outfile
-/mnt/zdisk/clibs/test/ssltst/ssltst ecsignbase -o $signfile $ecfile $hashnumber $hashsize 2>$signlog
-/mnt/zdisk/clibs/test/ssltst/ssltst ecvfybase $ectype $ecpub $hashnumber $signfile $hashsize 2>$outfile
+#/mnt/zdisk/clibs/test/ssltst/ssltst ecsignbase -o $signfile $ecfile $hashnumber $hashsize 2>$signlog
+#/mnt/zdisk/clibs/test/ssltst/ssltst ecsignbase -o $signfile $ecfile $hashnumber $hashsize 2>$outfile
+#/mnt/zdisk/clibs/test/ssltst/ssltst ecvfybase $ectype $ecpub $hashnumber $signfile $hashsize 2>$outfile
 
 python /mnt/zdisk/pylib/utils.py filterlog -i $outfile -o $simpleout python
 numbers=`cat $simpleout | grep -e 'random number' | awk '{print $3}' | xargs -I {} echo -n " {}"`

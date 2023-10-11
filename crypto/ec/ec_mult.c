@@ -289,6 +289,7 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
 
     //BACKTRACE_DEBUG("group->meth->make_affine %p",group->meth->make_affine);
     /* ensure input point is in affine coords for ladder step efficiency */
+    OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.x 0x%s p.y 0x%s p.z 0x%s Z_is_one %d",xptr,yptr,zptr,p->Z_is_one);
     if (!p->Z_is_one && (group->meth->make_affine == NULL
                          || !group->meth->make_affine(group, p, ctx))) {
             ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
@@ -309,8 +310,13 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         BN_consttime_swap(c, (a)->X, (b)->X, w);   \
         BN_consttime_swap(c, (a)->Y, (b)->Y, w);   \
         BN_consttime_swap(c, (a)->Z, (b)->Z, w);   \
+        OSSL_DEBUG_BN((16,(a)->X,&xptr,(a)->Y,&yptr,(a)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d",#a,xptr,#a,yptr,#a,zptr,(a)->Z_is_one); \
+        OSSL_DEBUG_BN((16,(b)->X,&xptr,(b)->Y,&yptr,(b)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d",#b,xptr,#b,yptr,#b,zptr,(b)->Z_is_one); \
+        OSSL_DEBUG("%s %d => %d set by %s %s %s",#t,(t),((a)->Z_is_one ^ (b)->Z_is_one) & (c),#a,#b,#c);\
         t = ((a)->Z_is_one ^ (b)->Z_is_one) & (c); \
+        OSSL_DEBUG_BN((16,(a)->X,&xptr,(a)->Y,&yptr,(a)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d => %d",#a,xptr,#a,yptr,#a,zptr,(a)->Z_is_one,(a)->Z_is_one ^ (t)); \
         (a)->Z_is_one ^= (t);                      \
+        OSSL_DEBUG_BN((16,(b)->X,&xptr,(b)->Y,&yptr,(b)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d => %d",#b,xptr,#b,yptr,#b,zptr,(b)->Z_is_one,(b)->Z_is_one); \
         (b)->Z_is_one ^= (t);                      \
 } while(0)
 
@@ -371,7 +377,8 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
      *
      * This is XOR. pbit tracks the previous bit of k.
      */
-
+    
+    Z_is_one = 0;
     for (i = cardinality_bits - 1; i >= 0; i--) {
         kbit = BN_is_bit_set(k, i) ^ pbit;
         OSSL_DEBUG_BN((16,s->X,&xptr,s->Y,&yptr,s->Z,&zptr,NULL),"s.X 0x%s s.Y 0x%s s.Z 0x%s", xptr,yptr,zptr);

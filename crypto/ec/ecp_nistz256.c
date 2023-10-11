@@ -939,11 +939,14 @@ __owur static int ecp_nistz256_set_from_affine(EC_POINT *out, const EC_GROUP *gr
                                                BN_CTX *ctx)
 {
     int ret = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     if ((ret = bn_set_words(out->X, in->X, P256_LIMBS))
         && (ret = bn_set_words(out->Y, in->Y, P256_LIMBS))
-        && (ret = bn_set_words(out->Z, ONE, P256_LIMBS)))
+        && (ret = bn_set_words(out->Z, ONE, P256_LIMBS))){
+        OSSL_DEBUG_BN((16,out->X,&xptr,out->Y,&yptr,out->Z,&zptr,NULL),"out.x 0x%s out.y 0x%s out.z 0x%s Z_is_one %d => 1",xptr,yptr,zptr,out->Z_is_one);
         out->Z_is_one = 1;
+    }
 
     return ret;
 }
@@ -972,6 +975,7 @@ __owur static int ecp_nistz256_points_mul(const EC_GROUP *group,
         P256_POINT_AFFINE a;
     } t, p;
     BIGNUM *tmp_scalar;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
 
     if ((num + 1) == 0 || (num + 1) > OPENSSL_MALLOC_MAX_NELEMS(void *)) {
         ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
@@ -1161,6 +1165,7 @@ __owur static int ecp_nistz256_points_mul(const EC_GROUP *group,
         !bn_set_words(r->Z, p.p.Z, P256_LIMBS)) {
         goto err;
     }
+    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s Z_is_one %d => %d",xptr,yptr,zptr,r->Z_is_one,is_one(r->Z) & 1);
     r->Z_is_one = is_one(r->Z) & 1;
 
     ret = 1;
