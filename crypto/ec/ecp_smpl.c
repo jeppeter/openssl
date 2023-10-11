@@ -329,7 +329,7 @@ int ossl_ec_GFp_simple_group_check_discriminant(const EC_GROUP *group,
 
 int ossl_ec_GFp_simple_point_init(EC_POINT *point)
 {
-    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+    //char *xptr=NULL,*yptr=NULL,*zptr=NULL;
     point->X = BN_new();
     point->Y = BN_new();
     point->Z = BN_new();    
@@ -341,7 +341,7 @@ int ossl_ec_GFp_simple_point_init(EC_POINT *point)
         BN_free(point->Z);
         return 0;
     }
-    OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0x%s point.y 0x%s point.z 0x%s Z_is_one 0",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0x%s point.y 0x%s point.z 0x%s Z_is_one 0",xptr,yptr,zptr);
     return 1;
 }
 
