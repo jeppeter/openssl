@@ -354,8 +354,8 @@ void ossl_ec_GFp_simple_point_finish(EC_POINT *point)
 
 void ossl_ec_GFp_simple_point_clear_finish(EC_POINT *point)
 {
-    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
-    OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0x%s point.y 0x%s point.z 0x%s Z_is_one %d => 0",xptr,yptr,zptr,point->Z_is_one);
+    //char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+    //OSSL_DEBUG_BN((16,point->X,&xptr,point->Y,&yptr,point->Z,&zptr,NULL),"point.x 0x%s point.y 0x%s point.z 0x%s Z_is_one %d => 0",xptr,yptr,zptr,point->Z_is_one);
     BN_clear_free(point->X);
     BN_clear_free(point->Y);
     BN_clear_free(point->Z);
