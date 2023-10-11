@@ -113,6 +113,8 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
                        const unsigned char *buf, size_t len, BN_CTX *ctx)
 {
     int ret;
+
+    OSSL_DEBUG("oct2point");
     if (group->meth->oct2point == 0
         && !(group->meth->flags & EC_FLAGS_DEFAULT_OCT)) {
         ERR_raise(ERR_LIB_EC, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
@@ -125,6 +127,10 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
     if (group->meth->flags & EC_FLAGS_DEFAULT_OCT) {
         if (group->meth->field_type == NID_X9_62_prime_field){
             ret = ossl_ec_GFp_simple_oct2point(group, point, buf, len, ctx);
+            if (ret <= 0) {
+                return ret;
+            }
+            ret = EC_POINT_is_on_curve(group,point,ctx);
             return ret;
         }
         else
@@ -136,11 +142,19 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
 #else
         {
             ret = ossl_ec_GF2m_simple_oct2point(group, point, buf, len, ctx);
+            if (ret <= 0) {
+                return ret;
+            }
+            ret = EC_POINT_is_on_curve(group,point,ctx);
             return ret;
         }
 #endif
     }
     ret = group->meth->oct2point(group, point, buf, len, ctx);
+    if (ret <= 0) {
+        return ret;
+    }
+    ret = EC_POINT_is_on_curve(group,point,ctx);
     return ret;
 }
 
