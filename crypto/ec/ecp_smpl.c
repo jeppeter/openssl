@@ -441,10 +441,12 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
         Z_is_one = BN_is_one(point->Z);
         if (group->meth->field_encode) {
             if (Z_is_one && (group->meth->field_set_to_one != 0)) {
+                OSSL_DEBUG("Z_is_one call field_set_to_one");
                 if (!group->meth->field_set_to_one(group, point->Z, ctx))
                     goto err;
                 OSSL_DEBUG_BN((16,point->Z,&xptr,NULL),"field_set_to_one point->Z 0x%s",xptr);
             } else {
+                OSSL_DEBUG("not Z_is_one call field_encode");
                 if (!group->
                     meth->field_encode(group, point->Z, point->Z, ctx))
                     goto err;

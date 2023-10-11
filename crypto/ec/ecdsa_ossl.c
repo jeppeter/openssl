@@ -130,7 +130,7 @@ static int ecdsa_sign_setup(EC_KEY *eckey, BN_CTX *ctx_in,
         || !BN_set_bit(X, order_bits))
         goto err;
 
-    OSSL_DEBUG_BN((16,k,&xptr,NULL),"k 0x%s",xptr);
+    OSSL_DEBUG_BN((16,k,&xptr,order,&yptr,NULL),"k 0x%s order 0x%s dlen %d",xptr,yptr,dlen);
     do {
         /* get random k */
         do {

@@ -46,12 +46,17 @@ EC_GROUP *EC_GROUP_new_curve_GFp(const BIGNUM *p, const BIGNUM *a,
      * prime method...
      *                                              <appro>
      */
+    OSSL_DEBUG("EC_GFp_mont_method");
     meth = EC_GFp_mont_method();
 #else
-    if (BN_nist_mod_func(p))
+    if (BN_nist_mod_func(p)) {
+        OSSL_DEBUG("EC_GFp_nist_method");
         meth = EC_GFp_nist_method();
-    else
+    }
+    else{
+        OSSL_DEBUG("EC_GFp_mont_method");
         meth = EC_GFp_mont_method();
+    }
 #endif
 
     ret = ossl_ec_group_new_ex(ossl_bn_get_libctx(ctx), NULL, meth);
