@@ -415,6 +415,9 @@ int ossl_ecdsa_simple_verify_sig(const unsigned char *dgst, int dgst_len,
         ERR_raise(ERR_LIB_EC, EC_R_MISSING_PARAMETERS);
         return -1;
     }
+    OSSL_DEBUG_BN((16,pub_key->X,&xptr,pub_key->Y,&yptr,pub_key->Z,&zptr,NULL),
+        "pub_key.x 0x%s pub_key.y 0x%s pub_key.z 0x%s pub_key.Z_is_one %d",
+        xptr,yptr,zptr,pub_key->Z_is_one);
 
     if (!EC_KEY_can_sign(eckey)) {
         ERR_raise(ERR_LIB_EC, EC_R_CURVE_DOES_NOT_SUPPORT_SIGNING);
