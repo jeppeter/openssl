@@ -130,7 +130,7 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
             if (ret <= 0) {
                 return ret;
             }
-            ret = EC_POINT_is_on_curve(group,point,ctx);
+            //ret = EC_POINT_is_on_curve(group,point,ctx);
             return ret;
         }
         else
@@ -145,7 +145,7 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
             if (ret <= 0) {
                 return ret;
             }
-            ret = EC_POINT_is_on_curve(group,point,ctx);
+            //ret = EC_POINT_is_on_curve(group,point,ctx);
             return ret;
         }
 #endif
@@ -154,7 +154,7 @@ int EC_POINT_oct2point(const EC_GROUP *group, EC_POINT *point,
     if (ret <= 0) {
         return ret;
     }
-    ret = EC_POINT_is_on_curve(group,point,ctx);
+    //ret = EC_POINT_is_on_curve(group,point,ctx);
     return ret;
 }
 

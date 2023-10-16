@@ -406,6 +406,7 @@ int ossl_ecdsa_simple_verify_sig(const unsigned char *dgst, int dgst_len,
     const EC_POINT *pub_key;
 
     char *xptr=NULL,*yptr=NULL,*zptr=NULL,*optr=NULL;
+    BACKTRACE_DEBUG("ossl_ecdsa_simple_verify_sig");
 
     OSSL_DEBUG_BN((16,sig->r,&xptr,sig->s,&yptr,NULL),"sig.r 0x%s sig.s 0x%s",xptr,yptr);
 
@@ -460,15 +461,21 @@ int ossl_ecdsa_simple_verify_sig(const unsigned char *dgst, int dgst_len,
     OSSL_DEBUG_BN((16,u2,&xptr,sig->s,&yptr,NULL),"s 0x%s u2 0x%s",yptr,xptr);
     /* digest -> m */
     i = BN_num_bits(order);
+    OSSL_DEBUG("order bits 0x%x",i);
     /*
      * Need to truncate digest if it is too long: first truncate whole bytes.
      */
-    if (8 * dgst_len > i)
+    if (8 * dgst_len > i){
         dgst_len = (i + 7) / 8;
+    }
+    OSSL_DEBUG("dgst_len 0x%x",dgst_len);
+
     if (!BN_bin2bn(dgst, dgst_len, m)) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         goto err;
     }
+    OSSL_DEBUG_BN((16,m,&xptr,NULL),"dgst_len 0x%x 0x%s",dgst_len,xptr);
+    OSSL_BUFFER_DEBUG(dgst,dgst_len,"dgst 0x%x",dgst_len);
     /* If still too long truncate remaining bits with a shift */
     if ((8 * dgst_len > i) && !BN_rshift(m, m, 8 - (i & 0x7))) {
         ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);

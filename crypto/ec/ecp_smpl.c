@@ -364,9 +364,9 @@ void ossl_ec_GFp_simple_point_clear_finish(EC_POINT *point)
 
 int ossl_ec_GFp_simple_point_copy(EC_POINT *dest, const EC_POINT *src)
 {
-    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
-    OSSL_DEBUG_BN((16,dest->X,&xptr,dest->Y,&yptr,dest->Z,&zptr,NULL),"orig.x 0x%s orig.y 0x%s orig.z 0x%s orig.Z_is_one %d",xptr,yptr,zptr,dest->Z_is_one);
-    OSSL_DEBUG_BN((16,src->X,&xptr,src->Y,&yptr,src->Z,&zptr,NULL),"new.x 0x%s new.y 0x%s new.z 0x%s new.Z_is_one %d",xptr,yptr,zptr,src->Z_is_one);
+    //char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+    //OSSL_DEBUG_BN((16,dest->X,&xptr,dest->Y,&yptr,dest->Z,&zptr,NULL),"orig.x 0x%s orig.y 0x%s orig.z 0x%s orig.Z_is_one %d",xptr,yptr,zptr,dest->Z_is_one);
+    //OSSL_DEBUG_BN((16,src->X,&xptr,src->Y,&yptr,src->Z,&zptr,NULL),"new.x 0x%s new.y 0x%s new.z 0x%s new.Z_is_one %d",xptr,yptr,zptr,src->Z_is_one);
     if (!BN_copy(dest->X, src->X))
         return 0;
     if (!BN_copy(dest->Y, src->Y))
@@ -714,7 +714,7 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
      */
 
     /* n1, n2 */
-    OSSL_DEBUG_BN((16,b->X,&xptr,b->Y,&yptr,b->Z,&zptr,NULL),"b.x 0x%s b.y 0x%s b.z 0x%s Z_is_one %d",xptr,yptr,zptr,b->Z_is_one);
+    //OSSL_DEBUG_BN((16,b->X,&xptr,b->Y,&yptr,b->Z,&zptr,NULL),"b.x 0x%s b.y 0x%s b.z 0x%s Z_is_one %d",xptr,yptr,zptr,b->Z_is_one);
     if (b->Z_is_one) {
         if (!BN_copy(n1, a->X))
             goto end;
@@ -739,7 +739,7 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     }
 
     /* n3, n4 */
-    OSSL_DEBUG_BN((16,a->X,&xptr,a->Y,&yptr,a->Z,&zptr,NULL),"a.x 0x%s a.y 0x%s a.z 0x%s Z_is_one %d",xptr,yptr,zptr,a->Z_is_one);
+    //OSSL_DEBUG_BN((16,a->X,&xptr,a->Y,&yptr,a->Z,&zptr,NULL),"a.x 0x%s a.y 0x%s a.z 0x%s Z_is_one %d",xptr,yptr,zptr,a->Z_is_one);
     if (a->Z_is_one) {
         if (!BN_copy(n3, b->X))
             goto end;
@@ -804,8 +804,8 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
     /* 'n8' = n2 + n4 */
 
     /* Z_r */
-    OSSL_DEBUG_BN((16,a->X,&xptr,a->Y,&yptr,a->Z,&zptr,NULL),"a.x 0x%s a.y 0x%s a.z 0x%s Z_is_one %d",xptr,yptr,zptr,a->Z_is_one);
-    OSSL_DEBUG_BN((16,b->X,&xptr,b->Y,&yptr,b->Z,&zptr,NULL),"b.x 0x%s b.y 0x%s b.z 0x%s Z_is_one %d",xptr,yptr,zptr,b->Z_is_one);
+    //OSSL_DEBUG_BN((16,a->X,&xptr,a->Y,&yptr,a->Z,&zptr,NULL),"a.x 0x%s a.y 0x%s a.z 0x%s Z_is_one %d",xptr,yptr,zptr,a->Z_is_one);
+    //OSSL_DEBUG_BN((16,b->X,&xptr,b->Y,&yptr,b->Z,&zptr,NULL),"b.x 0x%s b.y 0x%s b.z 0x%s Z_is_one %d",xptr,yptr,zptr,b->Z_is_one);
     if (a->Z_is_one && b->Z_is_one) {
         if (!BN_copy(r->Z, n5))
             goto end;
@@ -828,7 +828,7 @@ int ossl_ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a
         if (!field_mul(group, r->Z, n0, n5, ctx))
             goto end;
     }
-    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s Z_is_one %d",xptr,yptr,zptr,r->Z_is_one);
+    //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s Z_is_one %d",xptr,yptr,zptr,r->Z_is_one);
     r->Z_is_one = 0;
     /* Z_r = Z_a * Z_b * n5 */
 
@@ -1482,7 +1482,7 @@ int ossl_ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
                 if (!BN_one(p->Z))
                     goto err;
             }
-            OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.x 0x%s p.y 0x%s p.z 0x%s Z_is_one %d => 1",xptr,yptr,zptr,p->Z_is_one);
+            //OSSL_DEBUG_BN((16,p->X,&xptr,p->Y,&yptr,p->Z,&zptr,NULL),"p.x 0x%s p.y 0x%s p.z 0x%s Z_is_one %d => 1",xptr,yptr,zptr,p->Z_is_one);
             p->Z_is_one = 1;
         }
     }
