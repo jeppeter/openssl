@@ -20,6 +20,7 @@
 #include <openssl/pem.h>
 #include <openssl/hmac.h>
 #include <ctype.h>
+#include "internal/intern_log.h"
 
 #undef BUFSIZE
 #define BUFSIZE 1024*8
@@ -425,6 +426,7 @@ int dgst_main(int argc, char **argv)
         }
         ret = EXIT_SUCCESS;
         for (i = 0; i < argc; i++) {
+            OSSL2_DEBUG("[%d] [%s]",i,argv[i]);
             if (BIO_read_filename(in, argv[i]) <= 0) {
                 perror(argv[i]);
                 ret = EXIT_FAILURE;

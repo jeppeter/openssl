@@ -511,6 +511,7 @@ int ossl_sm2_internal_sign(const unsigned char *dgst, int dgstlen,
        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
        goto done;
     }
+    BACKTRACE_DEBUG("ossl_sm2_internal_sign");
     OSSL_BUFFER_DEBUG(dgst,dgstlen,"dgst");
     OSSL_DEBUG_BN((16,e,&xptr,NULL),"e 0x%s",xptr);
 
