@@ -20,6 +20,7 @@
 #include <openssl/err.h>
 #include <openssl/bn.h>
 #include <string.h>
+#include "internal/intern_log.h"
 
 int ossl_sm2_compute_z_digest(uint8_t *out,
                               const EVP_MD *digest,
@@ -209,6 +210,7 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
     BIGNUM *x1 = NULL;
     BIGNUM *tmp = NULL;
     OSSL_LIB_CTX *libctx = ossl_ec_key_get_libctx(key);
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
 
     kG = EC_POINT_new(group);
     ctx = BN_CTX_new_ex(libctx);
@@ -253,7 +255,28 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
             ERR_raise(ERR_LIB_SM2, ERR_R_INTERNAL_ERROR);
             goto done;
         }
+        OSSL_DEBUG_BN((16,k,&xptr,order,&yptr,NULL),"generate k 0x%s order 0x%s",xptr,yptr);
 
+#if 1
+        if (!EC_POINT_mul(group, kG, k, NULL, NULL, ctx)) {
+            ERR_raise(ERR_LIB_SM2, ERR_R_INTERNAL_ERROR);
+            goto done;
+        }
+        //OSSL_DEBUG_BN((16,kG->X,&xptr,kG->Y,&yptr,kG->Z,&zptr,NULL),"kG.x 0x%s kG.y 0x%s kG.z 0x%s",xptr,yptr,zptr);
+
+        if (!EC_POINT_get_affine_coordinates(group, kG, x1, NULL,
+                                                    ctx)) {
+            ERR_raise(ERR_LIB_SM2, ERR_R_INTERNAL_ERROR);
+            goto done;
+        }
+        OSSL_DEBUG_BN((16,x1,&xptr,NULL),"x1 0x%s",xptr);
+
+        if (!BN_mod_add(r, e, x1, order, ctx)) {
+            ERR_raise(ERR_LIB_SM2, ERR_R_INTERNAL_ERROR);
+            goto done;
+        }
+        OSSL_DEBUG_BN((16,r,&xptr,e,&yptr,x1,&zptr,order,&aptr,NULL),"mod_add(r 0x%s,e 0x%s,x1 0x%s,order 0x%s)",xptr,yptr,zptr,aptr);
+#else
         if (!EC_POINT_mul(group, kG, k, NULL, NULL, ctx)
                 || !EC_POINT_get_affine_coordinates(group, kG, x1, NULL,
                                                     ctx)
@@ -261,6 +284,8 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
             ERR_raise(ERR_LIB_SM2, ERR_R_INTERNAL_ERROR);
             goto done;
         }
+#endif
+        
 
         /* try again if r == 0 or r+k == n */
         if (BN_is_zero(r))
@@ -270,10 +295,43 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
             ERR_raise(ERR_LIB_SM2, ERR_R_INTERNAL_ERROR);
             goto done;
         }
+        OSSL_DEBUG_BN((16,rk,&xptr,r,&yptr,k,&zptr,NULL),"BN_add(rk 0x%s,r 0x%s,k 0x%s)",xptr,yptr,zptr);
 
         if (BN_cmp(rk, order) == 0)
             continue;
 
+#if 1
+        if (!BN_add(s, dA, BN_value_one())) {
+            ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+            goto done;
+        }
+        OSSL_DEBUG_BN((16,s,&xptr,dA,&yptr,NULL),"BN_add(s 0x%s,dA 0x%s,1)",xptr,yptr);
+
+        if (!ossl_ec_group_do_inverse_ord(group, s, s, ctx)) {
+            ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+            goto done;
+        }
+        OSSL_DEBUG_BN((16,s,&xptr,order,&yptr,NULL),"do_inverse_ord(s 0x%s,s,order 0x%s)",xptr,yptr);
+
+        if (!BN_mod_mul(tmp, dA, r, order, ctx)) {
+            ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+            goto done;
+        }
+        OSSL_DEBUG_BN((16,tmp,&xptr,dA,&yptr,r,&zptr,order,&aptr,NULL),"BN_mod_mul(tmp 0x%s,dA 0x%s,r 0x%s,order 0x%s)",xptr,yptr,zptr,aptr);
+
+        if (!BN_sub(tmp, k, tmp)) {
+            ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+            goto done;
+        }
+
+        OSSL_DEBUG_BN((16,tmp,&xptr,k,&yptr,NULL),"BN_sub(tmp 0x%s,k 0x%s,tmp)",xptr,yptr);
+
+        if (!BN_mod_mul(s, s, tmp, order, ctx)) {
+            ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+            goto done;
+        }
+        OSSL_DEBUG_BN((16,s,&xptr,tmp,&yptr,order,&zptr,NULL),"BN_mod_mul(s 0x%s,s,tmp 0x%s,order 0x%s)",xptr,yptr,zptr);
+#else
         if (!BN_add(s, dA, BN_value_one())
                 || !ossl_ec_group_do_inverse_ord(group, s, s, ctx)
                 || !BN_mod_mul(tmp, dA, r, order, ctx)
@@ -282,7 +340,7 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
             ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
             goto done;
         }
-
+#endif
         /* try again if s == 0 */
         if (BN_is_zero(s))
             continue;
@@ -293,6 +351,7 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
             goto done;
         }
 
+        OSSL_DEBUG_BN((16,r,&xptr,s,&yptr,NULL),"final r 0x%s s 0x%s",xptr,yptr);
          /* takes ownership of r and s */
         ECDSA_SIG_set0(sig, r, s);
         break;
@@ -396,12 +455,16 @@ ECDSA_SIG *ossl_sm2_do_sign(const EC_KEY *key,
 {
     BIGNUM *e = NULL;
     ECDSA_SIG *sig = NULL;
+    char *xptr=NULL;
 
     e = sm2_compute_msg_hash(digest, key, id, id_len, msg, msg_len);
     if (e == NULL) {
         /* SM2err already called */
         goto done;
     }
+
+    OSSL_BUFFER_DEBUG(msg,msg_len,"msg");
+    OSSL_DEBUG_BN((16,e,&xptr,NULL),"e 0x%s",xptr);
 
     sig = sm2_sig_gen(key, e);
 
@@ -441,12 +504,15 @@ int ossl_sm2_internal_sign(const unsigned char *dgst, int dgstlen,
     ECDSA_SIG *s = NULL;
     int sigleni;
     int ret = -1;
+    char *xptr=NULL;
 
     e = BN_bin2bn(dgst, dgstlen, NULL);
     if (e == NULL) {
        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
        goto done;
     }
+    OSSL_BUFFER_DEBUG(dgst,dgstlen,"dgst");
+    OSSL_DEBUG_BN((16,e,&xptr,NULL),"e 0x%s",xptr);
 
     s = sm2_sig_gen(eckey, e);
     if (s == NULL) {

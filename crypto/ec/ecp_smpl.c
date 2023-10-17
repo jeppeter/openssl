@@ -2219,7 +2219,7 @@ int ossl_ec_GFp_simple_ladder_post(const EC_GROUP *group,
             goto err;
     }
 
-    OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s Z_is_one %d => 0",xptr,yptr,zptr,r->Z_is_one);
+    //OSSL_DEBUG_BN((16,r->X,&xptr,r->Y,&yptr,r->Z,&zptr,NULL),"r.x 0x%s r.y 0x%s r.z 0x%s Z_is_one %d => 0",xptr,yptr,zptr,r->Z_is_one);
     r->Z_is_one = 1;
     ret = 1;
 

@@ -310,13 +310,13 @@ int ossl_ec_scalar_mul_ladder(const EC_GROUP *group, EC_POINT *r,
         BN_consttime_swap(c, (a)->X, (b)->X, w);   \
         BN_consttime_swap(c, (a)->Y, (b)->Y, w);   \
         BN_consttime_swap(c, (a)->Z, (b)->Z, w);   \
-        OSSL_DEBUG_BN((16,(a)->X,&xptr,(a)->Y,&yptr,(a)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d",#a,xptr,#a,yptr,#a,zptr,(a)->Z_is_one); \
-        OSSL_DEBUG_BN((16,(b)->X,&xptr,(b)->Y,&yptr,(b)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d",#b,xptr,#b,yptr,#b,zptr,(b)->Z_is_one); \
-        OSSL_DEBUG("%s %d => %d set by %s %s %s",#t,(t),((a)->Z_is_one ^ (b)->Z_is_one) & (c),#a,#b,#c);\
+        /*OSSL_DEBUG_BN((16,(a)->X,&xptr,(a)->Y,&yptr,(a)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d",#a,xptr,#a,yptr,#a,zptr,(a)->Z_is_one);*/ \
+        /*OSSL_DEBUG_BN((16,(b)->X,&xptr,(b)->Y,&yptr,(b)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d",#b,xptr,#b,yptr,#b,zptr,(b)->Z_is_one);*/ \
+        /*OSSL_DEBUG("%s %d => %d set by %s %s %s",#t,(t),((a)->Z_is_one ^ (b)->Z_is_one) & (c),#a,#b,#c); */\
         t = ((a)->Z_is_one ^ (b)->Z_is_one) & (c); \
-        OSSL_DEBUG_BN((16,(a)->X,&xptr,(a)->Y,&yptr,(a)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d => %d",#a,xptr,#a,yptr,#a,zptr,(a)->Z_is_one,(a)->Z_is_one ^ (t)); \
+        /*OSSL_DEBUG_BN((16,(a)->X,&xptr,(a)->Y,&yptr,(a)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d => %d",#a,xptr,#a,yptr,#a,zptr,(a)->Z_is_one,(a)->Z_is_one ^ (t));*/ \
         (a)->Z_is_one ^= (t);                      \
-        OSSL_DEBUG_BN((16,(b)->X,&xptr,(b)->Y,&yptr,(b)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d => %d",#b,xptr,#b,yptr,#b,zptr,(b)->Z_is_one,(b)->Z_is_one); \
+        /*OSSL_DEBUG_BN((16,(b)->X,&xptr,(b)->Y,&yptr,(b)->Z,&zptr,NULL),"%s.x 0x%s %s.y 0x%s %s.z 0x%s Z_is_one %d => %d",#b,xptr,#b,yptr,#b,zptr,(b)->Z_is_one,(b)->Z_is_one);*/ \
         (b)->Z_is_one ^= (t);                      \
 } while(0)
 
@@ -515,6 +515,7 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
                                              ctx);
         }
     }
+    BACKTRACE_DEBUG("ossl_ec_wNAF_mul");
 
     if (scalar != NULL) {
         OSSL_DEBUG(" ");
