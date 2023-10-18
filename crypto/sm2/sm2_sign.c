@@ -394,6 +394,7 @@ static int sm2_sig_verify(const EC_KEY *key, const ECDSA_SIG *sig,
     const BIGNUM *r = NULL;
     const BIGNUM *s = NULL;
     OSSL_LIB_CTX *libctx = ossl_ec_key_get_libctx(key);
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
 
     ctx = BN_CTX_new_ex(libctx);
     pt = EC_POINT_new(group);
@@ -434,6 +435,7 @@ static int sm2_sig_verify(const EC_KEY *key, const ECDSA_SIG *sig,
         ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
         goto done;
     }
+    OSSL_DEBUG_BN((16,t,&xptr,r,&yptr,s,&zptr,order,&aptr,NULL),"BN_mod_add(t 0x%s,r 0x%s,s 0x%s,order 0x%s)",xptr,yptr,zptr,aptr);
 
     if (BN_is_zero(t)) {
         ERR_raise(ERR_LIB_SM2, SM2_R_BAD_SIGNATURE);
@@ -445,11 +447,13 @@ static int sm2_sig_verify(const EC_KEY *key, const ECDSA_SIG *sig,
         ERR_raise(ERR_LIB_SM2, ERR_R_EC_LIB);
         goto done;
     }
+    OSSL_DEBUG_BN((16,x1,&xptr,NULL),"x1 0x%s",xptr);
 
     if (!BN_mod_add(t, e, x1, order, ctx)) {
         ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
         goto done;
     }
+    OSSL_DEBUG_BN((16,t,&xptr,e,&yptr,x1,&zptr,order,&aptr,NULL),"BN_mod_add(t 0x%s,e 0x%s,x1 0x%s,order 0x%s)",xptr,yptr,zptr,aptr);
 
     if (BN_cmp(r, t) == 0)
         ret = 1;
