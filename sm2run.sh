@@ -46,7 +46,8 @@ if [ ! -f $binfile ]
 then
 	dd if=/dev/urandom of=$binfile bs=1024 count=8
 fi
-$scriptdir/apps/openssl dgst -sm3 -sign $ecfile -out $signfile $binfile 2>$outfile
+$scriptdir/apps/openssl dgst -sm3 -sign $ecfile -out $signfile $binfile 2>$signlog
+$scriptdir/apps/openssl dgst -sm3 -verify $ecpub -signature $signfile $binfile 2>$outfile
 
 
 python /mnt/zdisk/pylib/utils.py filterlog -i $outfile -o $simpleout python
