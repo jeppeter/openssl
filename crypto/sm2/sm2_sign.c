@@ -22,6 +22,7 @@
 #include <string.h>
 #include "internal/intern_log.h"
 
+
 int ossl_sm2_compute_z_digest(uint8_t *out,
                               const EVP_MD *digest,
                               const uint8_t *id,
@@ -43,6 +44,8 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
     uint8_t *buf = NULL;
     uint16_t entl = 0;
     uint8_t e_byte = 0;
+    char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+    OSSL_BUFFER_DEBUG(id,id_len,"input id");
 
     hash = EVP_MD_CTX_new();
     ctx = BN_CTX_new_ex(ossl_ec_key_get_libctx(key));
@@ -80,16 +83,19 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
     entl = (uint16_t)(8 * id_len);
 
     e_byte = entl >> 8;
+    intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,&e_byte,1,"entl >> 8 number");
     if (!EVP_DigestUpdate(hash, &e_byte, 1)) {
         ERR_raise(ERR_LIB_SM2, ERR_R_EVP_LIB);
         goto done;
     }
     e_byte = entl & 0xFF;
+    intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,&e_byte,1,"entl & 0xff number");
     if (!EVP_DigestUpdate(hash, &e_byte, 1)) {
         ERR_raise(ERR_LIB_SM2, ERR_R_EVP_LIB);
         goto done;
     }
 
+    intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,(void*)id,id_len,"id len");
     if (id_len > 0 && !EVP_DigestUpdate(hash, id, id_len)) {
         ERR_raise(ERR_LIB_SM2, ERR_R_EVP_LIB);
         goto done;
@@ -99,6 +105,7 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
         ERR_raise(ERR_LIB_SM2, ERR_R_EC_LIB);
         goto done;
     }
+    OSSL_DEBUG_BN((16,p,&xptr,a,&yptr,b,&zptr,NULL),"p 0x%s a 0x%s b 0x%s",xptr,yptr,zptr);
 
     p_bytes = BN_num_bytes(p);
     buf = OPENSSL_zalloc(p_bytes);
@@ -108,22 +115,28 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
     }
 
     if (BN_bn2binpad(a, buf, p_bytes) < 0
+            || !intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,buf,p_bytes,"a number")
             || !EVP_DigestUpdate(hash, buf, p_bytes)
             || BN_bn2binpad(b, buf, p_bytes) < 0
+            || !intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,buf,p_bytes,"b number")
             || !EVP_DigestUpdate(hash, buf, p_bytes)
             || !EC_POINT_get_affine_coordinates(group,
                                                 EC_GROUP_get0_generator(group),
                                                 xG, yG, ctx)
             || BN_bn2binpad(xG, buf, p_bytes) < 0
+            || !intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,buf,p_bytes,"xG number")
             || !EVP_DigestUpdate(hash, buf, p_bytes)
             || BN_bn2binpad(yG, buf, p_bytes) < 0
+            || !intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,buf,p_bytes,"yG number")
             || !EVP_DigestUpdate(hash, buf, p_bytes)
             || !EC_POINT_get_affine_coordinates(group,
                                                 EC_KEY_get0_public_key(key),
                                                 xA, yA, ctx)
             || BN_bn2binpad(xA, buf, p_bytes) < 0
+            || !intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,buf,p_bytes,"xA number")
             || !EVP_DigestUpdate(hash, buf, p_bytes)
             || BN_bn2binpad(yA, buf, p_bytes) < 0
+            || !intern_buffer_log(INTERN_LOG_DEBUG,__FILE__,__LINE__,buf,p_bytes,"yA number")
             || !EVP_DigestUpdate(hash, buf, p_bytes)
             || !EVP_DigestFinal(hash, out, NULL)) {
         ERR_raise(ERR_LIB_SM2, ERR_R_INTERNAL_ERROR);

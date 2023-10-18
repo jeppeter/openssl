@@ -44,7 +44,7 @@ $scriptdir/apps/openssl ecparam -genkey -name SM2 -noout -out $ecfile 2>$genlog
 $scriptdir/apps/openssl ec -in $ecfile -pubout -out $ecpub 2>$publog
 if [ ! -f $binfile ]
 then
-	dd if=/dev/urandom of=$binfile bs=1024 count=4
+	dd if=/dev/urandom of=$binfile bs=1024 count=8
 fi
 $scriptdir/apps/openssl dgst -sm3 -sign $ecfile -out $signfile $binfile 2>$outfile
 

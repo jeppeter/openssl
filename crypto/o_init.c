@@ -66,7 +66,7 @@ char* format_intern_level(int level)
 	return "TRACE";
 }
 
-void intern_back_trace(int level,char* file, int lineno,const char* fmt,...)
+int intern_back_trace(int level,char* file, int lineno,const char* fmt,...)
 {
 	void** ptracebuf= NULL;
 	int tracesize = 16;
@@ -75,9 +75,11 @@ void intern_back_trace(int level,char* file, int lineno,const char* fmt,...)
 	char** psymbols=NULL;
 	va_list ap;
 	int i;
+	int retlen = 0;
 
 	if (check_intern_level(level) == 0 ){
-		return;
+		retlen += 1;
+		return retlen;
 	}
 
 	while(1) {
@@ -102,16 +104,16 @@ void intern_back_trace(int level,char* file, int lineno,const char* fmt,...)
 			break;
 		}
 
-		fprintf(stderr,"[%s:%d] SYMBOLSFUNC <%s> ",file,lineno,format_intern_level(level));
+		retlen += fprintf(stderr,"[%s:%d] SYMBOLSFUNC <%s> ",file,lineno,format_intern_level(level));
 		if (fmt != NULL) {
 			va_start(ap,fmt);
 			vfprintf(stderr,fmt,ap);
 		}
 
 		for(i=1;i<tracelen;i++) {
-			fprintf(stderr,"\nFUNC[%d] [%s] [%p]",i-1, psymbols[i],ptracebuf[i]);
+			retlen += fprintf(stderr,"\nFUNC[%d] [%s] [%p]",i-1, psymbols[i],ptracebuf[i]);
 		}
-		fprintf(stderr,"\n");
+		retlen += fprintf(stderr,"\n");
 		break;
 	}
 
@@ -124,75 +126,79 @@ void intern_back_trace(int level,char* file, int lineno,const char* fmt,...)
 		free(ptracebuf);
 	}
 	ptracebuf = NULL;
-	return;
+	return retlen;
 }
 
-void intern_log(int level,const char* file,int lineno, const char* fmt,...)
+int intern_log(int level,const char* file,int lineno, const char* fmt,...)
 {
 	va_list ap;
+	int retlen = 0;
 
 	if (check_intern_level(level) == 0) {
-		return ;
+		retlen += 1;
+		return retlen;
 	}
 
-	fprintf(stderr,"[%s:%d] <%s> ",file,lineno,format_intern_level(level));
+	retlen += fprintf(stderr,"[%s:%d] <%s> ",file,lineno,format_intern_level(level));
 	va_start(ap,fmt);
-	vfprintf(stderr,fmt,ap);
-	fprintf(stderr,"\n");
+	retlen += vfprintf(stderr,fmt,ap);
+	retlen += fprintf(stderr,"\n");
 	fflush(stderr);
-	return;
+	return retlen;
 }
 
-void intern_buffer_log(int level, const char* file,int lineno,void* pbuf,int size,const char* fmt,...)
+int intern_buffer_log(int level, const char* file,int lineno,void* pbuf,int size,const char* fmt,...)
 {
 	unsigned char* ptr=(unsigned char*)pbuf;
 	int lasti;
 	int i;
 	va_list ap;
+	int retlen=0;
 
 	if (check_intern_level(level) == 0) {
-		return;
+		retlen += 1;
+		return retlen;
 	}
 
-	fprintf(stderr,"[%s:%d] <%s> [%p] size[%d:0x%x]", file,lineno,format_intern_level(level),ptr,size,size);
+	retlen += fprintf(stderr,"[%s:%d] <%s> [%p] size[%d:0x%x]", file,lineno,format_intern_level(level),ptr,size,size);
 	va_start(ap,fmt);
-	vfprintf(stderr,fmt,ap);
+	retlen += vfprintf(stderr,fmt,ap);
 
 	lasti = 0;
 	for(i=0;i<size;i++) {
 		if ((i % 16) == 0) {
 			if (i > 0) {
-				fprintf(stderr,"    ");
+				retlen += fprintf(stderr,"    ");
 				while(lasti != i) {
 					if (ptr[lasti] >= 0x20 && ptr[lasti] <= 0x7e) {
-						fprintf(stderr,"%c",ptr[lasti]);
+						retlen += fprintf(stderr,"%c",ptr[lasti]);
 					} else {
-						fprintf(stderr, ".");
+						retlen += fprintf(stderr, ".");
 					}
 					lasti ++;
 				}
 			}
-			fprintf(stderr,"\n0x%08x:",i);
+			retlen += fprintf(stderr,"\n0x%08x:",i);
 		}
-		fprintf(stderr," 0x%02x",ptr[i]);
+		retlen += fprintf(stderr," 0x%02x",ptr[i]);
 	}
 
 	if (lasti != i) {
 		while((i % 16)!=0) {
-			fprintf(stderr,"     ");
+			retlen += fprintf(stderr,"     ");
 			i ++;
 		}
 
-		fprintf(stderr,"    ");
+		retlen += fprintf(stderr,"    ");
 		while(lasti < size) {
 			if (ptr[lasti] >= 0x20 && ptr[lasti] <= 0x7e) {
-				fprintf(stderr,"%c",ptr[lasti]);
+				retlen += fprintf(stderr,"%c",ptr[lasti]);
 			} else {
-				fprintf(stderr, ".");
+				retlen += fprintf(stderr, ".");
 			}
 			lasti ++;
 		}		
  	}
- 	fprintf(stderr,"\n");
- 	return;
+ 	retlen += fprintf(stderr,"\n");
+ 	return retlen;
 }

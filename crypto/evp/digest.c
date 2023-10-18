@@ -21,6 +21,7 @@
 #include <openssl/core_names.h>
 #include "internal/cryptlib.h"
 #include "internal/provider.h"
+#include "internal/intern_log.h"
 #include "internal/core.h"
 #include "crypto/evp.h"
 #include "evp_local.h"
@@ -442,6 +443,8 @@ int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *isize)
         ERR_raise(ERR_LIB_EVP, EVP_R_FINAL_ERROR);
         return 0;
     }
+
+    BACKTRACE_DEBUG("digest->dfinal %p",ctx->digest->dfinal);
 
     ret = ctx->digest->dfinal(ctx->algctx, md, &size, mdsize);
 

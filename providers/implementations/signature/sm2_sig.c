@@ -32,6 +32,7 @@
 #include "crypto/ec.h"
 #include "crypto/sm2.h"
 #include "prov/der_sm2.h"
+#include "internal/intern_log.h"
 
 static OSSL_FUNC_signature_newctx_fn sm2sig_newctx;
 static OSSL_FUNC_signature_sign_init_fn sm2sig_signature_init;
@@ -263,6 +264,7 @@ static int sm2sig_compute_z_digest(PROV_SM2_CTX *ctx)
                                           ctx->ec)
             || !EVP_DigestUpdate(ctx->mdctx, z, ctx->mdsize))
             ret = 0;
+        OSSL2_BUFFER_DEBUG(z,ctx->mdsize,"z output");
         OPENSSL_free(z);
     }
 
@@ -295,11 +297,13 @@ int sm2sig_digest_sign_final(void *vpsm2ctx, unsigned char *sig, size_t *siglen,
      * If sig is NULL then we're just finding out the sig size. Other fields
      * are ignored. Defer to sm2sig_sign.
      */
+    OSSL2_BUFFER_DEBUG(sig,sigsize,"sig buffer");
     if (sig != NULL) {
         if (!(sm2sig_compute_z_digest(psm2ctx)
               && EVP_DigestFinal_ex(psm2ctx->mdctx, digest, &dlen)))
             return 0;
     }
+    OSSL2_BUFFER_DEBUG(digest,dlen,"digest");
 
     return sm2sig_sign(vpsm2ctx, sig, siglen, sigsize, digest, (size_t)dlen);
 }

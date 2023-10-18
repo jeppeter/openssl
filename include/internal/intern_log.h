@@ -256,8 +256,8 @@ do{                                                                             
 	BN_free_safe X;                                                                               \
 } while(0)
 
-void intern_back_trace(int level,char* file, int lineno,const char* fmt,...);
-void intern_log(int level,const char* file,int lineno, const char* fmt,...);
-void intern_buffer_log(int level, const char* file,int lineno,void* pbuf,int size,const char* fmt,...);
+int intern_back_trace(int level,char* file, int lineno,const char* fmt,...);
+int intern_log(int level,const char* file,int lineno, const char* fmt,...);
+int intern_buffer_log(int level, const char* file,int lineno,void* pbuf,int size,const char* fmt,...);
 
 #endif /* __INTERN_LOG_H_47D822EB5F5DDD396D70E3833E294350__ */
