@@ -297,13 +297,13 @@ int sm2sig_digest_sign_final(void *vpsm2ctx, unsigned char *sig, size_t *siglen,
      * If sig is NULL then we're just finding out the sig size. Other fields
      * are ignored. Defer to sm2sig_sign.
      */
-    OSSL2_BUFFER_DEBUG(sig,sigsize,"sig buffer");
+    //OSSL2_BUFFER_DEBUG(sig,sigsize,"sig buffer");
     if (sig != NULL) {
         if (!(sm2sig_compute_z_digest(psm2ctx)
               && EVP_DigestFinal_ex(psm2ctx->mdctx, digest, &dlen)))
             return 0;
     }
-    OSSL2_BUFFER_DEBUG(digest,dlen,"digest");
+    //OSSL2_BUFFER_DEBUG(digest,dlen,"digest");
 
     return sm2sig_sign(vpsm2ctx, sig, siglen, sigsize, digest, (size_t)dlen);
 }
