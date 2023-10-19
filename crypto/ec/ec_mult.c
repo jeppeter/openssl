@@ -762,12 +762,12 @@ int ossl_ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
      *    ...
      */
     for (i = 0; i < num + num_scalar; i++) {
-        OSSL_DEBUG("i [%ld] num [%ld]",i,num);
+        //OSSL_DEBUG("i [%ld] num [%ld]",i,num);
         if (i < num) {
             OSSL_DEBUG("[%ld] copy points [%ld]", i,i);
-            OSSL_DEBUG_BN((16,points[i]->X,&xptr,points[i]->Y,&yptr,points[i]->Z,&zptr,NULL),
-                "points[%ld].x 0x%s points[%ld].y 0x%s points[%ld].z 0x%s points[%ld].Z_is_one %d",
-                i,xptr,i,yptr,i,zptr,i,points[i]->Z_is_one);
+            //OSSL_DEBUG_BN((16,points[i]->X,&xptr,points[i]->Y,&yptr,points[i]->Z,&zptr,NULL),
+            //    "points[%ld].x 0x%s points[%ld].y 0x%s points[%ld].z 0x%s points[%ld].Z_is_one %d",
+            //    i,xptr,i,yptr,i,zptr,i,points[i]->Z_is_one);
             if (!EC_POINT_copy(val_sub[i][0], points[i]))
                 goto err;
         } else {
