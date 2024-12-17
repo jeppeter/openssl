@@ -24,6 +24,7 @@
 #include "internal/cryptlib.h"
 #include "internal/provider.h"
 #include "internal/core.h"
+#include "internal/intern_log.h"
 #include "crypto/evp.h"
 #include "evp_local.h"
 
@@ -411,6 +412,7 @@ int EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,
 
 int EVP_CipherFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl)
 {
+    OSSL_DEBUG("ctx->encrypt %d",ctx->encrypt);
     if (ctx->encrypt)
         return EVP_EncryptFinal_ex(ctx, out, outl);
     else
@@ -665,17 +667,20 @@ int EVP_EncryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl)
     if (outl != NULL) {
         *outl = 0;
     } else {
+        OSSL_DEBUG(" ");
         ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_NULL_PARAMETER);
         return 0;
     }
 
     /* Prevent accidental use of decryption context when encrypting */
     if (!ctx->encrypt) {
+        OSSL_DEBUG(" ");
         ERR_raise(ERR_LIB_EVP, EVP_R_INVALID_OPERATION);
         return 0;
     }
 
     if (ctx->cipher == NULL) {
+        OSSL_DEBUG(" ");
         ERR_raise(ERR_LIB_EVP, EVP_R_NO_CIPHER_SET);
         return 0;
     }
@@ -685,6 +690,7 @@ int EVP_EncryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl)
     blocksize = EVP_CIPHER_CTX_get_block_size(ctx);
 
     if (blocksize < 1 || ctx->cipher->cfinal == NULL) {
+        OSSL_DEBUG(" ");
         ERR_raise(ERR_LIB_EVP, EVP_R_FINAL_ERROR);
         return 0;
     }
@@ -694,6 +700,7 @@ int EVP_EncryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl)
 
     if (ret) {
         if (soutl > INT_MAX) {
+            OSSL_DEBUG(" ");
             ERR_raise(ERR_LIB_EVP, EVP_R_FINAL_ERROR);
             return 0;
         }
@@ -707,8 +714,10 @@ int EVP_EncryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl)
 
     if (ctx->cipher->flags & EVP_CIPH_FLAG_CUSTOM_CIPHER) {
         ret = ctx->cipher->do_cipher(ctx, out, NULL, 0);
-        if (ret < 0)
+        if (ret < 0){
+            OSSL_DEBUG(" ");
             return 0;
+        }
         else
             *outl = ret;
         return 1;
@@ -723,6 +732,7 @@ int EVP_EncryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl)
     bl = ctx->buf_len;
     if (ctx->flags & EVP_CIPH_NO_PADDING) {
         if (bl) {
+            OSSL_DEBUG(" ");
             ERR_raise(ERR_LIB_EVP, EVP_R_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH);
             return 0;
         }
@@ -737,6 +747,7 @@ int EVP_EncryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl)
 
     if (ret)
         *outl = b;
+    OSSL_DEBUG("ret %d", ret);
 
     return ret;
 }
