@@ -168,18 +168,21 @@ static void cfbr_encrypt_block(const unsigned char *in, unsigned char *out,
     if (nbits <= 0 || nbits > 128)
         return;
 
+    CMN_OSSL_BUFFER_DEBUG(key,16,"key");
     CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
     /* fill in the first half of the new IV with the current IV */
     memcpy(ovec, ivec, 16);
     /* construct the new IV */
     CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
-    CMN_OSSL_BUFFER_DEBUG(ivec,16,"input");
+    CMN_OSSL_BUFFER_DEBUG(ivec,16,"ivec");    
     (*block) (ivec, ivec, key);
-    CMN_OSSL_BUFFER_DEBUG(ivec,16,"output");
+    CMN_OSSL_BUFFER_DEBUG(ivec,16,"ivec");
     num = (nbits + 7) / 8;
     if (enc)                    /* encrypt the input */
-        for (n = 0; n < num; ++n)
+        for (n = 0; n < num; ++n){            
+            CMN_OSSL_DEBUG("out[%d]ovec[16+%d] [0x%x] => [0x%x] (0x%0x ^ 0x%x)", n, n,ovec[16+n],in[n] ^ ivec[n], in[n],ivec[n]);
             out[n] = (ovec[16 + n] = in[n] ^ ivec[n]);
+        }
     else                        /* decrypt the input */
         for (n = 0; n < num; ++n)
             out[n] = (ovec[16 + n] = in[n]) ^ ivec[n];
@@ -191,12 +194,12 @@ static void cfbr_encrypt_block(const unsigned char *in, unsigned char *out,
     if (rem == 0){
         memcpy(ivec, ovec + num, 16);
     }
-    else{
+    else{        
         for (n = 0; n < 16; ++n){
             ivec[n] = ovec[n + num] << rem | ovec[n + num + 1] >> (8 - rem);
         }
         CMN_OSSL_BUFFER_DEBUG(ivec,16,"ivec");
-        CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
+        CMN_OSSL_BUFFER_DEBUG(ovec,16+num,"ovec");
     }
 
     /* it is not necessary to cleanse ovec, since the IV is not secret */
@@ -211,13 +214,17 @@ void CRYPTO_cfb128_1_encrypt(const unsigned char *in, unsigned char *out,
     size_t n;
     unsigned char c[1], d[1];
 
+    CMN_OSSL_BUFFER_DEBUG(in,16,"----in");
+    CMN_OSSL_BUFFER_DEBUG(ivec,16,"----ivec");
     for (n = 0; n < bits; ++n) {
         c[0] = (in[n / 8] & (1 << (7 - n % 8))) ? 0x80 : 0;
         cfbr_encrypt_block(c, d, 1, key, ivec, enc, block);
+        CMN_OSSL_DEBUG("out[%d/8] = 0x%x d[0] = 0x%x",n,out[n/8],d[0]);
         out[n / 8] = (out[n / 8] & ~(1 << (unsigned int)(7 - n % 8))) |
             ((d[0] & 0x80) >> (unsigned int)(n % 8));
+        CMN_OSSL_DEBUG("out[%d /n] = 0x%x ",n,out[n / 8]);
     }
-    CMN_OSSL_BUFFER_DEBUG(out,16,"out");
+    CMN_OSSL_BUFFER_DEBUG(out,16,"----out");
 }
 
 void CRYPTO_cfb128_8_encrypt(const unsigned char *in, unsigned char *out,
