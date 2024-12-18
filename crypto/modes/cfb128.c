@@ -10,6 +10,7 @@
 #include <string.h>
 #include <openssl/crypto.h>
 #include "crypto/modes.h"
+#include "prov/der_log.h"
 
 #if defined(__GNUC__) && !defined(STRICT_ALIGNMENT)
 typedef size_t size_t_aX __attribute((__aligned__(1)));
@@ -64,13 +65,17 @@ void CRYPTO_cfb128_encrypt(const unsigned char *in, unsigned char *out,
                     n = 0;
                 }
                 if (len) {
+                    CMN_OSSL_BUFFER_DEBUG(ivec,16,"input");
                     (*block) (ivec, ivec, key);
+                    CMN_OSSL_BUFFER_DEBUG(ivec,16,"output");
                     while (len--) {
                         out[n] = ivec[n] ^= in[n];
                         ++n;
                     }
                 }
                 *num = n;
+                CMN_OSSL_BUFFER_DEBUG(ivec,16,"ivec");
+                CMN_OSSL_BUFFER_DEBUG(out,16,"out");
                 return;
             } while (0);
         }
@@ -78,12 +83,16 @@ void CRYPTO_cfb128_encrypt(const unsigned char *in, unsigned char *out,
 #endif
         while (l < len) {
             if (n == 0) {
+                CMN_OSSL_BUFFER_DEBUG(ivec,16,"ivec input");
                 (*block) (ivec, ivec, key);
+                CMN_OSSL_BUFFER_DEBUG(ivec,16,"ivec output");
             }
             out[l] = ivec[n] ^= in[l];
             ++l;
             n = (n + 1) % 16;
         }
+        CMN_OSSL_BUFFER_DEBUG(out,16,"out");
+        CMN_OSSL_BUFFER_DEBUG(ivec,16,"ivec");
         *num = n;
     } else {
 #if !defined(OPENSSL_SMALL_FOOTPRINT)
@@ -159,10 +168,14 @@ static void cfbr_encrypt_block(const unsigned char *in, unsigned char *out,
     if (nbits <= 0 || nbits > 128)
         return;
 
+    CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
     /* fill in the first half of the new IV with the current IV */
     memcpy(ovec, ivec, 16);
     /* construct the new IV */
+    CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
+    CMN_OSSL_BUFFER_DEBUG(ivec,16,"input");
     (*block) (ivec, ivec, key);
+    CMN_OSSL_BUFFER_DEBUG(ivec,16,"output");
     num = (nbits + 7) / 8;
     if (enc)                    /* encrypt the input */
         for (n = 0; n < num; ++n)
@@ -171,13 +184,20 @@ static void cfbr_encrypt_block(const unsigned char *in, unsigned char *out,
         for (n = 0; n < num; ++n)
             out[n] = (ovec[16 + n] = in[n]) ^ ivec[n];
     /* shift ovec left... */
+    CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
+    CMN_OSSL_BUFFER_DEBUG(out,16,"out");
     rem = nbits % 8;
     num = nbits / 8;
-    if (rem == 0)
+    if (rem == 0){
         memcpy(ivec, ovec + num, 16);
-    else
-        for (n = 0; n < 16; ++n)
+    }
+    else{
+        for (n = 0; n < 16; ++n){
             ivec[n] = ovec[n + num] << rem | ovec[n + num + 1] >> (8 - rem);
+        }
+        CMN_OSSL_BUFFER_DEBUG(ivec,16,"ivec");
+        CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
+    }
 
     /* it is not necessary to cleanse ovec, since the IV is not secret */
 }
@@ -197,6 +217,7 @@ void CRYPTO_cfb128_1_encrypt(const unsigned char *in, unsigned char *out,
         out[n / 8] = (out[n / 8] & ~(1 << (unsigned int)(7 - n % 8))) |
             ((d[0] & 0x80) >> (unsigned int)(n % 8));
     }
+    CMN_OSSL_BUFFER_DEBUG(out,16,"out");
 }
 
 void CRYPTO_cfb128_8_encrypt(const unsigned char *in, unsigned char *out,
@@ -206,6 +227,8 @@ void CRYPTO_cfb128_8_encrypt(const unsigned char *in, unsigned char *out,
 {
     size_t n;
 
-    for (n = 0; n < length; ++n)
+    for (n = 0; n < length; ++n){
         cfbr_encrypt_block(&in[n], &out[n], 8, key, ivec, enc, block);
+    }
+    CMN_OSSL_BUFFER_DEBUG(out,16,"out");
 }
