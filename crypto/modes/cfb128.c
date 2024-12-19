@@ -237,5 +237,5 @@ void CRYPTO_cfb128_8_encrypt(const unsigned char *in, unsigned char *out,
     for (n = 0; n < length; ++n){
         cfbr_encrypt_block(&in[n], &out[n], 8, key, ivec, enc, block);
     }
-    CMN_OSSL_BUFFER_DEBUG(out,16,"out");
+    CMN_OSSL_BUFFER_DEBUG(out,length,"out");
 }
