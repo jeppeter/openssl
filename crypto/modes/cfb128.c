@@ -171,6 +171,7 @@ static void cfbr_encrypt_block(const unsigned char *in, unsigned char *out,
     CMN_OSSL_BUFFER_DEBUG(key,16,"key");
     CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
     /* fill in the first half of the new IV with the current IV */
+    memset(ovec,0, sizeof(ovec));
     memcpy(ovec, ivec, 16);
     /* construct the new IV */
     CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
@@ -180,7 +181,7 @@ static void cfbr_encrypt_block(const unsigned char *in, unsigned char *out,
     num = (nbits + 7) / 8;
     if (enc)                    /* encrypt the input */
         for (n = 0; n < num; ++n){            
-            CMN_OSSL_DEBUG("out[%d]ovec[16+%d] [0x%x] => [0x%x] (0x%0x ^ 0x%x)", n, n,ovec[16+n],in[n] ^ ivec[n], in[n],ivec[n]);
+            CMN_OSSL_DEBUG("out[%d]=ovec[16+%d] [0x%x] => [0x%x] (0x%0x ^ 0x%x)", n, n,ovec[16+n],in[n] ^ ivec[n], in[n],ivec[n]);
             out[n] = (ovec[16 + n] = in[n] ^ ivec[n]);
         }
     else                        /* decrypt the input */
@@ -219,6 +220,7 @@ void CRYPTO_cfb128_1_encrypt(const unsigned char *in, unsigned char *out,
     CMN_OSSL_BUFFER_DEBUG(ivec,16,"----ivec");
     for (n = 0; n < bits; ++n) {
         c[0] = (in[n / 8] & (1 << (7 - n % 8))) ? 0x80 : 0;
+        CMN_OSSL_DEBUG("tmpin 0x%x",c[0]);
         cfbr_encrypt_block(c, d, 1, key, ivec, enc, block);
         CMN_OSSL_DEBUG("out[%ld/8] = 0x%x d[0] = 0x%x",n,out[n/8],d[0]);
         tmp1 = (out[n / 8] & ~(1 << (unsigned int)(7 - n % 8)));
@@ -226,7 +228,7 @@ void CRYPTO_cfb128_1_encrypt(const unsigned char *in, unsigned char *out,
         CMN_OSSL_DEBUG("tmp1 0x%x = out[%ld / 8] [0x%x] & ~(1 << (unsigned int)(7 - %ld %% 8)))",tmp1,n,out[n / 8],n);
         CMN_OSSL_DEBUG("tmp2 0x%x = (d[0] [0x%x] & 0x80) >> (n %ld %% 8)",tmp2,d[0],n);
         out[n / 8] =  tmp1 | tmp2;
-        CMN_OSSL_DEBUG("out[%ld /8] = 0x%x ",n,out[n / 8]);
+        CMN_OSSL_DEBUG("out[%ld / 8] = 0x%x",n,out[n / 8]);
     }
     CMN_OSSL_BUFFER_DEBUG(out,16,"----out");
 }
