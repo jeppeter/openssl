@@ -188,7 +188,7 @@ static void cfbr_encrypt_block(const unsigned char *in, unsigned char *out,
             out[n] = (ovec[16 + n] = in[n]) ^ ivec[n];
     /* shift ovec left... */
     CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
-    CMN_OSSL_BUFFER_DEBUG(out,16,"out");
+    //CMN_OSSL_BUFFER_DEBUG(out,16,"out");
     rem = nbits % 8;
     num = nbits / 8;
     if (rem == 0){
