@@ -185,8 +185,10 @@ static void cfbr_encrypt_block(const unsigned char *in, unsigned char *out,
             out[n] = (ovec[16 + n] = in[n] ^ ivec[n]);
         }
     else                        /* decrypt the input */
-        for (n = 0; n < num; ++n)
+        for (n = 0; n < num; ++n){
+            CMN_OSSL_DEBUG("out[%d]= [0x%x] => [0x%x] ( 0x%x ^ 0x%x) ovec[16+%d] = [0x%x]",n,out[n],in[n] ^ ivec[n], in[n],ivec[n],n,in[n]);
             out[n] = (ovec[16 + n] = in[n]) ^ ivec[n];
+        }
     /* shift ovec left... */
     CMN_OSSL_BUFFER_DEBUG(ovec,16,"ovec");
     //CMN_OSSL_BUFFER_DEBUG(out,16,"out");
@@ -213,7 +215,7 @@ void CRYPTO_cfb128_1_encrypt(const unsigned char *in, unsigned char *out,
                              int enc, block128_f block)
 {
     size_t n;
-    unsigned char c[1], d[1];
+    unsigned char c[1]={0}, d[1]={0};
     unsigned char tmp1,tmp2;
 
     CMN_OSSL_BUFFER_DEBUG(in,16,"----in");
