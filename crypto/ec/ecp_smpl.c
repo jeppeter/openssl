@@ -147,6 +147,9 @@ int ossl_ec_GFp_simple_group_set_curve(EC_GROUP *group,
     BN_CTX *new_ctx = NULL;
     BIGNUM *tmp_a;
     char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+    xptr = xptr;
+    yptr = yptr;
+    zptr = zptr;
 
     /* p must be a prime > 3 */
     if (BN_num_bits(p) <= 2 || !BN_is_odd(p)) {
@@ -169,12 +172,12 @@ int ossl_ec_GFp_simple_group_set_curve(EC_GROUP *group,
     if (!BN_copy(group->field, p))
         goto err;
     BN_set_negative(group->field, 0);
-    OSSL_DEBUG_BN((16,group->field,&xptr,NULL),"group.field 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,group->field,&xptr,NULL),"group.field 0x%s",xptr);
 
     /* group->a */
     if (!BN_nnmod(tmp_a, a, p, ctx))
         goto err;
-    OSSL_DEBUG_BN((16,tmp_a,&xptr,a,&yptr,p,&zptr,NULL),"nnmod(tmp_a 0x%s,a 0x%s,p 0x%s)",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,tmp_a,&xptr,a,&yptr,p,&zptr,NULL),"nnmod(tmp_a 0x%s,a 0x%s,p 0x%s)",xptr,yptr,zptr);
     if (group->meth->field_encode) {
         OSSL_DEBUG("field_encode a");
         if (!group->meth->field_encode(group, group->a, tmp_a, ctx))
@@ -441,10 +444,10 @@ int ossl_ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
         Z_is_one = BN_is_one(point->Z);
         if (group->meth->field_encode) {
             if (Z_is_one && (group->meth->field_set_to_one != 0)) {
-                OSSL_DEBUG("Z_is_one call field_set_to_one");
+                //OSSL_DEBUG("Z_is_one call field_set_to_one");
                 if (!group->meth->field_set_to_one(group, point->Z, ctx))
                     goto err;
-                OSSL_DEBUG_BN((16,point->Z,&xptr,NULL),"field_set_to_one point->Z 0x%s",xptr);
+                //OSSL_DEBUG_BN((16,point->Z,&xptr,NULL),"field_set_to_one point->Z 0x%s",xptr);
             } else {
                 OSSL_DEBUG("not Z_is_one call field_encode");
                 if (!group->
@@ -1205,8 +1208,8 @@ int ossl_ec_GFp_simple_cmp(const EC_GROUP *group, const EC_POINT *a,
     if (EC_POINT_is_at_infinity(group, b))
         return 1;
 
-    OSSL_DEBUG_BN((16,a->X,&xptr,a->Y,&yptr,a->Z,&zptr,NULL),"a.x 0x%s a.y 0x%s a.z 0x%s Z_is_one %d",xptr,yptr,zptr,a->Z_is_one);
-    OSSL_DEBUG_BN((16,b->X,&xptr,b->Y,&yptr,b->Z,&zptr,NULL),"b.x 0x%s b.y 0x%s b.z 0x%s Z_is_one %d",xptr,yptr,zptr,b->Z_is_one);
+    //OSSL_DEBUG_BN((16,a->X,&xptr,a->Y,&yptr,a->Z,&zptr,NULL),"a.x 0x%s a.y 0x%s a.z 0x%s Z_is_one %d",xptr,yptr,zptr,a->Z_is_one);
+    //OSSL_DEBUG_BN((16,b->X,&xptr,b->Y,&yptr,b->Z,&zptr,NULL),"b.x 0x%s b.y 0x%s b.z 0x%s Z_is_one %d",xptr,yptr,zptr,b->Z_is_one);
     if (a->Z_is_one && b->Z_is_one) {
         return ((BN_cmp(a->X, b->X) == 0) && BN_cmp(a->Y, b->Y) == 0) ? 0 : 1;
     }
@@ -1872,11 +1875,11 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
     if (!BN_mod_add_quick(t5, t6, t5, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t5,&xptr,t6,&yptr,group->field,&zptr,NULL),"add_mod_quick(t5 0x%s,t6 0x%s,t5,group.field 0x%s)",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,t5,&xptr,t6,&yptr,group->field,&zptr,NULL),"add_mod_quick(t5 0x%s,t6 0x%s,t5,group.field 0x%s)",xptr,yptr,zptr);
     if (!BN_mod_add_quick(t6, t3, t4, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t6,&xptr,t3,&yptr,t4,&zptr,group->field,&aptr,NULL),"add_mod_quick(t6 0x%s,t3 0x%s,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    //OSSL_DEBUG_BN((16,t6,&xptr,t3,&yptr,t4,&zptr,group->field,&aptr,NULL),"add_mod_quick(t6 0x%s,t3 0x%s,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
     if (!group->meth->field_mul(group, t5, t6, t5, ctx)) {
         goto err;
     }
@@ -1886,18 +1889,18 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
     if (!BN_mod_lshift_quick(t2, group->b, 2, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t2,&xptr,group->b,&yptr,group->field,&zptr,NULL),"mod_lshift_quick(t2 0x%s,group.b 0x%s,2,group.field 0x%s)",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,t2,&xptr,group->b,&yptr,group->field,&zptr,NULL),"mod_lshift_quick(t2 0x%s,group.b 0x%s,2,group.field 0x%s)",xptr,yptr,zptr);
     if (!group->meth->field_mul(group, t0, t2, t0, ctx)) {
         goto err;
     }
     if (!BN_mod_lshift1_quick(t5, t5, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t5,&xptr,group->field,&yptr,NULL),"lshift1_mod_quick(t5 0x%s,t5,group.field 0x%s)",xptr,yptr);
+    //OSSL_DEBUG_BN((16,t5,&xptr,group->field,&yptr,NULL),"lshift1_mod_quick(t5 0x%s,t5,group.field 0x%s)",xptr,yptr);
     if (!BN_mod_sub_quick(t3, t4, t3, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t3 0x%s,t4 0x%s,t3,group.field 0x%s)",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t3 0x%s,t4 0x%s,t3,group.field 0x%s)",xptr,yptr,zptr);
     /* s->Z coord output */
     if (!group->meth->field_sqr(group, s->Z, t3, ctx)) {
         goto err;
@@ -1908,12 +1911,12 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
     if (!BN_mod_add_quick(t0, t0, t5, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t0,&xptr,t5,&yptr,group->field,&zptr,NULL),"add_mod_quick(t0 0x%s,t0,t5 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,t0,&xptr,t5,&yptr,group->field,&zptr,NULL),"add_mod_quick(t0 0x%s,t0,t5 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     /* s->X coord output */
     if (!BN_mod_sub_quick(s->X, t0, t4, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,s->X,&xptr,t0,&yptr,t4,&zptr,group->field,&aptr,NULL),"sub_mod_quick(s.x 0x%s,t0 0x%s,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    //OSSL_DEBUG_BN((16,s->X,&xptr,t0,&yptr,t4,&zptr,group->field,&aptr,NULL),"sub_mod_quick(s.x 0x%s,t0 0x%s,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
     if (!group->meth->field_sqr(group, t4, r->X, ctx)) {
         goto err;
     }
@@ -1923,26 +1926,26 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
     if (!group->meth->field_mul(group, t6, t5, group->a, ctx)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t6,&xptr,NULL),"new t6 0x%s",xptr);
+    //OSSL_DEBUG_BN((16,t6,&xptr,NULL),"new t6 0x%s",xptr);
     if (!BN_mod_add_quick(t1, r->X, r->Z, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t1,&xptr,r->X,&yptr,r->Z,&zptr,group->field,&aptr,NULL),"add_mod_quick(t1 0x%s,r.x 0x%s,r.z 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    //OSSL_DEBUG_BN((16,t1,&xptr,r->X,&yptr,r->Z,&zptr,group->field,&aptr,NULL),"add_mod_quick(t1 0x%s,r.x 0x%s,r.z 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
     if (!group->meth->field_sqr(group, t1, t1, ctx)) {
         goto err;
     }
     if (!BN_mod_sub_quick(t1, t1, t4, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t1,&xptr,t4,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t1 0x%s,t1,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,t1,&xptr,t4,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t1 0x%s,t1,t4 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     if (!BN_mod_sub_quick(t1, t1, t5, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t1,&xptr,t5,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t1 0x%s,t1,t5 0x%s,group.field 0x%s)",xptr,yptr,zptr);
+    //OSSL_DEBUG_BN((16,t1,&xptr,t5,&yptr,group->field,&zptr,NULL),"sub_mod_quick(t1 0x%s,t1,t5 0x%s,group.field 0x%s)",xptr,yptr,zptr);
     if (!BN_mod_sub_quick(t3, t4, t6, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,t6,&zptr,group->field,&aptr,NULL),"sub_mod_quick(t3 0x%s,t4 0x%s,t6 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    //OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,t6,&zptr,group->field,&aptr,NULL),"sub_mod_quick(t3 0x%s,t4 0x%s,t6 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
     if (!group->meth->field_sqr(group, t3, t3, ctx)) {
         goto err;
     }

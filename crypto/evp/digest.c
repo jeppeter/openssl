@@ -444,7 +444,7 @@ int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *isize)
         return 0;
     }
 
-    BACKTRACE_DEBUG("digest->dfinal %p",ctx->digest->dfinal);
+    OSSL_DEBUG("EVP_DigestFinal_ex %p digest->dfinal %p",EVP_DigestFinal_ex,ctx->digest->dfinal);
 
     ret = ctx->digest->dfinal(ctx->algctx, md, &size, mdsize);
 

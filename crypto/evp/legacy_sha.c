@@ -12,6 +12,7 @@
  * internal use.
  */
 #include "internal/deprecated.h"
+#include "internal/intern_log.h"
 
 #include <openssl/sha.h>         /* diverse SHA macros */
 #include "internal/sha3.h"       /* KECCAK1600_WIDTH */
@@ -126,6 +127,7 @@ static const EVP_MD sha256_md = {
 
 const EVP_MD *EVP_sha256(void)
 {
+    OSSL_DEBUG("sha256_final %p",&sha256_final);
     return &sha256_md;
 }
 

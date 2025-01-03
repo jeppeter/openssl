@@ -13,6 +13,7 @@
  * the case here.
  */
 #include "internal/deprecated.h"
+#include "internal/intern_log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -97,6 +98,7 @@ void sha256_block_data_order(void *c, const void *p, size_t len);
 
 static void sha256_update(SHA256_CTX *c, const void *data, size_t len)
 {
+    BACKTRACE_DEBUG("sha256_update");
     const unsigned char *ptr = data;
     size_t res;
 
