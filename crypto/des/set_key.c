@@ -21,6 +21,7 @@
  * use.
  */
 #include "internal/deprecated.h"
+#include "internal/intern_log.h"
 
 #include <openssl/crypto.h>
 #include "internal/constant_time.h"
@@ -337,6 +338,7 @@ void DES_set_key_unchecked(const_DES_cblock *key, DES_key_schedule *schedule)
 #endif
     k = &schedule->ks->deslong[0];
     in = &(*key)[0];
+    OSSL_BUFFER_DEBUG(in,sizeof(key),"input key");
 
     c2l(in, c);
     c2l(in, d);
@@ -386,6 +388,7 @@ void DES_set_key_unchecked(const_DES_cblock *key, DES_key_schedule *schedule)
         t2 = ((s >> 16L) | (t & 0xffff0000L));
         *(k++) = ROTATE(t2, 26) & 0xffffffffL;
     }
+    OSSL_BUFFER_DEBUG(schedule->ks,sizeof(schedule->ks),"deslong");
 }
 
 int DES_key_sched(const_DES_cblock *key, DES_key_schedule *schedule)
