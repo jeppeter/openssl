@@ -1843,6 +1843,10 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
     int ret = 0;
     BIGNUM *t0, *t1, *t2, *t3, *t4, *t5, *t6 = NULL;
     char *xptr=NULL,*yptr=NULL,*zptr=NULL,*aptr=NULL;
+    xptr = xptr;
+    yptr = yptr;
+    zptr = zptr;
+    aptr = aptr;
 
     BN_CTX_start(ctx);
     t0 = BN_CTX_get(ctx);
@@ -1959,11 +1963,11 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
     if (!BN_mod_sub_quick(r->X, t3, t0, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,r->X,&xptr,t3,&yptr,t0,&zptr,group->field,&aptr,NULL),"sub_mod_quick(r.x 0x%s,t3 0x%s,t0 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    //OSSL_DEBUG_BN((16,r->X,&xptr,t3,&yptr,t0,&zptr,group->field,&aptr,NULL),"sub_mod_quick(r.x 0x%s,t3 0x%s,t0 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
     if (!BN_mod_add_quick(t3, t4, t6, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,t6,&zptr,group->field,&aptr,NULL),"add_mod_quick(t3 0x%s,t4 0x%s,t6 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    //OSSL_DEBUG_BN((16,t3,&xptr,t4,&yptr,t6,&zptr,group->field,&aptr,NULL),"add_mod_quick(t3 0x%s,t4 0x%s,t6 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
     if (!group->meth->field_sqr(group, t4, t5, ctx)) {
         goto err;
     }
@@ -1976,12 +1980,12 @@ int ossl_ec_GFp_simple_ladder_step(const EC_GROUP *group,
     if (!BN_mod_lshift1_quick(t1, t1, group->field)) {
         goto err;
     }
-    OSSL_DEBUG_BN((16,t1,&xptr,group->field,&yptr,NULL),"lshift1_mod_quick(t1 0x%s,t1,group.field 0x%s)",xptr,yptr);
+    //OSSL_DEBUG_BN((16,t1,&xptr,group->field,&yptr,NULL),"lshift1_mod_quick(t1 0x%s,t1,group.field 0x%s)",xptr,yptr);
     /* r->Z coord output */
     if (!BN_mod_add_quick(r->Z, t4, t1, group->field)){
         goto err;
     }
-    OSSL_DEBUG_BN((16,r->Z,&xptr,t4,&yptr,t1,&zptr,group->field,&aptr,NULL),"add_mod_quick(r.z 0x%s,t4 0x%s,t1 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
+    //OSSL_DEBUG_BN((16,r->Z,&xptr,t4,&yptr,t1,&zptr,group->field,&aptr,NULL),"add_mod_quick(r.z 0x%s,t4 0x%s,t1 0x%s,group.field 0x%s)",xptr,yptr,zptr,aptr);
 
 #else
     if (t6 == NULL

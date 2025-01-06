@@ -204,6 +204,12 @@ int ossl_ec_GFp_mont_field_mul(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a
     int ret;
     BIGNUM *copya=NULL,*copyb=NULL;
     char *aptr=NULL,*bptr=NULL,*rptr=NULL,*mptr=NULL;
+
+    aptr = aptr;
+    bptr = bptr;
+    rptr = rptr;
+    mptr = mptr;
+
     if (group->field_data1 == NULL) {
         ERR_raise(ERR_LIB_EC, EC_R_NOT_INITIALIZED);
         return 0;
@@ -224,7 +230,7 @@ int ossl_ec_GFp_mont_field_mul(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a
 
     ret =  BN_mod_mul_montgomery(r, a, b, group->field_data1, ctx);
     if (ret > 0 && copya && copyb) {
-        OSSL_DEBUG_BN((16,copya,&aptr,copyb,&bptr,r,&rptr,group->field,&mptr,NULL),"r 0x%s = a 0x%s * b 0x%s %% m 0x%s",rptr,aptr,bptr,mptr);
+        //OSSL_DEBUG_BN((16,copya,&aptr,copyb,&bptr,r,&rptr,group->field,&mptr,NULL),"r 0x%s = a 0x%s * b 0x%s %% m 0x%s",rptr,aptr,bptr,mptr);
     }
 
     if (copya) {
@@ -245,6 +251,9 @@ int ossl_ec_GFp_mont_field_sqr(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a
     int ret;
     BIGNUM *copya=NULL;
     char *xptr=NULL,*yptr=NULL,*zptr=NULL;
+    xptr = xptr;
+    yptr = yptr;
+    zptr = zptr;
     if (group->field_data1 == NULL) {
         ERR_raise(ERR_LIB_EC, EC_R_NOT_INITIALIZED);
         return 0;
@@ -393,6 +402,7 @@ int ossl_ec_GFp_mont_field_set_to_one(const EC_GROUP *group, BIGNUM *r,
                                       BN_CTX *ctx)
 {
     char *xptr=NULL;
+    xptr = xptr;
     if (group->field_data2 == NULL) {
         ERR_raise(ERR_LIB_EC, EC_R_NOT_INITIALIZED);
         return 0;
