@@ -15,6 +15,7 @@
 #include <openssl/buffer.h>
 #include <openssl/err.h>
 #include "internal/numbers.h"
+#include "internal/intern_log.h"
 #include "asn1_local.h"
 
 /*
@@ -197,6 +198,7 @@ static int asn1_item_embed_d2i(ASN1_VALUE **pval, const unsigned char **in,
         goto err;
     }
 
+    OSSL_DEBUG("it->itype 0x%x",it->itype);
     switch (it->itype) {
     case ASN1_ITYPE_PRIMITIVE:
         if (it->templates) {
