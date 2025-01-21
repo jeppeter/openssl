@@ -12,6 +12,7 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 #include "internal/bio.h"
+#include "internal/intern_log.h"
 
 /*
  * BIO_put and BIO_get both add to the digest, BIO_gets returns the digest
@@ -103,6 +104,8 @@ static int md_write(BIO *b, const char *in, int inl)
     int ret = 0;
     EVP_MD_CTX *ctx;
     BIO *next;
+
+    OSSL_BUFFER_DEBUG(in,inl,"md_write");
 
     if ((in == NULL) || (inl <= 0))
         return 0;
