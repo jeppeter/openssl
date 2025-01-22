@@ -41,6 +41,29 @@ do{                                                                             
     }                                                                                             \
 }while(0)
 
+#define DEBUG_PKCS7_SIGNER_INFO(si,...)                                                           \
+do{                                                                                               \
+    char* __pbuf=NULL;                                                                            \
+    u_char* _p=NULL;                                                                              \
+    int _plen=0;                                                                                  \
+    _plen = i2d_PKCS7_SIGNER_INFO((si),NULL);                                                     \
+    if (_plen > 0) {                                                                              \
+        __pbuf = OPENSSL_malloc(_plen);                                                           \
+        if (__pbuf != NULL) {                                                                     \
+            _p = (u_char*)__pbuf;                                                                 \
+            i2d_PKCS7_SIGNER_INFO((si),&_p);                                                      \
+            OSSL_BUFFER_DEBUG(__pbuf,_plen,__VA_ARGS__);                                          \
+            OPENSSL_free(__pbuf);                                                                 \
+        }                                                                                         \
+        __pbuf = NULL;                                                                            \
+        _p = NULL;                                                                                \
+    } else {                                                                                      \
+        OSSL_DEBUG("failed ");                                                                    \
+        OSSL_DEBUG(__VA_ARGS__);                                                                  \
+    }                                                                                             \
+}while(0)
+
+
 static int add_attribute(STACK_OF(X509_ATTRIBUTE) **sk, int nid, int atrtype,
                          void *value);
 static ASN1_TYPE *get_attribute(const STACK_OF(X509_ATTRIBUTE) *sk, int nid);
@@ -954,6 +977,7 @@ int PKCS7_SIGNER_INFO_sign(PKCS7_SIGNER_INFO *si)
     const PKCS7_CTX *ctx = si->ctx;    
     char* objname = NULL;
     int objsize = 100;
+    DEBUG_PKCS7_SIGNER_INFO(si,"before PKCS7_SIGNER_INFO_sign");
 
     md = EVP_get_digestbyobj(si->digest_alg->algorithm);
     if (md == NULL)
