@@ -16,6 +16,7 @@
 #include <openssl/pkcs7.h>
 #include <openssl/x509.h>
 #include <openssl/err.h>
+#include "internal/intern_log.h"
 
 int PKCS7_add_attrib_smimecap(PKCS7_SIGNER_INFO *si,
                               STACK_OF(X509_ALGOR) *cap)
@@ -110,6 +111,7 @@ int PKCS7_add1_attrib_digest(PKCS7_SIGNER_INFO *si,
     os = ASN1_OCTET_STRING_new();
     if (os == NULL)
         return 0;
+    OSSL_BUFFER_DEBUG(md,mdlen,"set NID_pkcs9_messageDigest buffer");
     if (!ASN1_STRING_set(os, md, mdlen)
         || !PKCS7_add_signed_attribute(si, NID_pkcs9_messageDigest,
                                        V_ASN1_OCTET_STRING, os)) {

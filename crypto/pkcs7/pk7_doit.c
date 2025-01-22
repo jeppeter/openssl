@@ -15,6 +15,7 @@
 #include <openssl/err.h>
 #include "internal/cryptlib.h"
 #include "internal/sizes.h"
+#include "internal/intern_log.h"
 #include "pk7_local.h"
 
 static int add_attribute(STACK_OF(X509_ATTRIBUTE) **sk, int nid, int atrtype,
@@ -67,7 +68,10 @@ static int pkcs7_bio_add_digest(BIO **pbio, X509_ALGOR *alg,
         goto err;
     }
 
+    OBJ_obj2txt(name, sizeof(name), alg->algorithm, 1);
+    OSSL_DEBUG("name oid [%s]",name);
     OBJ_obj2txt(name, sizeof(name), alg->algorithm, 0);
+    OSSL_DEBUG("name [%s]",name);
 
     (void)ERR_set_mark();
     fetched = EVP_MD_fetch(ossl_pkcs7_ctx_get0_libctx(ctx), name,
@@ -76,6 +80,7 @@ static int pkcs7_bio_add_digest(BIO **pbio, X509_ALGOR *alg,
         md = fetched;
     else
         md = EVP_get_digestbyname(name);
+    OSSL_DEBUG("get md [%s]", name);
 
     if (md == NULL) {
         (void)ERR_clear_last_mark();
@@ -278,9 +283,12 @@ BIO *PKCS7_dataInit(PKCS7 *p7, BIO *bio)
         goto err;
     }
 
-    for (i = 0; i < sk_X509_ALGOR_num(md_sk); i++)
-        if (!pkcs7_bio_add_digest(&out, sk_X509_ALGOR_value(md_sk, i), p7_ctx))
+    for (i = 0; i < sk_X509_ALGOR_num(md_sk); i++){
+        OSSL_DEBUG("[%d] sk_X509_ALGOR_num",i);
+        if (!pkcs7_bio_add_digest(&out, sk_X509_ALGOR_value(md_sk, i), p7_ctx)){
             goto err;
+        }
+    }
 
     if (xa && !pkcs7_bio_add_digest(&out, xa, p7_ctx))
         goto err;
@@ -290,6 +298,7 @@ BIO *PKCS7_dataInit(PKCS7 *p7, BIO *bio)
         unsigned char iv[EVP_MAX_IV_LENGTH];
         int keylen, ivlen;
         EVP_CIPHER_CTX *ctx;
+        OSSL_DEBUG("evp_cipher != NULL");
 
         if ((btmp = BIO_new(BIO_f_cipher())) == NULL) {
             ERR_raise(ERR_LIB_PKCS7, ERR_R_BIO_LIB);
@@ -304,6 +313,7 @@ BIO *PKCS7_dataInit(PKCS7 *p7, BIO *bio)
                 goto err;
 
         (void)ERR_set_mark();
+        OSSL_DEBUG("cipher name %s",EVP_CIPHER_get0_name(evp_cipher));
         fetched_cipher = EVP_CIPHER_fetch(libctx,
                                           EVP_CIPHER_get0_name(evp_cipher),
                                           propq);
@@ -351,8 +361,10 @@ BIO *PKCS7_dataInit(PKCS7 *p7, BIO *bio)
 
     if (bio == NULL) {
         if (PKCS7_is_detached(p7)) {
+            OSSL_DEBUG("PKCS7_is_detached");
             bio = BIO_new(BIO_s_null());
         } else if (os && os->length > 0) {
+            OSSL_BUFFER_DEBUG(os->data,os->length,"os data");
             bio = BIO_new_mem_buf(os->data, os->length);
         } else {
             bio = BIO_new(BIO_s_mem());
@@ -704,6 +716,7 @@ static int do_pkcs7_signed_attrib(PKCS7_SIGNER_INFO *si, EVP_MD_CTX *mctx)
         ERR_raise(ERR_LIB_PKCS7, ERR_R_EVP_LIB);
         return 0;
     }
+    OSSL_BUFFER_DEBUG(md_data,md_len,"md_data");
     if (!PKCS7_add1_attrib_digest(si, md_data, md_len)) {
         ERR_raise(ERR_LIB_PKCS7, ERR_R_MALLOC_FAILURE);
         return 0;
@@ -727,6 +740,8 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
     STACK_OF(PKCS7_SIGNER_INFO) *si_sk = NULL;
     ASN1_OCTET_STRING *os = NULL;
     const PKCS7_CTX *p7_ctx;
+    char name[OSSL_MAX_NAME_SIZE];
+
 
     if (p7 == NULL) {
         ERR_raise(ERR_LIB_PKCS7, PKCS7_R_INVALID_NULL_POINTER);
@@ -811,6 +826,8 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
                 continue;
 
             j = OBJ_obj2nid(si->digest_alg->algorithm);
+            OBJ_obj2txt(name,sizeof(name),si->digest_alg->algorithm,0);
+            OSSL_DEBUG("digest_alg [%s]", name);
 
             btmp = bio;
 
@@ -849,6 +866,7 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
                     ERR_raise(ERR_LIB_PKCS7, ERR_R_EVP_LIB);
                     goto err;
                 }
+                OSSL_BUFFER_DEBUG(abuf,abuflen,"set enc_digest");
                 ASN1_STRING_set0(si->enc_digest, abuf, abuflen);
             }
         }
@@ -860,6 +878,7 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
             goto err;
         if (!EVP_DigestFinal_ex(mdc, md_data, &md_len))
             goto err;
+        OSSL_BUFFER_DEBUG(md_data,md_len,"digest");
         if (!ASN1_OCTET_STRING_set(p7->d.digest->digest, md_data, md_len))
             goto err;
     }
@@ -886,6 +905,7 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
              */
             BIO_set_flags(btmp, BIO_FLAGS_MEM_RDONLY);
             BIO_set_mem_eof_return(btmp, 0);
+            OSSL_BUFFER_DEBUG(cont,contlen,"set os");
             ASN1_STRING_set0(os, (unsigned char *)cont, contlen);
         }
     }
@@ -903,11 +923,23 @@ int PKCS7_SIGNER_INFO_sign(PKCS7_SIGNER_INFO *si)
     int alen;
     size_t siglen;
     const EVP_MD *md = NULL;
-    const PKCS7_CTX *ctx = si->ctx;
+    const PKCS7_CTX *ctx = si->ctx;    
+    char* objname = NULL;
+    int objsize = 100;
 
     md = EVP_get_digestbyobj(si->digest_alg->algorithm);
     if (md == NULL)
         return 0;
+    objname = malloc(objsize);
+    if (objname != NULL) {
+        OBJ_obj2txt(objname,objsize,si->digest_alg->algorithm,1);
+        OSSL_DEBUG("digest oid [%s]",objname);
+        OBJ_obj2txt(objname,objsize,si->digest_alg->algorithm,0);
+        OSSL_DEBUG("digest name [%s]",objname);
+        free(objname);
+        objname = NULL;
+    }
+    
 
     mctx = EVP_MD_CTX_new();
     if (mctx == NULL) {
@@ -915,6 +947,7 @@ int PKCS7_SIGNER_INFO_sign(PKCS7_SIGNER_INFO *si)
         goto err;
     }
 
+    OSSL_DEBUG("md [%s]", EVP_MD_get0_name(md));
     if (EVP_DigestSignInit_ex(mctx, &pctx, EVP_MD_get0_name(md),
                               ossl_pkcs7_ctx_get0_libctx(ctx),
                               ossl_pkcs7_ctx_get0_propq(ctx), si->pkey,
@@ -925,6 +958,7 @@ int PKCS7_SIGNER_INFO_sign(PKCS7_SIGNER_INFO *si)
                          ASN1_ITEM_rptr(PKCS7_ATTR_SIGN));
     if (!abuf)
         goto err;
+    OSSL_BUFFER_DEBUG(abuf,alen,"digest buffer");
     if (EVP_DigestSignUpdate(mctx, abuf, alen) <= 0)
         goto err;
     OPENSSL_free(abuf);
@@ -938,7 +972,7 @@ int PKCS7_SIGNER_INFO_sign(PKCS7_SIGNER_INFO *si)
         goto err;
 
     EVP_MD_CTX_free(mctx);
-
+    OSSL_BUFFER_DEBUG(abuf,siglen,"set digest");
     ASN1_STRING_set0(si->enc_digest, abuf, siglen);
 
     return 1;
