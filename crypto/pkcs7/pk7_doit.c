@@ -18,6 +18,29 @@
 #include "internal/intern_log.h"
 #include "pk7_local.h"
 
+
+#define DEBUG_I2D_PKCS7(p7,...)                                                                   \
+do{                                                                                               \
+    char* __pbuf=NULL;                                                                            \
+    u_char* _p=NULL;                                                                              \
+    int _plen=0;                                                                                  \
+    _plen = i2d_PKCS7((p7),NULL);                                                                 \
+    if (_plen > 0) {                                                                              \
+        __pbuf = OPENSSL_malloc(_plen);                                                           \
+        if (__pbuf != NULL) {                                                                     \
+            _p = (u_char*)__pbuf;                                                                 \
+            i2d_PKCS7((p7),&_p);                                                                  \
+            OSSL_BUFFER_DEBUG(__pbuf,_plen,__VA_ARGS__);                                          \
+            OPENSSL_free(__pbuf);                                                                 \
+        }                                                                                         \
+        __pbuf = NULL;                                                                            \
+        _p = NULL;                                                                                \
+    } else {                                                                                      \
+        OSSL_DEBUG("failed ");                                                                    \
+        OSSL_DEBUG(__VA_ARGS__);                                                                  \
+    }                                                                                             \
+}while(0)
+
 static int add_attribute(STACK_OF(X509_ATTRIBUTE) **sk, int nid, int atrtype,
                          void *value);
 static ASN1_TYPE *get_attribute(const STACK_OF(X509_ATTRIBUTE) *sk, int nid);
@@ -827,7 +850,7 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
 
             j = OBJ_obj2nid(si->digest_alg->algorithm);
             OBJ_obj2txt(name,sizeof(name),si->digest_alg->algorithm,0);
-            OSSL_DEBUG("digest_alg [%s]", name);
+            OSSL_DEBUG("[%d]digest_alg [%s]",i, name);
 
             btmp = bio;
 
@@ -849,6 +872,7 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
              * sign the attributes
              */
             if (sk_X509_ATTRIBUTE_num(sk) > 0) {
+                OSSL_DEBUG("[%d] signed attr",i);
                 if (!do_pkcs7_signed_attrib(si, ctx_tmp))
                     goto err;
             } else {
@@ -866,8 +890,10 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
                     ERR_raise(ERR_LIB_PKCS7, ERR_R_EVP_LIB);
                     goto err;
                 }
-                OSSL_BUFFER_DEBUG(abuf,abuflen,"set enc_digest");
+                DEBUG_I2D_PKCS7(p7,"before set enc_digest");
+                OSSL_BUFFER_DEBUG(abuf,abuflen,"[%d]set enc_digest",i);
                 ASN1_STRING_set0(si->enc_digest, abuf, abuflen);
+                DEBUG_I2D_PKCS7(p7,"after set enc_digest");
             }
         }
     } else if (i == NID_pkcs7_digest) {
@@ -905,8 +931,10 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
              */
             BIO_set_flags(btmp, BIO_FLAGS_MEM_RDONLY);
             BIO_set_mem_eof_return(btmp, 0);
+            DEBUG_I2D_PKCS7(p7,"before set os");
             OSSL_BUFFER_DEBUG(cont,contlen,"set os");
             ASN1_STRING_set0(os, (unsigned char *)cont, contlen);
+            DEBUG_I2D_PKCS7(p7,"after set os");
         }
     }
     ret = 1;
