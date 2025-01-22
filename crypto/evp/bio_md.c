@@ -105,7 +105,13 @@ static int md_write(BIO *b, const char *in, int inl)
     EVP_MD_CTX *ctx;
     BIO *next;
 
-    OSSL_BUFFER_DEBUG(in,inl,"md_write [%s]",BIO_method_name(b));
+    if (inl > 0x400) {
+        OSSL_BUFFER_DEBUG(in,0x400,"md_write [%s] first",BIO_method_name(b));
+        OSSL_BUFFER_DEBUG(in+inl-0x400,0x400,"md_write [%s] after",BIO_method_name(b));
+    } else {
+        OSSL_BUFFER_DEBUG(in,inl,"md_write [%s]",BIO_method_name(b));    
+    }
+    
 
     if ((in == NULL) || (inl <= 0))
         return 0;
