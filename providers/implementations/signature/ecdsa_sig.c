@@ -12,6 +12,7 @@
  * internal use.
  */
 #include "internal/deprecated.h"
+#include "internal/intern_log.h"
 
 #include <string.h> /* memcpy */
 #include <openssl/crypto.h>
@@ -31,6 +32,7 @@
 #include "prov/securitycheck.h"
 #include "crypto/ec.h"
 #include "prov/der_ec.h"
+
 
 static OSSL_FUNC_signature_newctx_fn ecdsa_newctx;
 static OSSL_FUNC_signature_sign_init_fn ecdsa_sign_init;
@@ -330,6 +332,7 @@ int ecdsa_digest_signverify_update(void *vctx, const unsigned char *data,
     if (ctx == NULL || ctx->mdctx == NULL)
         return 0;
 
+    OSSL_BUFFER_DEBUG(data,datalen,"update data");
     return EVP_DigestUpdate(ctx->mdctx, data, datalen);
 }
 
@@ -339,6 +342,7 @@ int ecdsa_digest_sign_final(void *vctx, unsigned char *sig, size_t *siglen,
     PROV_ECDSA_CTX *ctx = (PROV_ECDSA_CTX *)vctx;
     unsigned char digest[EVP_MAX_MD_SIZE];
     unsigned int dlen = 0;
+    int ret;
 
     if (!ossl_prov_is_running() || ctx == NULL || ctx->mdctx == NULL)
         return 0;
@@ -351,7 +355,14 @@ int ecdsa_digest_sign_final(void *vctx, unsigned char *sig, size_t *siglen,
         && !EVP_DigestFinal_ex(ctx->mdctx, digest, &dlen))
         return 0;
     ctx->flag_allow_md = 1;
-    return ecdsa_sign(vctx, sig, siglen, sigsize, digest, (size_t)dlen);
+    if (digest != NULL) {
+        OSSL_BUFFER_DEBUG(digest,dlen,"digest");    
+    }    
+    ret = ecdsa_sign(vctx, sig, siglen, sigsize, digest, (size_t)dlen);
+    if (ret > 0 && sig != NULL) {
+        OSSL_BUFFER_DEBUG(sig,*siglen,"sig value");
+    }
+    return ret;
 }
 
 int ecdsa_digest_verify_final(void *vctx, const unsigned char *sig,

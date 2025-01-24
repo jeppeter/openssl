@@ -15,6 +15,7 @@
 #include "internal/provider.h"
 #include "internal/numbers.h"   /* includes SIZE_MAX */
 #include "evp_local.h"
+#include "internal/intern_log.h"
 
 #ifndef FIPS_MODULE
 
@@ -366,7 +367,18 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
     if (ret > 0)
         ret = evp_pkey_ctx_use_cached_data(locpctx);
 #endif
-
+    if (ret > 0) {
+        if (ctx->pctx != NULL) {
+            OSSL_DEBUG("pctx->name %s",ctx->pctx->keytype);
+        }
+        if (ctx->reqdigest) {
+            OSSL_DEBUG("pctx->reqdigest->type_name %s",ctx->reqdigest->type_name);
+        }
+        if (ctx->digest) {
+            OSSL_DEBUG("pctx->digest->type_name %s",ctx->digest->type_name);
+        }
+        
+    }    
     EVP_KEYMGMT_free(tmp_keymgmt);
     return ret > 0 ? 1 : 0;
 }
@@ -418,19 +430,24 @@ int EVP_DigestSignUpdate(EVP_MD_CTX *ctx, const void *data, size_t dsize)
         ERR_raise(ERR_LIB_EVP, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
         return 0;
     }
-
+    BACKTRACE_DEBUG("pctx->op.sig.signature->digest_sign_update %p name [%s] description [%s]",
+        pctx->op.sig.signature->digest_sign_update,
+        EVP_SIGNATURE_get0_name(pctx->op.sig.signature),
+        EVP_SIGNATURE_get0_description(pctx->op.sig.signature));
     return pctx->op.sig.signature->digest_sign_update(pctx->op.sig.algctx,
                                                       data, dsize);
 
  legacy:
     if (pctx != NULL) {
         /* do_sigver_init() checked that |digest_custom| is non-NULL */
+        OSSL_DEBUG("digest_custom %p",ctx->pctx->pmeth->digest_custom);
         if (pctx->flag_call_digest_custom
             && !ctx->pctx->pmeth->digest_custom(ctx->pctx, ctx))
             return 0;
         pctx->flag_call_digest_custom = 0;
     }
 
+    OSSL_DEBUG(" ");
     return EVP_DigestUpdate(ctx, data, dsize);
 }
 
