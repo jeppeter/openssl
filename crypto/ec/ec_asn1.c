@@ -943,6 +943,8 @@ EC_KEY *d2i_ECPrivateKey(EC_KEY **a, const unsigned char **in, long len)
     } else
         ret = *a;
 
+    OSSL_DEBUG("parameters %p ret->group %p",priv_key->parameters,ret->group);
+
     if (priv_key->parameters) {
         EC_GROUP_free(ret->group);
         ret->group = EC_GROUP_new_from_ecpkparameters(priv_key->parameters);
