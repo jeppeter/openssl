@@ -11,6 +11,7 @@
 #include "internal/cryptlib.h"
 #include <openssl/pkcs12.h>
 #include <openssl/trace.h>
+#include "internal/intern_log.h"
 
 /*
  * Encrypt/Decrypt a buffer based on password and algor, result in a
@@ -144,6 +145,7 @@ void *PKCS12_item_decrypt_d2i_ex(const X509_ALGOR *algor, const ASN1_ITEM *it,
         BIO_dump(trc_out, out, outlen);
         BIO_printf(trc_out, "\n");
     } OSSL_TRACE_END(PKCS12_DECRYPT);
+    OSSL_BUFFER_DEBUG(p,outlen,"PKCS8 outlen pout");
     ret = ASN1_item_d2i(NULL, &p, outlen, it);
     if (zbuf)
         OPENSSL_cleanse(out, outlen);

@@ -11,6 +11,7 @@
 #include "internal/cryptlib.h"
 #include <openssl/pkcs12.h>
 #include "crypto/x509.h" /* for ossl_x509_add_cert_new() */
+#include "internal/intern_log.h"
 
 /* Simplified PKCS#12 routines */
 
@@ -200,6 +201,7 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
     case NID_keyBag:
         if (pkey == NULL || *pkey != NULL)
             return 1;
+        OSSL_DEBUG(" ");
         *pkey = EVP_PKCS82PKEY(PKCS12_SAFEBAG_get0_p8inf(bag));
         if (*pkey == NULL)
             return 0;
@@ -208,6 +210,7 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
     case NID_pkcs8ShroudedKeyBag:
         if (pkey == NULL || *pkey != NULL)
             return 1;
+        OSSL_DEBUG(" ");
         if ((p8 = PKCS12_decrypt_skey(bag, pass, passlen)) == NULL)
             return 0;
         *pkey = EVP_PKCS82PKEY(p8);
@@ -217,6 +220,7 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
         break;
 
     case NID_certBag:
+        OSSL_DEBUG(" ");
         if (ocerts == NULL
                 || PKCS12_SAFEBAG_get_bag_nid(bag) != NID_x509Certificate)
             return 1;
