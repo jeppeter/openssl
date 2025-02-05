@@ -27,6 +27,14 @@ unsigned char *PKCS12_pbe_crypt_ex(const X509_ALGOR *algor,
     int outlen, i;
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     int max_out_len, mac_len = 0;
+    char evpname[40];
+    int ret;
+
+    ret = OBJ_obj2txt(evpname,sizeof(evpname),algor->algorithm,1);
+    if (ret > 0) {
+      OSSL_DEBUG("evpname [%s]", evpname);
+    }
+
 
     if (ctx == NULL) {
         ERR_raise(ERR_LIB_PKCS12, ERR_R_MALLOC_FAILURE);

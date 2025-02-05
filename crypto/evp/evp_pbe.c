@@ -16,6 +16,7 @@
 #include <openssl/x509.h>
 #include "crypto/evp.h"
 #include "evp_local.h"
+#include "internal/intern_log.h"
 
 /* Password based encryption (PBE) functions */
 
@@ -146,6 +147,7 @@ int EVP_PBE_CipherInit_ex(ASN1_OBJECT *pbe_obj, const char *pass, int passlen,
         (void)ERR_pop_to_mark();
     }
 
+    BACKTRACE_DEBUG("keygen %p keygen_ex %p",keygen,keygen_ex);
     /* Try extended keygen with libctx/propq first, fall back to legacy keygen */
     if (keygen_ex != NULL)
         ret = keygen_ex(ctx, pass, passlen, param, cipher, md, en_de, libctx, propq);

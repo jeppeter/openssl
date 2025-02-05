@@ -190,6 +190,23 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
     const ASN1_TYPE *attrib;
     ASN1_BMPSTRING *fname = NULL;
     ASN1_OCTET_STRING *lkid = NULL;
+    unsigned char* _buf=NULL;
+    int _buflen=0;
+    unsigned char* _p;
+
+    _buflen = i2d_PKCS12_SAFEBAG(bag,NULL);
+    if (_buflen >0) {
+        _buf = malloc(_buflen);
+        if (_buf != NULL) {
+            memset(_buf,0,_buflen);
+            _p = _buf;
+            i2d_PKCS12_SAFEBAG(bag,&_p);
+            OSSL_BUFFER_DEBUG(_buf,_buflen,"output PKCS12_SAFEBAG");
+            free(_buf);
+        }
+        _buf = NULL;
+        _buflen = 0;
+    }
 
     if ((attrib = PKCS12_SAFEBAG_get0_attr(bag, NID_friendlyName)))
         fname = attrib->value.bmpstring;
@@ -202,7 +219,24 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
         if (pkey == NULL || *pkey != NULL)
             return 1;
         OSSL_DEBUG(" ");
-        *pkey = EVP_PKCS82PKEY(PKCS12_SAFEBAG_get0_p8inf(bag));
+        p8 = (PKCS8_PRIV_KEY_INFO*)PKCS12_SAFEBAG_get0_p8inf(bag);
+        if (p8 == NULL) {
+            return 1;
+        }
+        _buflen = i2d_PKCS8_PRIV_KEY_INFO(p8,NULL);
+        if (_buflen > 0) {
+            _buf = malloc(_buflen);
+            if (_buf != NULL) {
+                memset(_buf,0,_buflen);
+                _p = _buf;
+                i2d_PKCS8_PRIV_KEY_INFO(p8,&_p);
+                OSSL_BUFFER_DEBUG(_buf,_buflen,"PKCS8_PRIV_KEY_INFO");
+                free(_buf);
+            }
+            _buf = NULL;
+            _buflen = 0;
+        }
+        *pkey = EVP_PKCS82PKEY(p8);
         if (*pkey == NULL)
             return 0;
         break;
@@ -213,6 +247,19 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
         OSSL_DEBUG(" ");
         if ((p8 = PKCS12_decrypt_skey(bag, pass, passlen)) == NULL)
             return 0;
+        _buflen = i2d_PKCS8_PRIV_KEY_INFO(p8,NULL);
+        if (_buflen > 0) {
+            _buf = malloc(_buflen);
+            if (_buf != NULL) {
+                memset(_buf,0,_buflen);
+                _p = _buf;
+                i2d_PKCS8_PRIV_KEY_INFO(p8,&_p);
+                OSSL_BUFFER_DEBUG(_buf,_buflen,"PKCS8_PRIV_KEY_INFO");
+                free(_buf);
+            }
+            _buf = NULL;
+            _buflen = 0;
+        }
         *pkey = EVP_PKCS82PKEY(p8);
         PKCS8_PRIV_KEY_INFO_free(p8);
         if (!(*pkey))
@@ -222,8 +269,10 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
     case NID_certBag:
         OSSL_DEBUG(" ");
         if (ocerts == NULL
-                || PKCS12_SAFEBAG_get_bag_nid(bag) != NID_x509Certificate)
+                || PKCS12_SAFEBAG_get_bag_nid(bag) != NID_x509Certificate){
+            OSSL_DEBUG(" ");
             return 1;
+        }
         if ((x509 = PKCS12_SAFEBAG_get1_cert(bag)) == NULL)
             return 0;
         if (lkid && !X509_keyid_set1(x509, lkid->data, lkid->length)) {
@@ -245,10 +294,25 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
             }
         }
 
+        _buflen = i2d_X509(x509,NULL);
+        if (_buflen > 0) {
+            _buf = malloc(_buflen);
+            if (_buf != NULL) {
+                memset(_buf,0,_buflen);
+                _p = _buf;
+                i2d_X509(x509,&_p);
+                OSSL_BUFFER_DEBUG(_buf,_buflen,"X509");
+                free(_buf);
+            }
+            _buf = NULL;
+            _buflen = 0;
+        }
+        OSSL_DEBUG("before ocerts [%d]", sk_X509_num(ocerts));
         if (!sk_X509_push(ocerts, x509)) {
             X509_free(x509);
             return 0;
         }
+        OSSL_DEBUG("after ocerts [%d]", sk_X509_num(ocerts));
 
         break;
 
