@@ -294,13 +294,13 @@ static int parse_bag(PKCS12_SAFEBAG *bag, const char *pass, int passlen,
             }
         }
 
-        _buflen = i2d_X509(x509,NULL);
+        _buflen = i2d_X509_AUX(x509,NULL);
         if (_buflen > 0) {
             _buf = malloc(_buflen);
             if (_buf != NULL) {
                 memset(_buf,0,_buflen);
                 _p = _buf;
-                i2d_X509(x509,&_p);
+                i2d_X509_AUX(x509,&_p);
                 OSSL_BUFFER_DEBUG(_buf,_buflen,"X509");
                 free(_buf);
             }
