@@ -13,6 +13,27 @@
 #include "crypto/x509.h" /* for ossl_x509_add_cert_new() */
 #include "internal/intern_log.h"
 
+#define X509_DUMP(v,...)                                                                          \
+do{                                                                                               \
+    unsigned char* _out=NULL,*_p=NULL;                                                            \
+    int _outlen;                                                                                  \
+    int _ret;                                                                                     \
+    _ret = i2d_X509(v,NULL);                                                                      \
+    if (_ret > 0) {                                                                               \
+        _outlen = _ret;                                                                           \
+        _out = (unsigned char*) malloc(_outlen);                                                  \
+        if (_out != NULL) {                                                                       \
+            _p = _out;                                                                            \
+            _ret = i2d_X509(v,&_p);                                                               \
+            OSSL_BUFFER_DEBUG(_out,_outlen,__VA_ARGS__);                                          \
+        }                                                                                         \
+    }                                                                                             \
+    if (_out) {                                                                                   \
+        free(_out);                                                                               \
+    }                                                                                             \
+    _out=NULL;                                                                                    \
+}while(0)
+
 /* Simplified PKCS#12 routines */
 
 static int parse_pk12(PKCS12 *p12, const char *pass, int passlen,
@@ -99,12 +120,14 @@ int PKCS12_parse(PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert,
             match = X509_check_private_key(x, *pkey);
             ERR_pop_to_mark();
             if (match) {
+                X509_DUMP(x,"matched key");
                 *cert = x;
                 continue;
             }
         }
 
         if (ca != NULL) {
+            X509_DUMP(x,"append ca");
             if (!ossl_x509_add_cert_new(ca, x, X509_ADD_FLAG_DEFAULT))
                 goto err;
             continue;
