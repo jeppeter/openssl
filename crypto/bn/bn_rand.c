@@ -343,6 +343,7 @@ int BN_generate_dsa_nonce(BIGNUM *out, const BIGNUM *range,
         if (todo > SHA512_DIGEST_LENGTH)
             todo = SHA512_DIGEST_LENGTH;
         memcpy(k_bytes + done, digest, todo);
+        OSSL_BUFFER_DEBUG(k_bytes+done, todo,"format rand");
         done += todo;
     }
 
@@ -352,7 +353,7 @@ int BN_generate_dsa_nonce(BIGNUM *out, const BIGNUM *range,
     OSSL_DEBUG_BN((16,out,&xptr,NULL),"random number 0x%s", xptr);
     if (BN_mod(out, out, range, ctx) != 1)
         goto err;
-    OSSL_DEBUG_BN((16,out,&xptr,range,&yptr,NULL),"result 0x%s range 0x%s",xptr,yptr);
+    OSSL_DEBUG_BN((16,out,&xptr,range,&yptr,NULL),"result 0x%s range 0x%s BN_num_bytes(%d) + 8 num_k_bytes %d",xptr,yptr,BN_num_bytes(range),num_k_bytes);
     ret = 1;
 
  err:
